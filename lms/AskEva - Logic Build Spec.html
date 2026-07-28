@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AskEva · Logic Build Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand-300:#85D653; --brand-400:#5BCC4A; --brand-500:#3CC23F; --brand-600:#2BA84A; --brand-700:#177A36;
+    --tint-50:#EAF9E6; --tint-100:#DCF3D6; --tint-border:#CDEAC4;
+    --canvas:#F6F8F5; --surface:#fff; --line:#EEF1EC;
+    --ink:#15231A; --ink-2:#4D5D52; --ink-3:#8A978D;
+    --info:#3B82F6; --hot:#F2542D; --warm:#F5B829; --cold:#5AB6E8; --grey:#9AA39C; --coral:#EF5350;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+  body{ margin:0; background:var(--canvas); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.55; letter-spacing:-.005em; }
+  .wrap{ max-width:980px; margin:0 auto; padding:40px 26px 90px; }
+
+  /* ---- header ---- */
+  .masthead{ background:linear-gradient(135deg,#15231A 0%,#177A36 52%,#2BA84A 100%); border-radius:26px; padding:36px 36px 30px; color:#fff; position:relative; overflow:hidden; box-shadow:0 24px 50px -26px rgba(23,122,54,.7); }
+  .masthead::after{ content:""; position:absolute; inset:0; opacity:.16; pointer-events:none; background-image:repeating-linear-gradient(125deg,#fff 0 1px,transparent 1px 26px),repeating-linear-gradient(55deg,#fff 0 1px,transparent 1px 26px); mask-image:radial-gradient(120% 120% at 85% 10%,#000,transparent 70%); }
+  .mh-eyebrow{ font-size:12px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; opacity:.92; position:relative; z-index:1; }
+  .mh-title{ font-size:36px; font-weight:800; letter-spacing:-.028em; margin:9px 0 8px; line-height:1.05; position:relative; z-index:1; }
+  .mh-sub{ font-size:15px; font-weight:600; opacity:.95; max-width:66ch; position:relative; z-index:1; }
+  .mh-meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; position:relative; z-index:1; }
+  .mh-chip{ background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.26); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:700; }
+
+  /* ---- toc ---- */
+  .toc{ margin-top:16px; border:1.5px solid var(--tint-border); background:linear-gradient(180deg,#FBFEF9,#F3FBEF); border-radius:20px; padding:18px 22px; display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+  .toc a{ text-decoration:none; color:#33503C; display:block; }
+  .toc a .k{ font-family:var(--mono); font-size:11px; color:var(--brand-600); font-weight:600; }
+  .toc a .t{ font-size:13.5px; font-weight:800; color:var(--brand-700); margin-top:2px; letter-spacing:-.01em; }
+  .toc a:hover .t{ text-decoration:underline; }
+
+  /* ---- section ---- */
+  section{ margin-top:46px; scroll-margin-top:20px; }
+  .sec-h{ display:flex; align-items:baseline; gap:12px; margin:0 4px 14px; }
+  .sec-n{ font-family:var(--mono); font-size:13px; font-weight:600; color:var(--brand-600); }
+  .sec-h h2{ font-size:23px; font-weight:800; letter-spacing:-.022em; margin:0; }
+  .lead-p{ margin:0 4px 18px; color:var(--ink-2); font-size:15px; font-weight:500; max-width:84ch; }
+  .lead-p strong{ color:var(--ink); font-weight:700; }
+  .sub-h{ font-size:15px; font-weight:800; color:var(--ink); margin:24px 4px 12px; letter-spacing:-.01em; display:flex; align-items:center; gap:9px; }
+  .sub-h .dot{ width:7px; height:7px; border-radius:50%; background:var(--brand-500); }
+
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:22px 24px; box-shadow:0 1px 2px rgba(21,35,26,.04),0 12px 28px -22px rgba(21,35,26,.4); }
+  .card + .card{ margin-top:14px; }
+
+  /* ---- tables ---- */
+  .tbl-card{ overflow:hidden; padding:18px 12px 8px; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{ text-align:left; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); padding:0 12px 9px; border-bottom:1px solid var(--line); }
+  td{ padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); font-weight:500; }
+  tr:last-child td{ border-bottom:none; }
+  td b, td .nm{ color:var(--ink); font-weight:700; }
+  code{ font-family:var(--mono); font-size:12px; background:var(--tint-50); color:var(--brand-700); padding:2px 6px; border-radius:6px; font-weight:600; }
+
+  /* ---- pills / sev ---- */
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; letter-spacing:.02em; white-space:nowrap; }
+  .pill.ok{ background:var(--tint-50); color:var(--brand-700); border:1px solid var(--tint-border); }
+  .pill.no{ background:#FDECEC; color:#C1352F; border:1px solid #F6D4D2; }
+  .pill.part{ background:#FFF4DC; color:#9A6B00; border:1px solid #F6E2AE; }
+  .pill.blue{ background:#EAF1FB; color:#2B6CB0; border:1px solid #CFE0F5; }
+  .tag{ display:inline-block; font-size:10px; font-weight:800; padding:2px 7px; border-radius:5px; letter-spacing:.03em; font-family:var(--mono); }
+  .tag.pk{ background:var(--tint-50); color:var(--brand-700); }
+  .tag.fk{ background:#EAF1FB; color:#2B6CB0; }
+  .tag.enum{ background:#FFF4DC; color:#9A6B00; }
+  .tag.uq{ background:#F3ECFB; color:#7C4DBC; }
+
+  /* ---- ERD entity cards ---- */
+  .entgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .ent{ border:1px solid var(--line); border-radius:16px; background:var(--surface); overflow:hidden; box-shadow:0 1px 2px rgba(21,35,26,.04); }
+  .ent.core{ border-color:var(--tint-border); box-shadow:0 0 0 1px var(--tint-border),0 12px 26px -20px rgba(23,122,54,.5); }
+  .ent .eh{ background:linear-gradient(180deg,#1A2A20,#15231A); color:#fff; padding:11px 14px; display:flex; align-items:center; justify-content:space-between; }
+  .ent.core .eh{ background:linear-gradient(135deg,#177A36,#2BA84A); }
+  .ent .eh .en{ font-size:13.5px; font-weight:800; letter-spacing:-.01em; }
+  .ent .eh .ek{ font-family:var(--mono); font-size:10px; opacity:.8; }
+  .ent .ef{ padding:9px 13px 11px; }
+  .ent .fr{ display:flex; align-items:center; gap:7px; padding:4px 0; font-size:12px; border-bottom:1px dashed var(--line); }
+  .ent .fr:last-child{ border-bottom:none; }
+  .ent .fr .fn{ font-family:var(--mono); font-weight:600; color:var(--ink); }
+  .ent .fr .ft{ color:var(--ink-3); font-size:11px; margin-left:auto; font-family:var(--mono); }
+
+  /* ---- spine / rails (dark) ---- */
+  .rail{ background:linear-gradient(180deg,#0F1A13,#1A2A20); border-radius:22px; padding:24px 22px; color:#fff; overflow-x:auto; }
+  .rail-flow{ display:flex; align-items:center; gap:0; min-width:720px; }
+  .rnode{ flex:1; min-width:120px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:13px; padding:13px 12px; }
+  .rnode.hot{ border-color:rgba(60,194,63,.4); background:rgba(60,194,63,.12); }
+  .rnode .rk{ font-family:var(--mono); font-size:10px; color:var(--brand-300); letter-spacing:.05em; font-weight:600; }
+  .rnode .rt{ font-size:13.5px; font-weight:800; margin:4px 0 5px; letter-spacing:-.01em; }
+  .rnode .rd{ font-size:11px; color:rgba(255,255,255,.6); font-weight:500; line-height:1.42; }
+  .rnode .rent{ display:inline-block; margin-top:8px; font-family:var(--mono); font-size:9.5px; background:rgba(60,194,63,.16); color:var(--brand-300); border:1px solid rgba(60,194,63,.3); border-radius:5px; padding:2px 6px; font-weight:600; }
+  .rarrow{ align-self:center; color:rgba(255,255,255,.42); font-size:19px; padding:0 4px; flex:0 0 auto; }
+  .rlabel{ font-family:var(--mono); font-size:9px; color:rgba(255,255,255,.5); text-align:center; flex:0 0 auto; align-self:center; padding:0 2px; max-width:54px; }
+
+  /* ---- state machine ---- */
+  .sm{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .snode{ border-radius:11px; padding:9px 14px; font-size:12.5px; font-weight:800; border:1.5px solid; letter-spacing:-.01em; }
+  .snode.start{ background:#EAF1FB; border-color:#CFE0F5; color:#2B6CB0; }
+  .snode.mid{ background:#FFF4DC; border-color:#F6E2AE; color:#9A6B00; }
+  .snode.win{ background:var(--tint-50); border-color:var(--tint-border); color:var(--brand-700); }
+  .snode.bad{ background:#FDECEC; border-color:#F6D4D2; color:#C1352F; }
+  .snode.neutral{ background:var(--surface); border-color:var(--line); color:var(--ink); }
+  .sarr{ color:var(--ink-3); font-size:15px; font-weight:700; }
+  .sarr small{ font-family:var(--mono); font-size:9.5px; display:block; color:var(--ink-3); line-height:1; }
+
+  /* ---- callout ---- */
+  .callout{ border:1px solid var(--tint-border); border-radius:14px; background:linear-gradient(180deg,#FBFEF9,#fff); padding:14px 18px; margin-top:14px; }
+  .callout.warn{ border-color:#F6E2AE; background:#FFF9EC; }
+  .callout.blue{ border-color:#CFE0F5; background:#F3F8FF; }
+  .callout b{ color:var(--ink); }
+  .callout .ct{ font-size:12px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--brand-700); margin-bottom:5px; }
+  .callout.warn .ct{ color:#9A6B00; } .callout.blue .ct{ color:#2B6CB0; }
+  .callout p{ margin:4px 0 0; font-size:13px; color:var(--ink-2); }
+  .callout code{ font-size:11.5px; }
+
+  ul.clean{ margin:8px 0 0; padding-left:20px; }
+  ul.clean li{ margin:5px 0; color:var(--ink-2); font-size:13.8px; }
+  ul.clean li b{ color:var(--ink); }
+  ul.clean li.add::marker{ color:var(--brand-500); }
+  .note{ font-size:12.5px; color:var(--ink-3); margin-top:10px; font-style:italic; }
+
+  /* ---- phase ---- */
+  .phase{ border:1px solid var(--line); border-radius:18px; background:var(--surface); padding:18px 20px; position:relative; }
+  .phase + .phase{ margin-top:12px; }
+  .phase.gate{ border-color:#F2C6C2; background:linear-gradient(180deg,#FFF8F7,#fff); }
+  .phase .ph-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .phase .ph-n{ font-family:var(--mono); font-size:12px; font-weight:700; color:#fff; background:var(--brand-600); border-radius:7px; padding:3px 9px; }
+  .phase.gate .ph-n{ background:#C1352F; }
+  .phase h3{ font-size:15.5px; font-weight:800; margin:0; letter-spacing:-.01em; }
+  .phase .ph-steps{ margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--ink-3); }
+  .phase p{ margin:6px 0; font-size:13.5px; color:var(--ink-2); }
+  .phase .exit{ font-size:12.5px; color:var(--ink); font-weight:600; margin-top:8px; }
+  .phase .exit::before{ content:"Exit ✓ "; color:var(--brand-600); font-weight:800; font-family:var(--mono); font-size:11px; }
+  .phase .lift{ position:absolute; top:18px; right:20px; font-family:var(--mono); font-size:11px; color:var(--brand-700); font-weight:700; }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:14px; margin:2px 4px 16px; }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; color:var(--ink-2); }
+  .legend i{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+
+  .foot{ margin-top:54px; text-align:center; color:var(--ink-3); font-size:12px; }
+  .foot b{ color:var(--brand-700); }
+
+  @media (max-width:740px){
+    .toc{ grid-template-columns:repeat(2,1fr); }
+    .entgrid{ grid-template-columns:1fr; }
+    .mh-title{ font-size:28px; }
+    .tbl-card{ overflow-x:auto; } table{ min-width:600px; }
+  }
+  @media print{
+    body{ background:#fff; } .wrap{ padding:0; max-width:none; }
+    .card,.phase,.ent{ box-shadow:none; }
+    section{ break-inside:avoid; } .ent,.phase{ break-inside:avoid; }
+    .masthead,.rail,.ent .eh{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .toc{ display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===================== MASTHEAD ===================== -->
+  <header class="masthead">
+    <div class="mh-eyebrow">AskEva · Logic-Layer Engineering Blueprint</div>
+    <h1 class="mh-title">Build Spec</h1>
+    <p class="mh-sub">The 7-step audit roadmap, turned into a developer-ready specification: the entity model, the event bus, the triage rulebook, and the state machines that make AskEva's CRM logic safe to build. Same scope as the audit — logic only.</p>
+    <div class="mh-meta">
+      <span class="mh-chip">9 entities</span>
+      <span class="mh-chip">30 typed events</span>
+      <span class="mh-chip">8 triage intents</span>
+      <span class="mh-chip">4 state machines</span>
+      <span class="mh-chip">5 build phases</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#p1"><span class="k">PART 1</span><span class="t">Entity blueprint</span></a>
+    <a href="#p2"><span class="k">PART 2</span><span class="t">Event catalog</span></a>
+    <a href="#p3"><span class="k">PART 3</span><span class="t">Triage rulebook</span></a>
+    <a href="#p4"><span class="k">PART 4</span><span class="t">State machines</span></a>
+    <a href="#p5"><span class="k">PART 5</span><span class="t">Build plan</span></a>
+  </nav>
+
+  <!-- ===================== PART 1 — ERD ===================== -->
+  <section id="p1">
+    <div class="sec-h"><span class="sec-n">PART 1</span><h2>Entity &amp; relationship blueprint</h2></div>
+    <p class="lead-p">The fix for critical errors C-01, C-04 and C-05: split the single overloaded "lead row" into a clean graph. One <strong>Contact</strong> (a human) carries many <strong>Opportunities</strong> over time and, once won, one <strong>Customer</strong> relationship. Everything else hangs off stable IDs — never off a name or phone-string match.</p>
+
+    <div class="sub-h"><span class="dot"></span>The spine — how a human moves through the graph</div>
+    <div class="rail">
+      <div class="rail-flow">
+        <div class="rnode"><div class="rk">PERSON</div><div class="rt">Contact</div><div class="rd">One per normalized phone. Never duplicated.</div><span class="rent">contactId</span></div>
+        <span class="rlabel">1 : many</span><span class="rarrow">→</span>
+        <div class="rnode hot"><div class="rk">DEAL</div><div class="rt">Opportunity</div><div class="rd">Each sales attempt. Reusable for repeat business.</div><span class="rent">opportunityId · contactId</span></div>
+        <span class="rlabel">win → 1:1</span><span class="rarrow">→</span>
+        <div class="rnode hot"><div class="rk">RELATIONSHIP</div><div class="rt">Customer</div><div class="rd">Created on first won deal. The post-sale anchor.</div><span class="rent">customerId · contactId</span></div>
+        <span class="rlabel">1 : many</span><span class="rarrow">→</span>
+        <div class="rnode"><div class="rk">SERVICE</div><div class="rt">Appt · Ticket · Payment</div><div class="rd">All FK-linked to customerId. Real timeline.</div><span class="rent">customerId FK</span></div>
+      </div>
+    </div>
+
+    <div class="sub-h"><span class="dot"></span>Entities &amp; key fields</div>
+    <div class="legend">
+      <span><i style="background:var(--brand-500)"></i><span class="tag pk">PK</span> primary key</span>
+      <span><i style="background:#3B82F6"></i><span class="tag fk">FK</span> foreign key</span>
+      <span><i style="background:#F5B829"></i><span class="tag enum">ENUM</span> fixed states</span>
+      <span><i style="background:#7C4DBC"></i><span class="tag uq">UQ</span> unique</span>
+    </div>
+    <div class="entgrid">
+
+      <div class="ent core"><div class="eh"><span class="en">Contact</span><span class="ek">the person</span></div><div class="ef">
+        <div class="fr"><span class="fn">contactId</span><span class="tag pk">PK</span></div>
+        <div class="fr"><span class="fn">phone</span><span class="tag uq">UQ</span><span class="ft">normalized</span></div>
+        <div class="fr"><span class="fn">name · email</span></div>
+        <div class="fr"><span class="fn">companyId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">whatsappOptIn</span><span class="ft">bool · consentAt</span></div>
+        <div class="fr"><span class="fn">firstSource</span><span class="tag enum">ENUM</span></div>
+      </div></div>
+
+      <div class="ent core"><div class="eh"><span class="en">Opportunity</span><span class="ek">the deal</span></div><div class="ef">
+        <div class="fr"><span class="fn">opportunityId</span><span class="tag pk">PK</span></div>
+        <div class="fr"><span class="fn">contactId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">status</span><span class="tag enum">ENUM</span><span class="ft">new…won/lost</span></div>
+        <div class="fr"><span class="fn">ownerAgentId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">value · slaDueAt</span></div>
+        <div class="fr"><span class="fn">closedAt · lostReason</span></div>
+      </div></div>
+
+      <div class="ent core"><div class="eh"><span class="en">Customer</span><span class="ek">the relationship</span></div><div class="ef">
+        <div class="fr"><span class="fn">customerId</span><span class="tag pk">PK</span></div>
+        <div class="fr"><span class="fn">contactId</span><span class="tag fk">FK</span><span class="ft">1:1</span></div>
+        <div class="fr"><span class="fn">state</span><span class="tag enum">ENUM</span><span class="ft">active…churned</span></div>
+        <div class="fr"><span class="fn">wonOpportunityId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">ownerAgentId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">onboardedAt · ltv</span></div>
+      </div></div>
+
+      <div class="ent"><div class="eh"><span class="en">Conversation</span><span class="ek">chat thread</span></div><div class="ef">
+        <div class="fr"><span class="fn">conversationId</span><span class="tag pk">PK</span></div>
+        <div class="fr"><span class="fn">contactId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">channel</span><span class="tag enum">ENUM</span></div>
+        <div class="fr"><span class="fn">windowExpiresAt</span><span class="ft">24h timer</span></div>
+        <div class="fr"><span class="fn">assignedAgentId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">lastInboundAt</span></div>
+      </div></div>
+
+      <div class="ent"><div class="eh"><span class="en">Appointment</span><span class="ek">booking</span></div><div class="ef">
+        <div class="fr"><span class="fn">appointmentId</span><span class="tag pk">PK</span></div>
+        <div class="fr"><span class="fn">customerId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">ownerAgentId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">startAt</span></div>
+        <div class="fr"><span class="fn">status</span><span class="tag enum">ENUM</span></div>
+        <div class="fr"><span class="fn">reminderJobId</span></div>
+      </div></div>
+
+      <div class="ent"><div class="eh"><span class="en">Ticket</span><span class="ek">support</span></div><div class="ef">
+        <div class="fr"><span class="fn">ticketId</span><span class="tag pk">PK</span></div>
+        <div class="fr"><span class="fn">customerId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">sourceConvId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">priority · status</span><span class="tag enum">ENUM</span></div>
+        <div class="fr"><span class="fn">ownerAgentId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">followUpTaskId</span><span class="tag fk">FK</span></div>
+      </div></div>
+
+      <div class="ent"><div class="eh"><span class="en">Payment</span><span class="ek">money</span></div><div class="ef">
+        <div class="fr"><span class="fn">paymentId</span><span class="tag pk">PK</span></div>
+        <div class="fr"><span class="fn">customerId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="fn">orderId</span><span class="tag fk">FK</span><span class="ft">→ Catalog</span></div>
+        <div class="fr"><span class="fn">amount · currency</span></div>
+        <div class="fr"><span class="fn">status</span><span class="tag enum">ENUM</span></div>
+        <div class="fr"><span class="fn">invoiceId</span></div>
+      </div></div>
+
+      <div class="ent"><div class="eh"><span class="en">Company</span><span class="ek">B2B account</span></div><div class="ef">
+        <div class="fr"><span class="fn">companyId</span><span class="tag pk">PK</span></div>
+        <div class="fr"><span class="fn">name · website</span></div>
+        <div class="fr"><span class="fn">industry</span></div>
+        <div class="fr"><span class="fn">ownerAgentId</span><span class="tag fk">FK</span></div>
+        <div class="fr"><span class="ft">1 company : many contacts</span></div>
+      </div></div>
+
+      <div class="ent"><div class="eh"><span class="en">Agent</span><span class="ek">team member</span></div><div class="ef">
+        <div class="fr"><span class="fn">agentId</span><span class="tag pk">PK</span></div>
+        <div class="fr"><span class="fn">name · email</span></div>
+        <div class="fr"><span class="fn">role</span><span class="tag enum">ENUM</span></div>
+        <div class="fr"><span class="fn">availability</span><span class="tag enum">ENUM</span></div>
+        <div class="fr"><span class="ft">owns Opps · Tickets · Appts</span></div>
+      </div></div>
+
+    </div>
+
+    <div class="sub-h"><span class="dot"></span>Relationships &amp; integrity rules</div>
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Relationship</th><th>Cardinality</th><th>Integrity rule</th></tr></thead>
+        <tbody>
+          <tr><td><b>Contact → Opportunity</b></td><td>1 : many</td><td>A returning contact opens a <i>new</i> opportunity; never a duplicate contact.</td></tr>
+          <tr><td><b>Opportunity → Customer</b></td><td>1 : 1 on win</td><td><code>won</code> creates a Customer if none exists for that contact, else links to it.</td></tr>
+          <tr><td><b>Contact → Customer</b></td><td>1 : 1</td><td>At most one active Customer per Contact. Enforced by <code>contactId</code> unique on Customer.</td></tr>
+          <tr><td><b>Customer → Appt / Ticket / Payment</b></td><td>1 : many</td><td>All children carry <code>customerId</code> FK. No orphan rows permitted.</td></tr>
+          <tr><td><b>Conversation → Ticket</b></td><td>1 : many</td><td>A ticket records its <code>sourceConvId</code> so support has full context.</td></tr>
+          <tr><td><b>Company → Contact</b></td><td>1 : many</td><td>B2B: many people, one account. Company-level rollup of value &amp; activity.</td></tr>
+          <tr><td><b>Agent → {Opp, Ticket, Appt, Conv}</b></td><td>1 : many</td><td>Ownership is <b>mandatory</b> — no record may exist unassigned past the SLA grace window.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout blue"><div class="ct">Identity rule (resolves the duplication loop)</div><p>On every inbound, <b>resolve phone → contactId first</b>. If found, attach to the existing Contact and open a new Opportunity. Only mint a new Contact when the normalized phone is genuinely unseen. <code>phone</code> is unique; dedupe-on-ingest with a merge prompt enforces "one identity per human."</p></div>
+  </section>
+
+  <!-- ===================== PART 2 — EVENT CATALOG ===================== -->
+  <section id="p2">
+    <div class="sec-h"><span class="sec-n">PART 2</span><h2>Event catalog &amp; flow map</h2></div>
+    <p class="lead-p">One <strong>event bus</strong>, the backbone the audit's step 3 calls for. Every state change emits a typed event; Flow Builder, AI Agent, Reports, Dashboard and Notifications <em>subscribe</em> — nobody re-derives state by scanning chat text. Each event payload always carries <code>contactId</code> so consumers can resolve the full graph.</p>
+
+    <div class="sub-h"><span class="dot"></span>Producers &amp; subscribers</div>
+    <div class="rail">
+      <div class="rail-flow" style="min-width:660px">
+        <div class="rnode"><div class="rk">EMIT</div><div class="rt">Domain modules</div><div class="rd">Chat · Leads · Appts · Tickets · Payments mutate state &amp; publish events.</div></div>
+        <span class="rarrow">→</span>
+        <div class="rnode hot"><div class="rk">BUS</div><div class="rt">Event bus</div><div class="rd">Append-only log of typed events. Single source of truth for "what happened."</div><span class="rent">Event{type,entityId,payload,actor,ts}</span></div>
+        <span class="rarrow">→</span>
+        <div class="rnode"><div class="rk">SUBSCRIBE</div><div class="rt">Consumers</div><div class="rd">Flow Builder · AI Agent · Reports · Dashboard · Notifications react.</div></div>
+      </div>
+    </div>
+
+    <div class="sub-h"><span class="dot"></span>The 30 events</div>
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Event</th><th>Trigger</th><th>Key payload</th><th>Subscribers</th></tr></thead>
+        <tbody>
+          <tr><td><code>contact.created</code></td><td>Unseen phone resolved</td><td>contactId, phone, source</td><td>Dashboard, Reports</td></tr>
+          <tr><td><code>contact.merged</code></td><td>Dedupe accepted</td><td>winnerId, mergedId</td><td>all (re-key)</td></tr>
+          <tr><td><code>contact.opted_in</code> / <code>opted_out</code></td><td>Consent change</td><td>contactId, consentAt</td><td>Chat (gate sends)</td></tr>
+          <tr><td><code>lead.created</code></td><td>Opportunity opened</td><td>opportunityId, contactId, source</td><td>Flow, AI, Dashboard, Notif</td></tr>
+          <tr><td><code>lead.assigned</code></td><td>Owner set / changed</td><td>opportunityId, agentId</td><td>Notif, Reports</td></tr>
+          <tr><td><code>lead.qualified</code></td><td>status → hot/warm/cold</td><td>opportunityId, status</td><td>Flow, Reports</td></tr>
+          <tr><td><code>lead.sla_breached</code></td><td>slaDueAt passed untouched</td><td>opportunityId, agentId</td><td>Notif, escalation Flow</td></tr>
+          <tr><td><code>lead.won</code></td><td>Opportunity won</td><td>opportunityId, contactId</td><td>Customer svc, Flow, Reports</td></tr>
+          <tr><td><code>lead.lost</code></td><td>Opportunity lost</td><td>opportunityId, lostReason</td><td>Reports, win-back Flow</td></tr>
+          <tr><td><code>customer.created</code></td><td>First win</td><td>customerId, contactId</td><td>Onboarding Flow, Dashboard</td></tr>
+          <tr><td><code>customer.state_changed</code></td><td>active↔at_risk↔churned</td><td>customerId, from, to</td><td>Reports, retention Flow</td></tr>
+          <tr><td><code>conversation.inbound_received</code></td><td>Any inbound message</td><td>conversationId, contactId</td><td>AI Agent (triage), Chat</td></tr>
+          <tr><td><code>conversation.window_expiring</code></td><td>&lt;1h of 24h left</td><td>conversationId</td><td>Notif, Chat (prompt template)</td></tr>
+          <tr><td><code>conversation.window_expired</code></td><td>24h elapsed</td><td>conversationId</td><td>Chat (lock free-text)</td></tr>
+          <tr><td><code>appointment.booked</code></td><td>Slot confirmed</td><td>appointmentId, customerId, startAt</td><td>Reminder svc, Notif</td></tr>
+          <tr><td><code>appointment.reminder_due</code></td><td>T-minus rule fires</td><td>appointmentId</td><td>Chat (send reminder)</td></tr>
+          <tr><td><code>appointment.rescheduled</code></td><td>startAt changed</td><td>appointmentId, oldAt, newAt</td><td>Reminder svc, Notif</td></tr>
+          <tr><td><code>appointment.cancelled</code></td><td>Cancelled</td><td>appointmentId, by</td><td>Re-book Flow, Notif</td></tr>
+          <tr><td><code>appointment.no_show</code></td><td>Not attended past startAt</td><td>appointmentId</td><td>Follow-up Flow</td></tr>
+          <tr><td><code>appointment.completed</code></td><td>Marked done</td><td>appointmentId</td><td>Reports, feedback Flow</td></tr>
+          <tr><td><code>ticket.created</code></td><td>Support intent / manual</td><td>ticketId, customerId, sourceConvId</td><td>Notif, AI, Reports</td></tr>
+          <tr><td><code>ticket.assigned</code></td><td>Owner set</td><td>ticketId, agentId</td><td>Notif</td></tr>
+          <tr><td><code>ticket.resolved</code></td><td>Closed</td><td>ticketId</td><td>Follow-up Flow, CSAT</td></tr>
+          <tr><td><code>ticket.reopened</code></td><td>Customer replies post-resolve</td><td>ticketId</td><td>Notif, Reports</td></tr>
+          <tr><td><code>ticket.followup_created</code></td><td>Task spawned from ticket</td><td>taskId, ticketId</td><td>Appts/Tasks, Notif</td></tr>
+          <tr><td><code>payment.captured</code></td><td>Funds received</td><td>paymentId, customerId, amount</td><td>Reports, receipt Flow</td></tr>
+          <tr><td><code>payment.failed</code></td><td>Charge failed</td><td>paymentId, reason</td><td>Dunning Flow, Notif</td></tr>
+          <tr><td><code>payment.refunded</code></td><td>Refund issued</td><td>paymentId, amount</td><td>Reports</td></tr>
+          <tr><td><code>ai.action_proposed</code></td><td>AI wants to act</td><td>action, entityRef, confidence</td><td>Agent inbox (approval)</td></tr>
+          <tr><td><code>ai.handed_off</code></td><td>AI escalates to human</td><td>conversationId, reason</td><td>Notif, assignment</td></tr>
+          <tr><td><code>ai.reply_sent</code></td><td>AI auto-replied</td><td>conversationId, intent</td><td>Reports, audit log</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><div class="ct">Why append-only</div><p>The event log doubles as the <b>Customer Timeline</b> the audit flagged as incomplete: render any contact's history by replaying their events in order. Reports and Dashboard become projections over the same log — no separate analytics plumbing, no drift.</p></div>
+  </section>
+
+  <!-- ===================== PART 3 — TRIAGE RULEBOOK ===================== -->
+  <section id="p3">
+    <div class="sec-h"><span class="sec-n">PART 3</span><h2>Triage rulebook</h2></div>
+    <p class="lead-p">The decision table that ends "every agent classifies differently." Inbound intent → what AskEva creates → the AI's authority. <strong>Autonomy</strong> is the safety dial: <span class="pill ok">Auto</span> the AI acts alone, <span class="pill part">Propose</span> it drafts and an agent approves, <span class="pill no">Human</span> it must hand off.</p>
+
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Inbound intent</th><th>Signal</th><th>Classify as</th><th>Entity action</th><th>AI autonomy</th></tr></thead>
+        <tbody>
+          <tr><td><b>New enquiry</b></td><td>Unknown number, first message</td><td>Opportunity</td><td>Create Contact + Lead <code>new</code>, auto-assign</td><td><span class="pill ok">Auto</span></td></tr>
+          <tr><td><b>Product / pricing</b></td><td>Asks about catalog, price, availability</td><td>Opportunity → hot</td><td>Bump status; attach interest</td><td><span class="pill part">Propose</span><div class="why" style="font-size:11px;color:var(--ink-3);margin-top:3px">Auto for catalog FAQ; Propose for quotes</div></td></tr>
+          <tr><td><b>Booking request</b></td><td>"Can I book / schedule…"</td><td>Appointment</td><td>Offer slots; create Appt on confirm</td><td><span class="pill part">Propose</span></td></tr>
+          <tr><td><b>Support issue</b></td><td>Existing customer reports a problem</td><td>Ticket</td><td>Create Ticket, link <code>sourceConvId</code></td><td><span class="pill part">Propose</span></td></tr>
+          <tr><td><b>Complaint / escalation</b></td><td>Anger, churn threat, legal words</td><td>Ticket (high)</td><td>Priority high + immediate hand-off</td><td><span class="pill no">Human</span></td></tr>
+          <tr><td><b>Payment / refund</b></td><td>Money, invoice, refund, dispute</td><td>Payment / Ticket</td><td>Surface payment context; never act</td><td><span class="pill no">Human</span></td></tr>
+          <tr><td><b>Returning customer</b></td><td>Known contact, new need</td><td>New Opportunity</td><td>Open Opp on existing Customer</td><td><span class="pill part">Propose</span></td></tr>
+          <tr><td><b>Spam / invalid</b></td><td>Bot, gibberish, opt-out</td><td>Invalid</td><td>Mark invalid; no promotion</td><td><span class="pill ok">Auto</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="navcol" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div class="callout"><div class="ct">AI reply / hand-off rule</div><p><b>Reply</b> when intent is known &amp; autonomy is Auto and confidence ≥ threshold. <b>Hand off</b> on: low confidence, any <span class="pill no">Human</span> intent, explicit "talk to a person," or a second unresolved loop. Every AI action emits an event for audit.</p></div>
+      <div class="callout warn"><div class="ct">Conflict guards</div><p>One intent per message wins (highest-priority match). Complaint &gt; Payment &gt; Support &gt; Booking &gt; Pricing &gt; Enquiry. A message can update at most one entity per turn to prevent the AI fanning out duplicates.</p></div>
+    </div>
+  </section>
+
+  <!-- ===================== PART 4 — STATE MACHINES ===================== -->
+  <section id="p4">
+    <div class="sec-h"><span class="sec-n">PART 4</span><h2>State machines</h2></div>
+    <p class="lead-p">Every entity gets one explicit state machine — no implicit transitions, no terminal dead-ends. This is where the audit's "close the dead-ends" and "post-sale lifecycle" steps become concrete.</p>
+
+    <div class="sub-h"><span class="dot"></span>Opportunity — the deal funnel</div>
+    <div class="card">
+      <div class="sm">
+        <span class="snode start">new</span>
+        <span class="sarr">→<small>qualify</small></span>
+        <span class="snode mid">hot</span><span class="snode mid">warm</span><span class="snode mid">cold</span>
+        <span class="sarr">→<small>close</small></span>
+        <span class="snode win">won</span>
+        <span class="sarr">/</span>
+        <span class="snode bad">lost</span>
+      </div>
+      <div class="callout blue" style="margin-top:14px"><div class="ct">Transitions</div><p><code>new → hot|warm|cold</code> by qualification rule · <code>hot↔warm↔cold</code> freely re-qualify · <code>any → won</code> emits <code>lead.won</code> &amp; creates/links Customer · <code>any → lost</code> requires <code>lostReason</code> &amp; opens a win-back Flow. <b>No state is terminal-without-exit</b> — <code>lost</code> and <code>won</code> both route forward.</p></div>
+    </div>
+
+    <div class="sub-h"><span class="dot"></span>Customer — the post-sale lifecycle (the missing loop)</div>
+    <div class="card">
+      <div class="sm">
+        <span class="snode win">active</span>
+        <span class="sarr">⇄<small>inactivity / health</small></span>
+        <span class="snode mid">at&nbsp;risk</span>
+        <span class="sarr">→<small>lapse</small></span>
+        <span class="snode bad">churned</span>
+        <span class="sarr">→<small>win-back</small></span>
+        <span class="snode start">reactivated</span>
+        <span class="sarr">→<small>opens new Opp</small></span>
+        <span class="snode win">active</span>
+      </div>
+      <div class="callout" style="margin-top:14px"><div class="ct">The reactivation edge</div><p>This is the single most important missing transition from the audit's lifecycle diagram. A <code>reactivated</code> customer <b>opens a new Opportunity against the existing Contact</b> — it does not create a new Lead/Contact. That closes the duplication loop for good.</p></div>
+    </div>
+
+    <div class="navcol" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+      <div class="card">
+        <div class="sub-h" style="margin-top:0"><span class="dot"></span>Ticket</div>
+        <div class="sm">
+          <span class="snode start">open</span><span class="sarr">→</span>
+          <span class="snode mid">pending</span><span class="sarr">→</span>
+          <span class="snode win">resolved</span>
+        </div>
+        <div class="sm" style="margin-top:10px">
+          <span class="snode win">resolved</span><span class="sarr">→<small>reply</small></span><span class="snode bad">reopened</span><span class="sarr">→</span><span class="snode start">open</span>
+        </div>
+        <p class="note" style="margin-top:12px">On <code>resolved</code> → optional <code>ticket.followup_created</code> (task or appointment). Reopen on customer reply within window.</p>
+      </div>
+      <div class="card">
+        <div class="sub-h" style="margin-top:0"><span class="dot"></span>Appointment</div>
+        <div class="sm">
+          <span class="snode start">booked</span><span class="sarr">→</span><span class="snode win">completed</span>
+        </div>
+        <div class="sm" style="margin-top:10px">
+          <span class="snode start">booked</span><span class="sarr">→</span><span class="snode mid">rescheduled</span><span class="sarr">↺</span><span class="snode start">booked</span>
+        </div>
+        <div class="sm" style="margin-top:10px">
+          <span class="snode start">booked</span><span class="sarr">→</span><span class="snode bad">cancelled</span><span class="sarr">/</span><span class="snode bad">no&nbsp;show</span>
+        </div>
+        <p class="note" style="margin-top:12px"><code>booked</code> auto-schedules a reminder. <code>cancelled</code> → re-book prompt. <code>no_show</code> → follow-up task. No dead-ends.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PART 5 — BUILD PLAN ===================== -->
+  <section id="p5">
+    <div class="sec-h"><span class="sec-n">PART 5</span><h2>Phased build plan</h2></div>
+    <p class="lead-p">The seven recommendations, sequenced so each phase unblocks the next and the readiness score climbs from <strong>58</strong> toward build-ready. Phase 0 is a hard gate — nothing module-specific ships until the entity model and identity rule exist.</p>
+
+    <div class="phase gate">
+      <div class="ph-top"><span class="ph-n">P0 · GATE</span><h3>Entities &amp; identity</h3><span class="ph-steps">steps 1 · 7</span></div>
+      <span class="lift">→ +14</span>
+      <p>Stand up Contact / Opportunity / Customer with FKs, unique normalized phone, and dedupe-on-ingest. Migrate the current "lead row" into the new graph.</p>
+      <p class="exit">Every record resolves to a stable <code>contactId</code>; no two rows share a phone; convert creates a Customer.</p>
+    </div>
+
+    <div class="phase">
+      <div class="ph-top"><span class="ph-n">P1</span><h3>Owned automatic capture</h3><span class="ph-steps">step 2</span></div>
+      <span class="lift">→ +6</span>
+      <p>First inbound from an unknown number auto-creates an assigned Opportunity with an SLA clock. Assignment policy (round-robin / by-source) + fallback queue.</p>
+      <p class="exit">No inbound exists unowned past the grace window; <code>lead.sla_breached</code> escalates.</p>
+    </div>
+
+    <div class="phase">
+      <div class="ph-top"><span class="ph-n">P2</span><h3>Event bus</h3><span class="ph-steps">step 3</span></div>
+      <span class="lift">→ +4</span>
+      <p>Ship the append-only event log and the 30 typed events. Re-point Dashboard, Reports, and Notifications to subscribe rather than scan.</p>
+      <p class="exit">Customer Timeline renders purely by replaying events; no module re-derives state from chat text.</p>
+    </div>
+
+    <div class="phase">
+      <div class="ph-top"><span class="ph-n">P3</span><h3>Triage &amp; AI boundaries</h3><span class="ph-steps">step 4</span></div>
+      <span class="lift">→ +5</span>
+      <p>Implement the triage decision table and the Auto / Propose / Human autonomy dial. AI actions route through <code>ai.action_proposed</code> for approval.</p>
+      <p class="exit">Every inbound intent maps to exactly one entity action with a defined AI authority and audit trail.</p>
+    </div>
+
+    <div class="phase">
+      <div class="ph-top"><span class="ph-n">P4</span><h3>Close dead-ends &amp; lifecycle</h3><span class="ph-steps">steps 5 · 6</span></div>
+      <span class="lift">→ +5</span>
+      <p>Wire the no-show / cancel / resolved follow-up Flows, post-conversion onboarding, auto-reminders, and the Customer active→at-risk→churned→reactivated states with the reactivation edge.</p>
+      <p class="exit">No workflow terminates without a next step; returning customers re-engage instead of duplicating.</p>
+    </div>
+
+    <div class="card" style="margin-top:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div><b style="font-size:15px">Projected readiness</b><div class="note" style="margin-top:2px;font-style:normal">Through Phase 4, cumulative lift of +34 over today's baseline.</div></div>
+      <div style="font-family:var(--mono);font-weight:800;font-size:22px;color:var(--brand-700)">58 → 92<span style="font-size:13px;color:var(--ink-3)">/100</span></div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <b>AskEva</b> · Logic Build Spec · Companion to the Business Logic Audit · Logic layer only — UI, infrastructure &amp; tech stack out of scope.
+  </div>
+
+</div>
+</body>
+</html>

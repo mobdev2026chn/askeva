@@ -1,0 +1,217 @@
+/* =========================================================
+   AskEva — Colors & Type
+   The brand is built around a single, unmissable lime-grass
+   green, the chunky "ASK EVA" speech-bubble logo, and a
+   friendly white-and-green mascot. Black & white photography
+   pops on green; everything else stays out of the way.
+   ========================================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Anton&family=Quicksand:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Archivo:wght@400;500;600;700;800;900&display=swap");
+
+:root {
+  /* ---------- Brand greens (single canonical AskEva palette) ---------- */
+  --eva-green:           #3DC838;  /* brand-500 — primary (buttons, toggles)  */
+  --eva-green-dark:      #2BA84A;  /* brand-600 — hover / pressed / avatars   */
+  --eva-green-deep:      #177A36;  /* brand-700 — headings, links, active nav  */
+  --eva-lime:            #5BCC4A;  /* brand-400 — gradient light end          */
+  --eva-lime-glow:       #85D653;  /* brand-300 — highlight / glow            */
+  --eva-green-50:        #EAF9E6;  /* tint-50 — surfaces, pills               */
+  --eva-green-100:       #DCF3D6;  /* tint-100 — hover chips                  */
+  --eva-green-200:       #CDEAC4;  /* tint border                            */
+  --eva-green-500:       #3DC838;
+  --eva-green-700:       #177A36;
+  --eva-green-900:       #0F3D0E;
+
+  /* CLAUDE.md brand aliases — components that reference these resolve canonically */
+  --brand-300: #85D653; --brand-400: #5BCC4A; --brand-500: #3DC838; --brand-600: #2BA84A; --brand-700: #177A36;
+  --tint-50: #EAF9E6; --tint-100: #DCF3D6; --tint-border: #CDEAC4; --canvas: #F6F8F5;
+
+  /* Signature gradient — used on logo + key marketing surfaces */
+  --eva-gradient: #3DC838;
+  --eva-gradient-vert: #3DC838;
+
+  /* ---------- Neutrals ---------- */
+  --ink:                 #15231A;  /* near-black with green undertone   */
+  --ink-2:               #4D5D52;  /* body / secondary text             */
+  --ink-3:               #8A978D;  /* muted labels, placeholders        */
+  --ink-4:               #9AA39C;  /* faintest / disabled               */
+  --line:                #EEF1EC;  /* hairline borders, dividers        */
+  --surface:             #FFFFFF;  /* cards                             */
+  --surface-2:           #F6F8F5;  /* page background tint              */
+  --surface-3:           #ECF0E8;
+
+  /* ---------- WhatsApp / chat context ---------- */
+  /* AskEva sits ON TOP of WhatsApp — these are the colors
+     the user sees inside the WA chat surface, used in
+     mockups and chatbot previews. */
+  --wa-header:           #008069;
+  --wa-bg:               #E5DDD5;
+  --wa-bubble-out:       #D9FDD3;
+  --wa-bubble-in:        #FFFFFF;
+  --wa-tick-blue:        #53BDEB;
+
+  /* ---------- Semantic ---------- */
+  --fg-1:                var(--ink);
+  --fg-2:                var(--ink-2);
+  --fg-3:                var(--ink-3);
+  --fg-muted:            var(--ink-4);
+  --fg-on-green:         #FFFFFF;
+  --bg-1:                var(--surface);
+  --bg-2:                var(--surface-2);
+  --bg-brand:            var(--eva-green);
+  --bg-brand-soft:       var(--eva-green-50);
+  --border:              var(--line);
+  --success:             #2BA84A;
+  --warning:             #F5B829;
+  --danger:              #EF5350;
+  --info:                #3B82F6;
+
+  /* ---------- Type families ---------- */
+  /* Display: very condensed, all-caps, heavy weight — the
+     logo word-mark uses this character. Anton is the closest
+     free Google Fonts match; the original may be a custom
+     condensed grotesque (e.g. Druk Wide / Bebas variant). */
+  --font-display: 'Poppins', sans-serif;
+  /* Body: rounded geometric sans matching the AskEva web app
+     (my.askeva.io). Quicksand is the closest free match to the
+     site's rounded, monoline UI face; Nunito/Archivo are
+     fallbacks. Quicksand tops out at 700, so 800 declarations
+     render at 700 — the heaviest the site uses too. */
+  --font-body:    'Poppins', sans-serif;
+  --font-mono:    "JetBrains Mono", "Menlo", "Consolas", monospace;
+
+  /* ---------- Type scale (semantic) ---------- */
+  --display-xl-size: 96px;  --display-xl-lh: 0.9;
+  --display-lg-size: 72px;  --display-lg-lh: 0.92;
+  --display-md-size: 56px;  --display-md-lh: 0.95;
+  --display-sm-size: 40px;  --display-sm-lh: 1.0;
+
+  --h1-size: 40px;  --h1-lh: 1.1;   --h1-weight: 700;
+  --h2-size: 32px;  --h2-lh: 1.15;  --h2-weight: 700;
+  --h3-size: 24px;  --h3-lh: 1.25;  --h3-weight: 700;
+  --h4-size: 20px;  --h4-lh: 1.3;   --h4-weight: 600;
+  --h5-size: 17px;  --h5-lh: 1.35;  --h5-weight: 600;
+
+  --body-lg-size: 18px;  --body-lg-lh: 1.55;
+  --body-md-size: 16px;  --body-md-lh: 1.55;
+  --body-sm-size: 14px;  --body-sm-lh: 1.5;
+  --caption-size: 12px;  --caption-lh: 1.4;
+  --overline-size: 12px; --overline-lh: 1.2;
+
+  /* ---------- Spacing ---------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+  --s-9: 48px;
+  --s-10: 64px;
+  --s-11: 80px;
+  --s-12: 96px;
+
+  /* ---------- Radii ---------- */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* ---------- Shadows ---------- */
+  --shadow-xs: 0 1px 2px rgba(15, 26, 14, 0.06);
+  --shadow-sm: 0 2px 6px rgba(15, 26, 14, 0.08);
+  --shadow-md: 0 8px 20px rgba(15, 26, 14, 0.10);
+  --shadow-lg: 0 18px 40px rgba(15, 26, 14, 0.14);
+  --shadow-glow: 0 0 0 6px rgba(61, 200, 56, 0.18);
+  --shadow-eva: 0 14px 32px rgba(31, 122, 27, 0.28);
+}
+
+/* ---------- Element-level defaults ---------- */
+html, body {
+  font-family: var(--font-body);
+  color: var(--fg-1);
+  background: var(--bg-1);
+  font-size: var(--body-md-size);
+  line-height: var(--body-md-lh);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: 700;          /* Poppins display weight */
+  font-size: var(--h1-size);
+  line-height: var(--h1-lh);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--fg-1);
+  margin: 0;
+}
+h2, .h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--h2-size);
+  line-height: var(--h2-lh);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin: 0;
+}
+h3, .h3 {
+  font-family: var(--font-body);
+  font-weight: var(--h3-weight);
+  font-size: var(--h3-size);
+  line-height: var(--h3-lh);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+h4, .h4 {
+  font-family: var(--font-body);
+  font-weight: var(--h4-weight);
+  font-size: var(--h4-size);
+  line-height: var(--h4-lh);
+  margin: 0;
+}
+h5, .h5 {
+  font-family: var(--font-body);
+  font-weight: var(--h5-weight);
+  font-size: var(--h5-size);
+  line-height: var(--h5-lh);
+  margin: 0;
+}
+
+p, .body { font-size: var(--body-md-size); line-height: var(--body-md-lh); margin: 0 0 var(--s-4); }
+.body-lg { font-size: var(--body-lg-size); line-height: var(--body-lg-lh); }
+.body-sm { font-size: var(--body-sm-size); line-height: var(--body-sm-lh); }
+.caption { font-size: var(--caption-size); line-height: var(--caption-lh); color: var(--fg-3); }
+.overline {
+  font-size: var(--overline-size); line-height: var(--overline-lh);
+  text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700;
+  color: var(--fg-3);
+}
+
+/* Display utility — for hero numbers, marketing slabs */
+.display-xl { font-family: var(--font-display); font-weight: 800; font-size: var(--display-xl-size); line-height: var(--display-xl-lh); text-transform: uppercase; letter-spacing: 0.01em; }
+.display-lg { font-family: var(--font-display); font-weight: 800; font-size: var(--display-lg-size); line-height: var(--display-lg-lh); text-transform: uppercase; letter-spacing: 0.01em; }
+.display-md { font-family: var(--font-display); font-weight: 800; font-size: var(--display-md-size); line-height: var(--display-md-lh); text-transform: uppercase; letter-spacing: 0.01em; }
+
+code, pre, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+/* ---------- A few common brand utility classes ---------- */
+.bg-eva       { background: var(--eva-green); color: var(--fg-on-green); }
+.bg-eva-grad  { background: var(--eva-gradient); color: var(--fg-on-green); }
+.bg-eva-soft  { background: var(--eva-green-50); color: var(--ink); }
+.text-eva     { color: var(--eva-green); }
+.border-eva   { border: 1px solid var(--eva-green); }
+
+/* ---------- Global font lock: Poppins across the entire app ---------- */
+html, body, button, input, select, textarea, optgroup,
+h1, h2, h3, h4, h5, h6, p, span, div, a, label, li, td, th, b, strong, em, small {
+  font-family: 'Poppins', sans-serif !important;
+}
+code, pre, .mono { font-family: var(--font-mono) !important; }

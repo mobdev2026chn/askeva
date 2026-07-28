@@ -1,0 +1,259 @@
+/* =========================================================
+   AskEva — Dark theme (comprehensive)
+   Activated by `.theme-dark` on the .device-screen (toggled
+   from Settings → Appearance → Dark mode, persisted to
+   localStorage). Loaded LAST so these rules win the cascade.
+
+   Strategy:
+     1. Re-map every design token → dark, so any component that
+        uses var(--surface)/var(--ink)/… flips automatically.
+     2. Targeted overrides for the hardcoded #fff surfaces,
+        sheets, inputs, chips and borders used across modules.
+   Brand-green chrome (gradient headers, avatars, primary CTAs)
+   is intentionally left untouched — it reads well on dark.
+   ========================================================= */
+
+.theme-dark {
+  /* ---- neutrals → green-tinted dark ---- */
+  --ink:        #EAF2EC;
+  --ink-2:      #C4D2C8;
+  --ink-3:      #8FA095;
+  --ink-4:      #6B7B71;
+  --line:       #28352E;
+  --surface:    #161F1A;   /* cards */
+  --surface-2:  #0E1511;   /* page background */
+  --surface-3:  #1F2C24;   /* inset / inputs */
+
+  /* ---- green tints (pills, status chips, soft buttons) ---- */
+  --eva-green-50:  #16301C;
+  --eva-green-100: #1D3D25;
+  --eva-green-200: #2A5132;
+  --tint-50:       #16301C;
+  --tint-100:      #1D3D25;
+  --tint-border:   #2A5132;
+  --canvas:        #0E1511;
+
+  /* deep green is used for text/links/icons on light surfaces —
+     lift it so it stays legible on dark */
+  --eva-green-deep: #7FD86A;
+  --eva-green-700:  #7FD86A;
+
+  /* WhatsApp chat surface */
+  --wa-bg:         #0B1410;
+  --wa-bubble-in:  #1E2A22;
+  --wa-bubble-out: #14492E;
+
+  /* semantic aliases follow the tokens above */
+  --fg-1: var(--ink); --fg-2: var(--ink-2); --fg-3: var(--ink-3); --fg-muted: var(--ink-4);
+  --bg-1: var(--surface); --bg-2: var(--surface-2); --border: var(--line);
+
+  /* accent-soft helpers some modules reference */
+  --accent-soft:   #16301C;
+  --accent-soft-2: #2A5132;
+
+  /* shadows → deeper, no green glow on dark */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-sm: 0 2px 6px rgba(0,0,0,.45);
+  --shadow-md: 0 8px 20px rgba(0,0,0,.5);
+  --shadow-lg: 0 18px 40px rgba(0,0,0,.6);
+
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* =========================================================
+   App canvas + panes + status bar
+   ========================================================= */
+.theme-dark,
+.theme-dark .device-screen,
+.theme-dark .app-pane,
+.theme-dark .screens,
+.theme-dark .screen-view,
+.theme-dark #app-home,
+.theme-dark #app-dashboard,
+.theme-dark .list-screen,
+.theme-dark .chat-list-screen { background: var(--surface-2) !important; color: var(--ink); }
+
+.theme-dark .status-bar { color: var(--ink); }
+
+/* =========================================================
+   Generic surfaces — cards / rows / menus / sheets
+   (every common white container class across the app)
+   ========================================================= */
+.theme-dark .set-menu, .theme-dark .set-row, .theme-dark .set-sub, .theme-dark .set-kv,
+.theme-dark .set-card, .theme-dark .set-input, .theme-dark .set-tgl, .theme-dark .set-secrow,
+.theme-dark .set-bar, .theme-dark .set-scroll,
+.theme-dark .ls-card, .theme-dark .ls-input,
+.theme-dark .cp-card, .theme-dark .cp-row,
+.theme-dark .ap-card, .theme-dark .ap-stat, .theme-dark .ap-kpi, .theme-dark .ap-agent-btn, .theme-dark .ap-agrow,
+.theme-dark .ct, .theme-dark .ct-card, .theme-dark .ct-oorow, .theme-dark .ct-uicard,
+.theme-dark .ct-input, .theme-dark .ct-select, .theme-dark .ct-selecttog, .theme-dark .ct-mitem,
+.theme-dark .ct-pickchip, .theme-dark .ct-count, .theme-dark .ct-field,
+.theme-dark .tk-card, .theme-dark .tx-card, .theme-dark .tx-stat, .theme-dark .tx-quickbar,
+.theme-dark .tx-composer, .theme-dark .tm-row, .theme-dark .tm-search, .theme-dark .tm-viewdd,
+.theme-dark .pt-card, .theme-dark .pt-row,
+.theme-dark .cfg-card, .theme-dark .ts-card, .theme-dark .sla-card, .theme-dark .qr-row,
+.theme-dark .vn-row, .theme-dark .dm-row, .theme-dark .na-card, .theme-dark .ua-card,
+.theme-dark .sec-card, .theme-dark .ag-card, .theme-dark .qr-card, .theme-dark .bh-day,
+.theme-dark .txn, .theme-dark .sesn, .theme-dark .plan-card, .theme-dark .note-card,
+.theme-dark .inv-item, .theme-dark .section,
+.theme-dark .lp-card, .theme-dark .lx-card, .theme-dark .lx-countrow, .theme-dark .lx-filterchip,
+.theme-dark .pf-card, .theme-dark .pf-field, .theme-dark .pf-tx, .theme-dark .pf-tab, .theme-dark .pf-mavrow,
+.theme-dark .pf-login, .theme-dark .pf-cost, .theme-dark .pf-statuspill,
+.theme-dark .hm-card, .theme-dark .d2-card, .theme-dark .d2-kpi, .theme-dark .d2-tile, .theme-dark .d2-metric, .theme-dark .hm-fundrow, .theme-dark .hm-fundgroup,
+.theme-dark .cm-card, .theme-dark .cm-field, .theme-dark .cm-input, .theme-dark .cm-selectwrap,
+.theme-dark .nf-card, .theme-dark .nf-select, .theme-dark .nf-upload, .theme-dark .nf-row,
+.theme-dark .sub-card, .theme-dark .sub-row, .theme-dark .sub-billrow, .theme-dark .sub-pay,
+.theme-dark .td-card, .theme-dark .td-callrow,
+.theme-dark .ax-control, .theme-dark .ax-field, .theme-dark .ax-card, .theme-dark .ax-pillchip,
+.theme-dark .ax-type, .theme-dark .ax-reason,
+.theme-dark .md-card, .theme-dark .panel, .theme-dark .panel-body, .theme-dark .modal,
+.theme-dark .imp-file, .theme-dark .imp-upload, .theme-dark .gs-opt {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+  color: var(--ink);
+}
+
+/* page-tinted insets (slightly darker than cards) */
+.theme-dark .ct-list, .theme-dark .set-grouplbl, .theme-dark .ap-secrow,
+.theme-dark .tx-threadlbl, .theme-dark .pf-mbody, .theme-dark .lx-bulk {
+  background: transparent !important; color: var(--ink-2);
+}
+
+/* =========================================================
+   Overlays / bottom-sheets / slide-in detail panes
+   ========================================================= */
+.theme-dark .ax-overlay, .theme-dark .ax-sheet, .theme-dark .ax-foot, .theme-dark .ax-savebar,
+.theme-dark .ax-bar, .theme-dark .ax-scroll,
+.theme-dark .lp-sheet, .theme-dark .lpf-sheet, .theme-dark .lpf-screen,
+.theme-dark .ct-sheet, .theme-dark .sheet, .theme-dark .lx-sheet, .theme-dark .lx-sheetpop,
+.theme-dark .pf-msheet, .theme-dark .pf-mhd, .theme-dark .pf-mfoot,
+.theme-dark .set-sheet, .theme-dark .bottom-sheet, .theme-dark .ts-sheet,
+.theme-dark .md-sheet, .theme-dark .panel-sheet, .theme-dark .sub-sheet {
+  background: var(--surface) !important;
+  color: var(--ink);
+  border-color: var(--line) !important;
+}
+.theme-dark .ax-overlay, .theme-dark .lpf-screen { background: var(--surface-2) !important; }
+
+/* grips / dividers */
+.theme-dark .pf-mgrip, .theme-dark .ax-grip, .theme-dark .sheet-grip,
+.theme-dark .ct-mdiv, .theme-dark hr, .theme-dark .divider { background: var(--line); border-color: var(--line); }
+
+/* =========================================================
+   Chat / WhatsApp surface
+   ========================================================= */
+.theme-dark .chat-list, .theme-dark .conv-list, .theme-dark .list-item, .theme-dark .conv-item,
+.theme-dark .chat-header, .theme-dark .conv-header, .theme-dark .chat-search-bar,
+.theme-dark .composer, .theme-dark .chat-composer, .theme-dark .list-search,
+.theme-dark .chat-tabs, .theme-dark .list-tabs {
+  background: var(--surface) !important; color: var(--ink); border-color: var(--line) !important;
+}
+.theme-dark #convView, .theme-dark .conv-view, .theme-dark .chat-thread {
+  background: var(--wa-bg) !important;
+}
+.theme-dark .bubble.in, .theme-dark .msg.in .bubble, .theme-dark .pay-msg, .theme-dark .order-msg {
+  background: var(--wa-bubble-in) !important; color: var(--ink) !important;
+}
+.theme-dark .bubble.out, .theme-dark .msg.out .bubble {
+  background: var(--wa-bubble-out) !important; color: #EAF2EC !important;
+}
+
+/* =========================================================
+   Bottom nav / sidebar
+   ========================================================= */
+.theme-dark .ask-tabbar { background: rgba(14,21,17,.96) !important; border-top-color: var(--line) !important; }
+.theme-dark .ask-tabbar button { color: var(--ink-3); }
+.theme-dark .ask-tabbar button.on, .theme-dark .ask-tabbar button.active { color: var(--eva-green); }
+.theme-dark .sidebar { background: var(--surface) !important; border-right-color: var(--line); }
+.theme-dark .side-item { color: var(--ink-2); }
+.theme-dark .side-item.active, .theme-dark .side-item.on { background: var(--eva-green-50) !important; color: var(--eva-green-deep); }
+.theme-dark .side-foot { border-top-color: var(--line); }
+
+/* =========================================================
+   Form controls
+   ========================================================= */
+.theme-dark input, .theme-dark textarea, .theme-dark select,
+.theme-dark .ax-control, .theme-dark .set-input input, .theme-dark .ls-input input,
+.theme-dark .ct-input, .theme-dark .ct-select, .theme-dark .pf-input, .theme-dark .pf-select,
+.theme-dark .cm-input, .theme-dark .nf-select, .theme-dark .invite-form input, .theme-dark .invite-form select {
+  background: var(--surface-3) !important; color: var(--ink) !important; border-color: var(--line) !important;
+}
+.theme-dark input::placeholder, .theme-dark textarea::placeholder { color: var(--ink-4); }
+
+/* segmented / tab pills that were white */
+.theme-dark .lp-seg, .theme-dark .pf-tabs, .theme-dark .ct-subtabs, .theme-dark .ct-actions,
+.theme-dark .tx-chips, .theme-dark .tm-actchip, .theme-dark .lx-seg {
+  background: transparent !important;
+}
+.theme-dark .lp-seg button, .theme-dark .ct-subtab, .theme-dark .tx-chip, .theme-dark .pf-tab {
+  background: var(--surface) !important; color: var(--ink-2); border-color: var(--line) !important;
+}
+.theme-dark .lp-seg button.active, .theme-dark .ct-subtab.on, .theme-dark .tx-chip.on, .theme-dark .pf-tab.active {
+  background: var(--eva-green) !important; color: #fff !important; border-color: transparent !important;
+}
+
+/* =========================================================
+   Misc text tweaks
+   ========================================================= */
+.theme-dark .ap-stat .lbl, .theme-dark .tx-stat .lbl, .theme-dark .pf-mhd .s,
+.theme-dark .set-tgl .s, .theme-dark .caption, .theme-dark .overline { color: var(--ink-3); }
+
+/* code / mono blocks (webhook payloads) */
+.theme-dark .wh-code, .theme-dark pre, .theme-dark code {
+  background: #0A0F0C !important; color: #B9D9C2 !important; border-color: var(--line) !important;
+}
+
+/* skeleton / empty states */
+.theme-dark .ct-empty, .theme-dark .tx-empty, .theme-dark .lx-empty { color: var(--ink-3); }
+.theme-dark .ct-empty svg, .theme-dark .tx-empty .ic { color: var(--ink-4); }
+
+/* scrims a touch deeper */
+.theme-dark .scrim, .theme-dark .ax-scrim, .theme-dark .ct-scrim, .theme-dark .lx-scrim,
+.theme-dark .side-scrim, .theme-dark .set-scrim, .theme-dark .modal-scrim { background: rgba(0,0,0,.6) !important; }
+
+/* =========================================================
+   Hardcoded-white surfaces missed by the token remap
+   (cards/sheets/pills that use literal #fff / #fbfdfa / #f4f6f3)
+   ========================================================= */
+.theme-dark .hm-balance, .theme-dark .hm-drchip, .theme-dark .hm-menu, .theme-dark .hm-plan-card,
+.theme-dark .pg-mhead, .theme-dark .pg-app, .theme-dark .pg-bank,
+.theme-dark .sub-term, .theme-dark .sub-pay, .theme-dark .sub-plan, .theme-dark .sub-cmp, .theme-dark .sub-billrow,
+.theme-dark .ct-modal, .theme-dark .ntx-statusmenu, .theme-dark .nt-panel, .theme-dark .pushn {
+  background: var(--surface) !important; border-color: var(--line) !important; color: var(--ink);
+}
+.theme-dark .sub-plan.current { background: linear-gradient(160deg,#16301C,#161F1A) !important; }
+.theme-dark .sub-cmphd { background: var(--surface-3) !important; }
+.theme-dark .pg-overlay { background: rgba(14,21,17,.97) !important; }
+
+/* light inset fields / chips (#fbfdfa, #f4f6f3) */
+.theme-dark .ct-input, .theme-dark .ct-select, .theme-dark .ct-pickchip,
+.theme-dark .imp-hint, .theme-dark .dp-time {
+  background: var(--surface-3) !important; color: var(--ink) !important; border-color: var(--line) !important;
+}
+.theme-dark .ct-btn.ghost, .theme-dark .ct-gact, .theme-dark .ct-shead .x,
+.theme-dark .dp-x, .theme-dark .dp-btn.ghost, .theme-dark .dp-nav, .theme-dark .dp-apbtn,
+.theme-dark .lx-btn.ghost, .theme-dark .imp-replace {
+  background: var(--surface-3) !important; color: var(--ink-2) !important; border-color: var(--line) !important;
+}
+.theme-dark .ct-mitem:hover, .theme-dark .dp-cell:hover:not(.sel) { background: var(--surface-3) !important; }
+
+/* tag pill (grey "#tag") */
+.theme-dark .ct-tag { background: var(--surface-3) !important; border-color: var(--line) !important; color: var(--ink-2) !important; }
+
+/* selectable check circle */
+.theme-dark .ct-check { background: var(--surface-3) !important; border-color: var(--line) !important; }
+.theme-dark .ct-card.sel .ct-check { background: var(--eva-green) !important; border-color: var(--eva-green) !important; }
+.theme-dark .ct-card.sel { background: linear-gradient(0deg,rgba(60,194,63,.10),rgba(60,194,63,.10)),var(--surface) !important; }
+
+/* date-range sheet + grip */
+.theme-dark .dp-sheet { background: var(--surface) !important; }
+.theme-dark .dp-grip { background: var(--line) !important; }
+
+/* =========================================================
+   Compact density (optional small tightening)
+   ========================================================= */
+.theme-compact .set-row { padding-top: 11px; padding-bottom: 11px; }
+.theme-compact .ap-card,
+.theme-compact .tx-card,
+.theme-compact .cfg-card { padding: 13px; }

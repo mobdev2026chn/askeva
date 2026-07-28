@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expo Go – AskEva QR</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0F1F08;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 40px 48px;
+      text-align: center;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+      max-width: 420px;
+      width: 100%;
+    }
+    .logo {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0E1410;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #6A7567;
+      margin-bottom: 28px;
+    }
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    #qrcode canvas, #qrcode img {
+      border-radius: 12px;
+      border: 4px solid #E8F8DC;
+    }
+    .url {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #52C41A;
+      font-weight: 600;
+      background: #E8F8DC;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      word-break: break-all;
+    }
+    .steps {
+      text-align: left;
+      background: #F5F6F2;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 8px;
+    }
+    .steps h3 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6A7567;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .steps ol {
+      padding-left: 18px;
+    }
+    .steps li {
+      font-size: 13px;
+      color: #3B4339;
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .badge {
+      display: inline-block;
+      background: #52C41A;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">📱</div>
+    <h1>AskEva</h1>
+    <p class="subtitle">Business Card Capture</p>
+    <span class="badge">● SERVER RUNNING</span>
+    <div id="qrcode"></div>
+    <div class="url">exp://192.168.0.18:8081</div>
+    <div class="steps">
+      <h3>How to connect</h3>
+      <ol>
+        <li>Install <strong>Expo Go</strong> on your phone</li>
+        <li>Connect phone to the <strong>same Wi-Fi</strong></li>
+        <li>Open Expo Go → tap <strong>Scan QR Code</strong></li>
+        <li>Point camera at the QR code above</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    new QRCode(document.getElementById("qrcode"), {
+      text: "exp://192.168.0.18:8081",
+      width: 280,
+      height: 280,
+      colorDark: "#0E1410",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  </script>
+</body>
+</html>

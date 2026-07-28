@@ -1,0 +1,47 @@
+# AskEva — Install on iPhone (Add to Home Screen)
+
+This folder is a Progressive Web App (PWA). Once it's online at a web address,
+you can install it on an iPhone so it opens full-screen with its own icon — just
+like a native app. No App Store, no Mac, no developer account needed.
+
+----------------------------------------------------------------
+STEP 1 — Put the folder online (one-time, free)
+----------------------------------------------------------------
+A PWA must be served over https:// — opening the file directly from the Files
+app will NOT give you the installable app experience. Pick any one of these
+(all have free tiers):
+
+  • Netlify Drop ....... https://app.netlify.com/drop
+       Drag this WHOLE folder onto the page. You get a link instantly.
+  • Vercel ............. https://vercel.com  (drag-and-drop or CLI)
+  • GitHub Pages ....... push the folder to a repo, enable Pages
+  • Cloudflare Pages ... https://pages.cloudflare.com
+
+Keep all files together — index.html must stay next to the .css/.js files,
+the /assets folder, manifest.json and sw.js.
+
+----------------------------------------------------------------
+STEP 2 — Install on the iPhone
+----------------------------------------------------------------
+  1. Open the https:// link in SAFARI (must be Safari, not Chrome).
+  2. Tap the Share button (the square with an arrow pointing up).
+  3. Scroll down and tap "Add to Home Screen".
+  4. Tap "Add" in the top-right.
+
+The AskEva icon now sits on your home screen. Tapping it launches the app
+full-screen, with no Safari address bar.
+
+----------------------------------------------------------------
+What you get
+----------------------------------------------------------------
+  • Full-screen standalone launch (no browser chrome)
+  • AskEva home-screen icon
+  • Works offline after the first load (service worker caches the app)
+
+----------------------------------------------------------------
+Want a real App Store / TestFlight .ipa instead?
+----------------------------------------------------------------
+That requires wrapping this PWA with a tool like Capacitor or PWABuilder and
+building it in Xcode on a Mac with an Apple Developer account ($99/yr). The web
+app in this folder is the exact source you'd wrap. Ask and I'll prepare that
+hand-off package.

@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AskEva · CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="colors_and_type.css?v=5">
+<link rel="stylesheet" href="profile.css?v=7">
+<link rel="stylesheet" href="settings-agents.css?v=9">
+<link rel="stylesheet" href="settings-roles.css?v=2">
+<link rel="stylesheet" href="settings-qr.css">
+<link rel="stylesheet" href="settings-userattrs.css?v=2">
+<link rel="stylesheet" href="settings-security.css?v=3">
+<link rel="stylesheet" href="chat.css?v=17">
+<link rel="stylesheet" href="chat-intervene.css?v=7">
+<link rel="stylesheet" href="login.css?v=9">
+<style>
+  /* =====================================================
+     INTEGRATION LAYER — global app nav + Leads & Profile
+     panes, unified on the AskEva (chat) design system.
+     ===================================================== */
+  /* CACHE-PROOF: conversation header must clear the 34px status-bar overlay
+     so the Search + 3-dot Settings icons are never hidden behind it.
+     Inline + !important so it wins regardless of external CSS cache state. */
+  #convView .chat-header{ padding-top:46px !important; }
+  /* the in-chat search bar slides over the header — give it the SAME top
+     clearance so its input isn't tucked under the status bar. */
+  #convView .chat-search-bar{ padding-top:46px !important; }
+  #app-leads, #app-profile { /* full-screen app panes */ }
+  .app-pane{
+    position:absolute; left:0; right:0; top:0; bottom:62px;
+    display:none; flex-direction:column; overflow:hidden;
+    background:var(--surface); z-index:14;
+  }
+  .tab-leads   #app-leads   { display:flex; }
+  .tab-profile #app-profile { display:flex; }
+
+  /* chat 'app' = the .screens stack; show only on Chats tab */
+  .screens{ display:none; bottom:62px; }
+  .tab-chats .screens{ display:block; }
+  .device-screen.nav-hidden .screens{ bottom:0; }
+
+  /* status bar adapts to the active pane */
+  .tab-chats .status-bar{ background:transparent; color:#fff; z-index:60; }
+  .tab-chats.chat-conv .status-bar{ background:var(--surface); color:var(--ink); }
+  .tab-leads .status-bar, .tab-profile .status-bar{
+    background:transparent; color:#fff; z-index:60;
+  }
+
+  /* hide chat's own WhatsApp bottom tabs — global nav replaces them */
+  .list-tabs{ display:none !important; }
+  .list-fab{ display:none !important; }
+
+  /* ---------------- GLOBAL BOTTOM NAV ---------------- */
+  .ask-tabbar{
+    position:absolute; left:0; right:0; bottom:0; height:62px; z-index:56;
+    background:rgba(255,255,255,.94); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);
+    display:flex; align-items:stretch; justify-content:space-around;
+    transition:transform .3s cubic-bezier(.2,.8,.2,1);
+  }
+  .device-screen.nav-hidden .ask-tabbar{ transform:translateY(140%); }
+  .ask-tabbar button{
+    flex:1; border:none; background:transparent; cursor:pointer; font-family:var(--font-body);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    color:var(--ink-4); padding:8px 0 6px;
+  }
+  .ask-tabbar button .ic{
+    width:30px; height:30px; border-radius:999px; display:flex; align-items:center; justify-content:center;
+    transition:background .15s ease;
+  }
+  .ask-tabbar button svg{ width:23px; height:23px; }
+  .ask-tabbar button .tl{ font-size:11px; font-weight:700; letter-spacing:.01em; }
+  .ask-tabbar button.active{ color:var(--accent-deep); }
+  .ask-tabbar button.active .ic{ background:var(--accent-soft); }
+
+  /* =================== LEADS PANE =================== */
+  .lp-head{
+    flex:0 0 auto; color:#fff; padding:40px 16px 0; position:relative;
+    background-image:linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,0) 46%), url('assets/bg-green.jpg');
+    background-size:cover; background-position:center top;
+  }
+  .lp-topbar{ height:46px; display:flex; align-items:center; justify-content:space-between; }
+  .lp-iconbtn{
+    width:40px; height:40px; border-radius:12px; display:grid; place-items:center; cursor:pointer;
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.24);
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); color:#fff;
+  }
+  .lp-title{ font-size:19px; font-weight:800; letter-spacing:.01em; }
+  .lp-seg{
+    margin-top:12px; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.26);
+    border-radius:14px; padding:5px; display:flex; gap:5px; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+  }
+  .lp-seg button{
+    flex:1; border:0; cursor:pointer; font-family:inherit; font-size:14px; font-weight:700;
+    color:rgba(255,255,255,.92); background:transparent; border-radius:10px; padding:10px 0;
+  }
+  .lp-seg button.active{ background:#fff; color:var(--accent-deep); box-shadow:0 6px 16px -8px rgba(0,0,0,.45); }
+  .lp-hero{ display:flex; align-items:flex-end; justify-content:space-between; padding:16px 2px 22px; }
+  .lp-big{ font-size:25px; font-weight:800; letter-spacing:-.02em; }
+  .lp-sub{ font-size:13px; font-weight:600; color:rgba(255,255,255,.88); margin-top:3px; }
+  .lp-pill{ font-size:12.5px; font-weight:700; color:#fff; background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.3); padding:7px 13px; border-radius:999px; }
+
+  .lp-sheet{
+    flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;
+    background:var(--surface-2); border-radius:24px 24px 0 0; margin-top:-18px;
+    padding:18px 16px 20px; position:relative; z-index:2;
+  }
+  .lp-sheet::-webkit-scrollbar{ width:0; }
+  .lp-search{
+    display:flex; align-items:center; gap:11px; background:#fff; border:1px solid var(--line);
+    border-radius:14px; padding:13px 15px; color:var(--ink-4); font-size:14.5px; font-weight:600;
+    box-shadow:var(--shadow-xs);
+  }
+  .lp-search svg{ width:18px; height:18px; color:var(--ink-4); }
+  .lp-secrow{ display:flex; align-items:center; justify-content:space-between; margin:22px 4px 12px; }
+  .lp-secrow h3{ font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-4); }
+  .lp-secrow span{ font-size:13px; font-weight:700; color:var(--accent-deep); cursor:pointer; }
+
+  .lp-lead, .lp-company{
+    width:100%; text-align:left; border:1px solid var(--line); background:#fff; cursor:pointer;
+    border-radius:18px; padding:14px; display:flex; align-items:center; gap:13px; margin-bottom:12px;
+    box-shadow:var(--shadow-xs); font-family:var(--font-body); transition:transform .08s ease, box-shadow .15s ease;
+  }
+  .lp-lead:active, .lp-company:active{ transform:scale(.99); }
+  .lp-lead:hover, .lp-company:hover{ box-shadow:var(--shadow-sm); }
+  .lp-av{
+    width:50px; height:50px; border-radius:15px; flex:0 0 50px; display:grid; place-items:center;
+    font-size:18px; font-weight:800; color:#fff;
+  }
+  .lp-av.muted{ background:var(--surface-3)!important; color:var(--ink-4); }
+  .lp-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+  .lp-name{ font-size:16px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+  .lp-meta{ font-size:12.5px; font-weight:600; color:var(--ink-4); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lp-status{ display:inline-flex; align-items:center; gap:6px; align-self:flex-start; margin-top:3px;
+    font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; letter-spacing:.02em; }
+  .lp-status .d{ width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .lp-status.hot{ color:#C23A18; background:#FDEAE3; }
+  .lp-status.warm{ color:#9A6B05; background:#FBF1D8; }
+  .lp-status.new{ color:#2563EB; background:#E5EEFD; }
+  .lp-status.converted{ color:var(--accent-deep); background:var(--accent-soft); }
+  .lp-status.cold{ color:#1E7FB0; background:#E3F2FB; }
+  .lp-chat{
+    width:42px; height:42px; border-radius:13px; flex:0 0 42px; display:grid; place-items:center;
+    background:var(--accent-soft); color:var(--accent-deep);
+  }
+  .lp-chat svg{ width:20px; height:20px; }
+  .lp-company .lp-go{ width:42px; height:42px; border-radius:13px; flex:0 0 42px; display:grid; place-items:center;
+    background:var(--accent-soft); color:var(--accent-deep); }
+  .lp-company .lp-go.solid{ background:var(--eva-gradient); color:#fff; box-shadow:var(--shadow-eva); }
+  .lp-company .lp-go svg{ width:20px; height:20px; }
+
+  /* =================== COMPANY PROFILE PANE =================== */
+  .cp-head{
+    flex:0 0 auto; color:#fff; padding:38px 18px 56px; text-align:center; position:relative;
+    background-image:linear-gradient(180deg, rgba(0,0,0,.20), rgba(0,0,0,0) 42%), url('assets/bg-green.jpg');
+    background-size:cover; background-position:center 32%;
+  }
+  .cp-topbar{ height:46px; display:flex; align-items:center; justify-content:space-between; }
+  .cp-topbar .lp-title{ font-size:19px; font-weight:800; }
+  .cp-avatar{
+    width:96px; height:96px; border-radius:50%; margin:8px auto 0; display:grid; place-items:center;
+    background:linear-gradient(160deg,#fff,#eef5ec);
+    box-shadow:0 16px 36px -16px rgba(0,0,0,.5), 0 0 0 5px rgba(255,255,255,.22);
+  }
+  .cp-logo{
+    width:78px; height:78px; border-radius:50%; display:grid; place-items:center; line-height:1;
+    background:var(--eva-gradient); color:#fff; font-size:12px; font-weight:800; letter-spacing:.05em; text-align:center;
+  }
+  .cp-logo b{ display:block; font-size:18px; font-weight:800; }
+  .cp-nm{ font-size:23px; font-weight:800; letter-spacing:-.02em; margin-top:12px; }
+  .cp-em{ font-size:13.5px; font-weight:600; color:rgba(255,255,255,.9); margin-top:3px; }
+  .cp-chips{ display:flex; justify-content:center; gap:8px; margin-top:13px; }
+  .cp-chips span{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#fff;
+    background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); padding:6px 12px; border-radius:999px; }
+  .cp-sheet{
+    flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;
+    background:var(--surface-2); border-radius:24px 24px 0 0; margin-top:-36px;
+    padding:22px 16px 22px; position:relative; z-index:2;
+  }
+  .cp-sheet::-webkit-scrollbar{ width:0; }
+  .cp-card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:var(--shadow-xs); margin-bottom:13px; }
+  .cp-cardhead{ display:flex; align-items:center; gap:11px; margin-bottom:11px; }
+  .cp-cardhead .ic{ width:36px; height:36px; border-radius:11px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent-deep); }
+  .cp-cardhead .ic svg{ width:19px; height:19px; }
+  .cp-cardhead .lbl{ font-size:11.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-4); }
+  .cp-body{ font-size:14.5px; font-weight:500; color:var(--ink-2); line-height:1.55; }
+  .cp-row{ display:flex; align-items:flex-start; gap:12px; padding:13px 0; }
+  .cp-row + .cp-row{ border-top:1px solid var(--surface-3); }
+  .cp-row.first{ padding-top:0; }
+  .cp-row .ic{ width:36px; height:36px; border-radius:11px; flex:0 0 36px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent-deep); }
+  .cp-row .ic svg{ width:19px; height:19px; }
+  .cp-row .k{ font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-4); }
+  .cp-row .v{ font-size:14.5px; font-weight:600; color:var(--ink); margin-top:4px; line-height:1.45; }
+  .cp-row .v.link{ color:var(--accent-deep); font-weight:700; }
+</style>
+<link rel="stylesheet" href="app-shell.css?v=3">
+<link rel="stylesheet" href="contacts.css?v=17">
+<link rel="stylesheet" href="datepicker.css?v=11">
+<meta name="ext-resource-dependency" content="assets/askeva-logo.png" data-resource-id="askevaLogo" />
+<link rel="stylesheet" href="appointments.css?v=16">
+<link rel="stylesheet" href="appointments-views.css?v=19">
+<link rel="stylesheet" href="ticketing.css">
+<link rel="stylesheet" href="ticketing-dashboard.css?v=8">
+<link rel="stylesheet" href="ticketing-tickets.css?v=32">
+<link rel="stylesheet" href="ticketing-settings2.css?v=8">
+<link rel="stylesheet" href="lead-profile.css">
+<link rel="stylesheet" href="compose-message.css?v=6">
+<link rel="stylesheet" href="leads-tools.css">
+<style id="dash2-redesign">
+  /* ============================================================
+     DASHBOARD 2.0 — Lead overview redesign
+     ============================================================ */
+  .route-dashboard .status-bar{ background:transparent; color:var(--ink); }
+  .route-dashboard .status-bar .battery{ color:var(--ink); }
+
+  /* ---- WABA account status strip (Dashboard top) ---- */
+  .waba-card{ background:#fff; border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow-xs);
+    display:grid; grid-template-columns:1fr 1fr; overflow:hidden; margin-bottom:16px; }
+  .waba-item{ display:flex; align-items:center; gap:11px; padding:17px 13px; min-width:0; }
+  .waba-item:nth-child(odd){ border-right:1px solid var(--line); }
+  .waba-item:nth-child(1), .waba-item:nth-child(2){ border-bottom:1px solid var(--line); }
+  .waba-ic{ width:34px; height:34px; flex:0 0 34px; border-radius:10px; display:grid; place-items:center;
+    background:var(--tint-50,#EAF9E6); color:var(--eva-green-deep,#177A36); }
+  .waba-ic svg{ width:18px; height:18px; }
+  .waba-tx{ min-width:0; }
+  .waba-k{ font-size:11.5px; font-weight:500; letter-spacing:0; text-transform:none; color:var(--ink-3); white-space:nowrap; }
+  .waba-v{ font-size:13px; font-weight:600; color:var(--ink); letter-spacing:-.02em; margin-top:4px; font-variant-numeric:tabular-nums;
+    display:flex; align-items:center; gap:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .waba-item:last-child .waba-v{ white-space:normal; overflow:visible; text-overflow:clip; line-height:1.25; }
+  .waba-dot{ width:8px; height:8px; flex:0 0 8px; border-radius:50%; background:#3CC23F; box-shadow:0 0 0 3px rgba(60,194,63,.16); }
+  .waba-dot.live{ animation:wabaPulse 1.8s ease-in-out infinite; }
+  @keyframes wabaPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(60,194,63,.45); } 50%{ box-shadow:0 0 0 5px rgba(60,194,63,0); } }
+  @media (prefers-reduced-motion:reduce){ .waba-dot.live{ animation:none; } }
+
+  #app-dashboard{ background:var(--surface-2); }
+  .d2-head{ flex:0 0 auto; padding:38px 8px 2px; background:var(--surface-2); }
+  .d2-topbar{ display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 8px; }
+  .d2-iconbtn{ width:42px; height:42px; border:none; background:transparent; display:grid; place-items:center; cursor:pointer; color:var(--eva-green-deep); border-radius:12px; }
+  .d2-iconbtn:active{ background:var(--surface-3); }
+  .d2-iconbtn svg{ width:24px; height:24px; }
+  .d2-title{ font-size:20px; font-weight:800; letter-spacing:-.01em; color:var(--ink); }
+
+  .d2-sheet{ flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:8px 16px 104px; }
+  .d2-sheet::-webkit-scrollbar{ width:0; }
+
+  /* ---- hero (horizontal premium card) ---- */
+  .d2-hero{ position:relative; display:flex; align-items:center; gap:10px; border-radius:24px; overflow:hidden;
+    padding:18px 16px 18px 20px; color:#fff; box-shadow:var(--shadow-eva); min-height:0;
+    background-image:linear-gradient(135deg, rgba(0,0,0,.10), rgba(0,0,0,0) 58%), url('assets/bg-green.jpg');
+    background-size:cover; background-position:center; }
+  .d2-hero::after{ content:""; position:absolute; right:-40px; top:-50px; width:170px; height:170px; border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), rgba(255,255,255,0) 70%); pointer-events:none; }
+  .d2-herotext{ flex:1; min-width:0; position:relative; z-index:1; }
+  .d2-hi{ font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .d2-hero h1{ font-family:var(--font-display); font-weight:400; font-size:33px; line-height:.96;
+    letter-spacing:.01em; margin:7px 0 0; text-transform:uppercase; }
+  .d2-herosub{ font-size:12.5px; font-weight:600; line-height:1.4; margin:9px 0 0; color:rgba(255,255,255,.93); }
+  .d2-herochips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .d2-herobot{ flex:0 0 auto; align-self:stretch; display:flex; align-items:flex-end; justify-content:center; position:relative; z-index:1; }
+  .d2-herobot img{ width:108px; height:auto; filter:drop-shadow(0 8px 12px rgba(0,0,0,.22)); margin-bottom:-18px; }
+  .d2-chip{ display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,.20);
+    border:1px solid rgba(255,255,255,.32); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
+    border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:700; color:#fff; letter-spacing:.01em; }
+  .d2-chip svg{ width:14px; height:14px; }
+  .d2-chip .dot{ width:7px; height:7px; border-radius:50%; background:#C8FF4A; box-shadow:0 0 0 3px rgba(200,255,74,.35); }
+  .d2-bot{ position:absolute; right:8px; bottom:8px; width:118px; height:auto; filter:drop-shadow(0 8px 12px rgba(0,0,0,.22)); }
+
+  /* ---- section heading ---- */
+  .d2-sec{ display:flex; align-items:center; gap:9px; margin:26px 2px 13px; }
+  .d2-sec .si{ width:22px; height:22px; display:grid; place-items:center; flex:0 0 22px; }
+  .d2-sec .si svg{ width:21px; height:21px; }
+  .d2-sec h3{ font-size:16.5px; font-weight:800; letter-spacing:-.01em; color:var(--ink); }
+
+  /* ---- lead status grid (3x2) ---- */
+  .d2-statgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:11px; }
+  .d2-stat{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:13px 12px 13px;
+    box-shadow:var(--shadow-xs); }
+  .d2-stat .top{ display:flex; align-items:center; justify-content:space-between; min-height:24px; }
+  .d2-sic{ width:30px; height:30px; border-radius:9px; display:grid; place-items:center; flex:0 0 auto; }
+  .d2-sic svg{ width:17px; height:17px; }
+  .d2-sic.newbadge{ width:auto; height:22px; padding:0 8px; border-radius:7px; background:#3B82F6; color:#fff;
+    font-size:9.5px; font-weight:800; letter-spacing:.06em; }
+  .d2-sic.hot{ background:#FDEAE3; color:#F2542D; }
+  .d2-sic.warm{ background:#FEF2D4; color:#E0A106; }
+  .d2-sic.conv{ background:#E7F8E3; color:#2BA84A; }
+  .d2-sic.cold{ background:#E3F2FB; color:#3BA4DD; }
+  .d2-sic.inv{ background:#EEF0ED; color:#9AA39C; }
+  .d2-trend{ display:inline-flex; align-items:center; gap:3px; background:#E7F8E3; color:#22A03D;
+    font-size:11px; font-weight:800; padding:3px 7px 3px 5px; border-radius:999px; }
+  .d2-trend svg{ width:11px; height:11px; }
+  .d2-stat .n{ font-size:25px; font-weight:800; color:var(--ink); margin-top:13px; line-height:1; letter-spacing:-.02em; }
+  .d2-stat .l{ font-size:11.5px; font-weight:600; color:var(--ink-3); margin-top:6px; }
+
+  /* ---- lead source grid (2 col) ---- */
+  .d2-srcgrid{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+  .d2-src{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px;
+    box-shadow:var(--shadow-xs); display:flex; align-items:center; gap:12px; }
+  .d2-src .si{ width:42px; height:42px; border-radius:12px; display:grid; place-items:center; flex:0 0 42px; }
+  .d2-src .si svg{ width:21px; height:21px; }
+  .d2-src .si.biz{ background:#EFEAFE; color:#7C5CFF; }
+  .d2-src .si.web{ background:#E7F8E3; color:#2BA84A; }
+  .d2-src .si.ref{ background:#FCE7F0; color:#E5499A; }
+  .d2-src .si.soc{ background:#E3F2FB; color:#3BA4DD; }
+  .d2-src .n{ font-size:21px; font-weight:800; color:var(--ink); line-height:1; letter-spacing:-.02em; }
+  .d2-src .l{ font-size:11.5px; font-weight:600; color:var(--ink-3); margin-top:5px; }
+
+  /* ---- distribution donut cards ---- */
+  .d2-distcard{ background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow-xs);
+    padding:18px 18px; display:flex; align-items:center; gap:18px; }
+  .d2-donut{ width:118px; height:118px; flex:0 0 118px; border-radius:50%; position:relative; }
+  .d2-donut::before{ content:""; position:absolute; inset:19px; border-radius:50%; background:#fff; }
+  .d2-donut .c{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2; }
+  .d2-donut .c b{ font-size:28px; font-weight:800; color:var(--ink); line-height:1; letter-spacing:-.02em; }
+  .d2-donut .c span{ font-size:9px; font-weight:800; letter-spacing:.14em; color:var(--ink-4); margin-top:4px; }
+  .d2-donut.status{ background:conic-gradient(#3CC23F 0 57.143%, #F2542D 0 71.429%, #F5B829 0 85.714%, #5AB6E8 0 100%); }
+  .d2-donut.source{ background:conic-gradient(#6D3BEB 0 57.143%, #3CC23F 0 71.429%, #9B6CF6 0 85.714%, #5AB6E8 0 100%); }
+  .d2-legend{ flex:1; display:flex; flex-direction:column; gap:11px; min-width:0; }
+  .d2-legrow{ display:flex; align-items:center; gap:10px; font-size:14px; font-weight:700; color:var(--ink-2); }
+  .d2-legrow .ld{ width:11px; height:11px; border-radius:50%; flex:0 0 11px; }
+  .d2-legrow .v{ margin-left:auto; font-weight:800; color:var(--ink); font-size:15px; }
+
+  /* ---- floating scan card ---- */
+  .d2-scan{ position:absolute; right:16px; bottom:76px; z-index:9; display:inline-flex; align-items:center; gap:9px;
+    border:none; cursor:pointer; padding:13px 21px; border-radius:999px; color:#fff;
+    font-family:var(--font-body); font-size:14.5px; font-weight:800; letter-spacing:.01em;
+    background:linear-gradient(135deg,#3CC23F,#2BA84A); box-shadow:var(--shadow-eva); }
+  .d2-scan svg{ width:20px; height:20px; }
+  .d2-scan:active{ transform:translateY(1px); }
+
+  /* mascot image */
+  .d2-bot{ position:absolute; right:-4px; bottom:-6px; width:152px; height:auto; filter:drop-shadow(0 10px 14px rgba(0,0,0,.20)); }
+
+  /* tint helpers */
+  .tint-red{ background:#FDEAE3; color:#F2542D; }
+  .tint-green{ background:#E7F8E3; color:#2BA84A; }
+  .tint-blue{ background:#E3F2FB; color:#3BA4DD; }
+  .tint-amber{ background:#FEF2D4; color:#E0A106; }
+  .tint-violet{ background:#EFEAFE; color:#7C5CFF; }
+
+  /* filter row */
+  .d2-filterrow{ display:flex; align-items:center; justify-content:space-between; margin:20px 2px 14px; }
+  .d2-filterrow .lbl{ display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; color:var(--ink-3); }
+  .d2-filterrow .lbl svg{ width:15px; height:15px; color:var(--eva-green-deep); }
+  .d2-filterbtn{ display:inline-flex; align-items:center; gap:6px; background:var(--eva-gradient); color:#fff; border:none;
+    border-radius:11px; padding:9px 14px; font-family:var(--font-body); font-size:12.5px; font-weight:800; cursor:pointer; box-shadow:var(--shadow-xs); }
+  .d2-filterbtn svg{ width:14px; height:14px; }
+  .d2-filterbtn:active{ transform:translateY(1px); }
+
+  /* KPI grid */
+  .d2-kpigrid{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+  .d2-kpi{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:var(--shadow-xs); }
+  .d2-kpi .l{ font-size:12px; font-weight:600; color:var(--ink-3); }
+  .d2-kpi .row{ display:flex; align-items:center; gap:10px; margin-top:11px; }
+  .d2-kpi .ic{ width:32px; height:32px; border-radius:10px; display:grid; place-items:center; flex:0 0 32px; }
+  .d2-kpi .ic svg{ width:18px; height:18px; }
+  .d2-kpi .v{ font-size:23px; font-weight:800; color:var(--ink); letter-spacing:-.02em; line-height:1; }
+
+  /* generic card */
+  .d2-card{ background:#fff; border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow-xs); padding:22px; }
+
+  /* lead status donut + legend */
+  .d2-donut.status{ background:conic-gradient(#5BAEE6 0 57.143%, #EF4B4B 0 71.429%, #A8D98F 0 85.714%, #2BA84A 0 100%); }
+  .d2-empty{ padding:22px 8px; text-align:center; font-size:13px; font-weight:600; color:var(--ink-3); }
+  .d2-statwrap{ display:flex; flex-direction:column; align-items:center; gap:16px; }
+  .d2-leggrid{ width:100%; display:grid; grid-template-columns:1fr 1fr; gap:11px 16px; min-width:0; }
+  .d2-leggrid .d2-legrow{ font-size:12.5px; white-space:nowrap; }
+  .d2-leggrid .d2-legrow .v{ font-size:14px; }
+
+  /* conversion funnel */
+  .d2-funnel{ display:flex; flex-direction:column; align-items:center; gap:9px; }
+  .d2-fbar{ display:flex; align-items:center; justify-content:center; gap:8px; height:48px; border-radius:12px; color:#fff; box-shadow:var(--shadow-xs); min-width:120px; }
+  .d2-fbar b{ font-size:19px; font-weight:800; letter-spacing:-.01em; }
+  .d2-fbar span{ font-size:12.5px; font-weight:700; opacity:.96; }
+  .d2-fbar.f1{ background:#2BA84A; }
+  .d2-fbar.f2{ background:#43BE53; }
+  .d2-fbar.f3{ background:#79D06A; }
+
+  /* performer / company rows */
+  .d2-perf{ display:flex; align-items:flex-start; gap:12px; padding:13px 0; }
+  .d2-perf:first-child{ padding-top:0; }
+  .d2-perf + .d2-perf{ border-top:1px solid var(--line); }
+  .d2-pav{ width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:#fff; font-weight:800; font-size:14px; flex:0 0 38px; }
+  .d2-pinfo{ flex:1; min-width:0; }
+  .d2-pinfo .toprow{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .d2-pname{ font-size:13.5px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .d2-pval{ font-size:13px; font-weight:800; color:var(--ink); flex:0 0 auto; }
+  .d2-psub{ font-size:11.5px; font-weight:600; color:var(--ink-3); margin-top:3px; }
+  .d2-trackrow{ display:flex; align-items:center; gap:9px; margin-top:8px; }
+  .d2-ptrack{ flex:1; height:6px; border-radius:999px; background:var(--surface-3); overflow:hidden; }
+  .d2-ptrack i{ display:block; height:100%; border-radius:999px; background:var(--eva-gradient); }
+  .d2-ppct{ font-size:11.5px; font-weight:800; color:var(--ink-2); flex:0 0 auto; min-width:34px; text-align:right; }
+  .d2-ppct.done{ color:#22A03D; }
+  .d2-ppct.muted{ color:var(--ink-4); }
+
+  /* trend chart */
+  .d2-trend{ width:100%; height:128px; display:block; }
+  .d2-xlabels{ display:flex; justify-content:space-between; margin-top:8px; padding:0 2px; }
+  .d2-xlabels span{ font-size:10px; font-weight:600; color:var(--ink-4); }
+
+  /* ============================================================
+     SIDEBAR — expandable Leads group
+     ============================================================ */
+  .side-group{ display:flex; flex-direction:column; }
+  .side-grouphd{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; border:none;
+    background:transparent; cursor:pointer; font-family:var(--font-body); padding:11px 14px; border-radius:13px;
+    color:var(--ink); transition:background .14s ease; }
+  .side-grouphd svg{ width:22px; height:22px; flex:0 0 22px; color:var(--ink-3); }
+  .side-grouphd .lbl{ font-size:15px; font-weight:700; letter-spacing:-.01em; flex:1; }
+  .side-grouphd .gchev{ flex:0 0 auto; display:grid; place-items:center; color:var(--ink-4); transition:transform .24s ease; }
+  .side-grouphd .gchev svg{ width:18px; height:18px; }
+  .side-group.open > .side-grouphd .gchev{ transform:rotate(180deg); }
+  .side-grouphd:hover{ background:var(--surface-2); }
+  .side-group.open > .side-grouphd{ color:var(--accent-deep); }
+  .side-group.open > .side-grouphd svg{ color:var(--accent-deep); }
+
+  .side-sub{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .26s cubic-bezier(.2,.8,.2,1); }
+  .side-group.open > .side-sub{ grid-template-rows:1fr; }
+  .side-subwrap{ overflow:hidden; min-height:0; position:relative; margin:2px 0 2px 0; }
+  .side-subwrap::before{ content:""; position:absolute; left:23px; top:3px; bottom:7px; width:1.5px; background:var(--line); }
+  .side-subitem{ display:flex; align-items:center; gap:0; width:100%; text-align:left; border:none; background:transparent;
+    cursor:pointer; font-family:var(--font-body); padding:10px 14px 10px 40px; border-radius:12px; color:var(--ink-3);
+    position:relative; transition:background .14s ease, color .14s ease; }
+  .side-subitem .subdot{ position:absolute; left:18.5px; top:50%; transform:translateY(-50%); width:10px; height:10px;
+    border-radius:50%; background:var(--surface); border:2px solid var(--line); transition:all .14s ease; }
+  .side-subitem .lbl{ font-size:14px; font-weight:600; letter-spacing:-.01em; flex:1; }
+  .side-subitem .badge{ font-size:11px; font-weight:800; min-width:20px; height:20px; padding:0 6px; border-radius:999px;
+    background:var(--accent); color:#fff; display:inline-flex; align-items:center; justify-content:center; }
+  .side-subitem:hover{ background:var(--surface-2); }
+  .side-subitem.active{ background:var(--accent-soft); color:var(--accent-deep); }
+  .side-subitem.active .lbl{ font-weight:800; }
+  .side-subitem.active .subdot{ background:var(--accent); border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+</style>
+<link rel="stylesheet" href="leads-mobile.css?v=31">
+<link rel="stylesheet" href="leads-extra.css?v=15">
+<link rel="stylesheet" href="home-dashboard.css?v=8">
+<link rel="stylesheet" href="notifications.css?v=8">
+<link rel="stylesheet" href="profile-page.css?v=2">
+<link rel="stylesheet" href="subscription.css?v=6">
+<style id="merge-green-header">
+  /* ============================================================
+     MERGE: unify Dashboard / Leads / Profile with the Appointments
+     design system (.lp-head / .lp-seg / .lp-sheet). Reuses the exact
+     green-header chrome so every section looks the same. Content
+     is preserved — only chrome/layout is aligned.
+     ============================================================ */
+
+  /* status bar reads white over the green header */
+  .route-home .status-bar, .route-dashboard .status-bar, .route-leads .status-bar, .route-leadsettings .status-bar, .route-settings .status-bar{ background:transparent !important; color:#fff !important; }
+  .route-home .status-bar .battery, .route-dashboard .status-bar .battery, .route-leads .status-bar .battery, .route-leadsettings .status-bar .battery, .route-settings .status-bar .battery{ color:#fff !important; }
+
+  /* ---- green gradient headers (Home + Lead dashboards, Leads list) ---- */
+  .d2-head, .lx-head{
+    color:#fff !important;
+    background-color:transparent !important;
+    background-image:linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,0) 46%), url('assets/bg-green.jpg') !important;
+    background-size:cover !important;
+    background-position:center top !important;
+    border-bottom:0 !important;
+    padding:38px 16px 24px !important;
+  }
+  #app-home, #app-dashboard{ background:var(--surface-2) !important; }
+  .pf-head{ padding:38px 16px 24px !important; }
+
+  /* ---- unified top chrome: topbar + title + icon buttons (matches .lp-*) ---- */
+  .d2-topbar, .lx-topbar{ height:46px !important; padding:0 !important; }
+  .d2-title, .lx-title{ font-size:19px !important; font-weight:800 !important; letter-spacing:.01em !important; color:#fff !important; }
+  .d2-iconbtn, .lx-iconbtn, .pf-ic{
+    width:40px !important; height:40px !important; border-radius:12px !important;
+    display:grid !important; place-items:center !important;
+    background:rgba(255,255,255,.16) !important; border:1px solid rgba(255,255,255,.24) !important;
+    color:#fff !important; -webkit-backdrop-filter:blur(6px) !important; backdrop-filter:blur(6px) !important;
+  }
+  .d2-iconbtn:active, .lx-iconbtn:active, .pf-ic:active{ background:rgba(255,255,255,.28) !important; }
+
+  /* ---- PRIMARY tabs: [ Dashboard · Leads · Settings ] in the green header ---- */
+  /* uses the shared .lp-seg pill look (3 equal pills, active = solid white) */
+  .leads-primary{ margin-top:12px !important; }
+
+  /* ---- SECONDARY sub-tabs (each section's own views) — chip row under the primary tabs, on green ---- */
+  .leads-secondary{
+    margin-top:9px !important; display:flex !important; gap:7px !important;
+    background:transparent !important; border:0 !important; padding:0 0 2px !important;
+    overflow-x:auto !important; scrollbar-width:none !important; flex-wrap:nowrap !important;
+  }
+  .leads-secondary::-webkit-scrollbar{ display:none !important; }
+  .leads-secondary .lx-tab, .leads-secondary button{
+    flex:0 0 auto !important; border:1px solid rgba(255,255,255,.22) !important; cursor:pointer; font-family:inherit;
+    font-size:13px !important; font-weight:700 !important; color:rgba(255,255,255,.82) !important;
+    background:rgba(255,255,255,.12) !important; border-radius:999px !important; padding:7px 14px !important;
+    white-space:nowrap !important; display:flex !important; align-items:center !important; justify-content:center !important; gap:6px !important;
+    -webkit-backdrop-filter:blur(6px) !important; backdrop-filter:blur(6px) !important;
+  }
+  .leads-secondary .lx-tab svg, .leads-secondary button svg{ width:14px !important; height:14px !important; display:inline-block !important; }
+  .leads-secondary .lx-tab.active, .leads-secondary button.active{
+    background:#fff !important; color:var(--accent-deep) !important; border-color:#fff !important;
+  }
+  .leads-secondary .lx-tab.active::after{ display:none !important; }
+  /* ---- Profile tabs live on the WHITE sheet — light segmented control (readable) ---- */
+  #app-profile #pfTabs{
+    position:static !important; margin:2px -16px 14px !important; background:var(--surface-2) !important;
+    border:0 !important; border-radius:0 !important; box-shadow:none !important;
+    padding:2px 16px 12px !important; display:flex !important; gap:8px !important;
+    overflow-x:auto !important; scrollbar-width:none !important;
+    -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+  }
+  #app-profile #pfTabs::-webkit-scrollbar{ display:none !important; }
+  #app-profile #pfTabs .pf-tab{
+    flex:0 0 auto !important; border:1px solid var(--line) !important; cursor:pointer; font-family:inherit;
+    font-size:13.5px !important; font-weight:700 !important; color:var(--ink-3) !important;
+    background:#fff !important; border-radius:999px !important; padding:9px 15px !important; white-space:nowrap !important;
+    display:flex !important; align-items:center !important; gap:6px !important;
+  }
+  #app-profile #pfTabs .pf-tab svg{ width:15px !important; height:15px !important; }
+  #app-profile #pfTabs .pf-tab.active{
+    background:linear-gradient(135deg,#3CC23F,#2BA84A) !important; color:#fff !important;
+    border-color:transparent !important;
+    box-shadow:0 6px 14px -6px rgba(43,168,74,.65) !important;
+  }
+  #app-profile #pfTabs .pf-tab.active svg{ color:#fff !important; }
+
+  /* ---- white content sheets curve up over the header — exactly like .lp-sheet ---- */
+  .hm-sheet, .d2-sheet, .lx-sheet, .pf-scroll{
+    background:var(--surface-2) !important;
+    border-radius:24px 24px 0 0 !important;
+    margin-top:-18px !important;
+    position:relative !important;
+    z-index:3 !important;
+  }
+  .hm-sheet, .pf-scroll{ padding-top:18px !important; }
+  .d2-sheet, .lx-sheet{ padding-top:16px !important; }
+</style>
+<link rel="stylesheet" href="sync-layer.css?v=3">
+</head>
+<body>
+<div id="stage">
+  <div class="device">
+    <div class="device-screen route-dashboard" id="screen">
+      <div class="punch-hole"></div>
+      <div id="toast" style="position:absolute;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);max-width:calc(100% - 28px);box-sizing:border-box;text-align:center;white-space:normal;line-height:1.4;background:var(--ink);color:#fff;padding:11px 18px;border-radius:18px;font-size:13.5px;font-weight:600;font-family:var(--font-body);box-shadow:0 8px 24px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:999;"></div>
+
+      <!-- System status bar -->
+      <div class="status-bar">
+        <div class="clock">12:24</div>
+        <div class="sys-icons">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4C7 4 3.3 6 1 9l11 13L23 9c-2.3-3-6-5-11-5z" opacity="0.95"/></svg>
+          <svg width="16" height="14" viewBox="0 0 24 20" fill="currentColor"><rect x="1" y="13" width="4" height="6" rx="1"/><rect x="7" y="9" width="4" height="10" rx="1"/><rect x="13" y="5" width="4" height="14" rx="1"/><rect x="19" y="1" width="4" height="18" rx="1"/></svg>
+          <span class="battery">23</span>
+        </div>
+      </div>
+
+      <!-- ============ LEADS PANE ============ -->
+        <section class="app-pane" id="app-leads" data-screen-label="Leads"></section>
+
+        <!-- ============ CONTACTS PANE ============ -->
+        <section class="app-pane" id="app-contacts" data-screen-label="Contacts"></section>
+
+        <!-- ============ PROFILE PANE ============ -->
+        <section class="app-pane" id="app-profile" data-screen-label="Profile">
+          <div class="pf-head">
+            <div class="pf-topbar">
+              <button class="pf-ic" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+              <div class="tt">Profile</div>
+              <button class="pf-ic" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5 2 6H4c.5-1 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></button>
+            </div>
+            <div class="pf-id">
+              <div class="pf-avatar"><img class="lg" src="assets/askeva-logo.png" alt="AskEva"></div>
+              <div><div class="nm">Eshan</div><div class="em">eshan@tunepath.com</div></div>
+            </div>
+          </div>
+
+          <div class="pf-scroll">
+
+            <div class="pf-tabs" id="pfTabs">
+              <button class="pf-tab active" data-tab="account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.2 3-5 7-5s7 1.8 7 5"/></svg>Account</button>
+              <button class="pf-tab" data-tab="team"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-2.8 2.7-4.4 6-4.4s6 1.6 6 4.4M16 5.5a3 3 0 0 1 0 5.6M18 14.4c2 .6 3 1.9 3 4.1"/></svg>Team</button>
+              <button class="pf-tab" data-tab="password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.4"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Password</button>
+              <button class="pf-tab" data-tab="pricing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Pricing</button>
+              <button class="pf-tab" data-tab="subscription"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 11h18M8 15h3"/><path d="m17 4 1.5 1.5L21 3"/></svg>Subscription</button>
+              <button class="pf-tab" data-tab="transactions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>Transactions</button>
+            </div>
+
+            <div class="pf-panel" data-tabpanel="account" id="pfAccount"></div>
+            <div class="pf-panel" data-tabpanel="team" id="pfTeam" hidden></div>
+            <div class="pf-panel" data-tabpanel="password" id="pfPassword" hidden></div>
+            <div class="pf-panel" data-tabpanel="pricing" id="pfPricing" hidden></div>
+            <div class="pf-panel" data-tabpanel="subscription" id="pfSubscription" hidden></div>
+            <div class="pf-panel" data-tabpanel="transactions" id="pfTransactions" hidden></div>
+          </div>
+
+          <div class="pf-mscrim" id="pfMScrim"></div>
+          <div class="pf-msheet" id="pfMSheet"></div>
+        </section>
+
+        <!-- ============ HOME (OVERALL) DASHBOARD PANE ============ -->
+        <section class="app-pane" id="app-home" data-screen-label="Dashboard">
+          <div class="d2-head"><div class="d2-topbar"><button class="d2-iconbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div class="d2-title">Dashboard</div><button class="d2-iconbtn" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5 2 6H4c.5-1 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></button></div></div>
+          <div class="hm-sheet">
+            <div class="waba-card">
+              <div class="waba-item">
+                <span class="waba-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M9.5 12.4 8 21l4-2.2L16 21l-1.5-8.6"/></svg></span>
+                <div class="waba-tx"><div class="waba-k">WABA Number</div><div class="waba-v">917200440497</div></div>
+              </div>
+              <div class="waba-item">
+                <span class="waba-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v8"/><path d="M6.5 7.5a8 8 0 1 0 11 0"/></svg></span>
+                <div class="waba-tx"><div class="waba-k">Status</div><div class="waba-v"><span class="waba-dot live"></span>Live</div></div>
+              </div>
+              <div class="waba-item">
+                <span class="waba-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4.5c4-2 7 2 11 0v8c-4 2-7-2-11 0"/></svg></span>
+                <div class="waba-tx"><div class="waba-k">Quality Rating</div><div class="waba-v"><span class="waba-dot"></span>Green</div></div>
+              </div>
+              <div class="waba-item">
+                <span class="waba-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg></span>
+                <div class="waba-tx"><div class="waba-k">Messaging Tier</div><div class="waba-v" id="wabaTierVal">tier_3: MSG_ 100000 LIMIT</div></div>
+              </div>
+            </div>
+            <div class="hm-balance"><div class="l"><div class="hi">Hello, Eshan!</div><div class="amt">INR 77.24</div></div><button class="hm-addfund" data-hm="addfund">Add Fund</button></div>
+            <div class="hm-greenrow"><div class="hm-green"><div class="hm-gtitle">Message Limit</div><div class="hm-gauge"><svg viewBox="0 0 118 66"><path d="M9 58 A50 50 0 0 1 109 58" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="9" stroke-linecap="round"/><path d="M9 58 A50 50 0 0 1 109 58" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="156.8" id="msgArc"/><circle cx="9.5" cy="58" r="5" fill="#fff"/></svg><span class="pct" id="msgPct">0.1%</span></div><div class="hm-gsub center" id="msgLimitSub">14 out of 100000</div></div><div class="hm-green plan" id="subDashCard"></div></div>
+            <div class="d2-card hm-conv"><div class="hm-cardhd"><h4>Total Conversation</h4><button class="hm-more" data-hm="more"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button></div><div class="hm-convgrid"><div class="hm-stat"><div class="n">5,644</div><div class="k">Marketing</div></div><div class="hm-stat"><div class="n">278</div><div class="k">Authentication</div></div><div class="hm-stat"><div class="n">5,638</div><div class="k">Utility</div></div><div class="hm-stat"><div class="n">939</div><div class="k">User initiated</div></div><div class="hm-stat"><div class="n">11,560</div><div class="k">Business initiated</div></div><div class="hm-stat total"><div class="n">12,499</div><div class="k">Total</div></div></div></div>
+            <div class="d2-card hm-summary"><div class="hm-cardhd"><h4>Overview Summary of Broadcast Message</h4><button class="hm-more" data-hm="more"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button></div><div class="hm-statpills"><div class="hm-pill"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4 10-11"/></svg></span><div><div class="n">392</div><div class="k">Sent</div></div></div><div class="hm-pill"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></span><div><div class="n">273</div><div class="k">Delivered</div></div></div><div class="hm-pill"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span><div><div class="n">217</div><div class="k">Read</div></div></div></div><div class="hm-reportrow"><span class="rt">Last 7 days Report</span><button class="hm-daterange" data-hm="daterange"><span class="hm-drtxt ph">Start date &rarr; End date</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button></div><div class="hm-legend"><span><span class="d" style="background:#177A36"></span>Sent</span><span><span class="d" style="background:#3CC23F"></span>Delivered</span><span><span class="d" style="background:#85D653"></span>Read</span></div><svg class="hm-chart" viewBox="0 0 320 132" preserveAspectRatio="none" aria-hidden="true"><line x1="8" y1="122" x2="312" y2="122" stroke="#E4E8E1" stroke-width="1"/><line x1="8" y1="85.7" x2="312" y2="85.7" stroke="#EEF1EC" stroke-width="1"/><line x1="8" y1="49.4" x2="312" y2="49.4" stroke="#EEF1EC" stroke-width="1"/><line x1="8" y1="12.0" x2="312" y2="12.0" stroke="#EEF1EC" stroke-width="1"/><path d="M8,79.2 L58.7,93.9 L109.3,88.4 L160,24.2 L210.7,104.9 L261.3,118.3 L312,113.4 L312,122 L8,122 Z" fill="rgba(28,122,99,.32)"/><path d="M8,79.2 L58.7,93.9 L109.3,88.4 L160,24.2 L210.7,104.9 L261.3,118.3 L312,113.4" fill="none" stroke="#177A36" stroke-width="2" stroke-linejoin="round"/><path d="M8,90.2 L58.7,95.1 L109.3,89 L160,68.2 L210.7,107.3 L261.3,118.9 L312,115.3 L312,122 L8,122 Z" fill="rgba(67,190,142,.40)"/><path d="M8,90.2 L58.7,95.1 L109.3,89 L160,68.2 L210.7,107.3 L261.3,118.9 L312,115.3" fill="none" stroke="#3CC23F" stroke-width="2" stroke-linejoin="round"/><path d="M8,93.9 L58.7,97.6 L109.3,91.4 L160,79.2 L210.7,109.8 L261.3,119.6 L312,116.5 L312,122 L8,122 Z" fill="rgba(150,222,190,.55)"/><path d="M8,93.9 L58.7,97.6 L109.3,91.4 L160,79.2 L210.7,109.8 L261.3,119.6 L312,116.5" fill="none" stroke="#85D653" stroke-width="2" stroke-linejoin="round"/></svg><div class="hm-xlabels"><span>05-29</span><span>05-30</span><span>06-01</span><span>06-02</span><span>06-03</span><span>06-04</span><span>06-05</span></div></div>
+            <div class="d2-card hm-summary"><div class="hm-cardhd"><h4>Overview Summary of API Message</h4><button class="hm-more" data-hm="more"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button></div><div class="hm-statpills"><div class="hm-pill"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4 10-11"/></svg></span><div><div class="n">92</div><div class="k">Sent</div></div></div><div class="hm-pill"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg></span><div><div class="n">63</div><div class="k">Delivered</div></div></div><div class="hm-pill"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span><div><div class="n">59</div><div class="k">Read</div></div></div></div><div class="hm-reportrow"><span class="rt">Last 7 days Report</span><button class="hm-daterange" data-hm="daterange"><span class="hm-drtxt ph">Start date &rarr; End date</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button></div><div class="hm-legend"><span><span class="d" style="background:#177A36"></span>Sent</span><span><span class="d" style="background:#3CC23F"></span>Delivered</span><span><span class="d" style="background:#85D653"></span>Read</span></div><svg class="hm-chart" viewBox="0 0 320 132" preserveAspectRatio="none" aria-hidden="true"><line x1="8" y1="122" x2="312" y2="122" stroke="#E4E8E1" stroke-width="1"/><line x1="8" y1="85.7" x2="312" y2="85.7" stroke="#EEF1EC" stroke-width="1"/><line x1="8" y1="49.4" x2="312" y2="49.4" stroke="#EEF1EC" stroke-width="1"/><line x1="8" y1="12.0" x2="312" y2="12.0" stroke="#EEF1EC" stroke-width="1"/><path d="M8,92.7 L51.4,89 L94.9,114.7 L138.3,74.3 L181.7,56 L225.1,81.7 L268.6,26.7 L312,111 L312,122 L8,122 Z" fill="rgba(28,122,99,.32)"/><path d="M8,92.7 L51.4,89 L94.9,114.7 L138.3,74.3 L181.7,56 L225.1,81.7 L268.6,26.7 L312,111" fill="none" stroke="#177A36" stroke-width="2" stroke-linejoin="round"/><path d="M8,92.7 L51.4,89 L94.9,114.7 L138.3,74.3 L181.7,78 L225.1,92.7 L268.6,41.3 L312,111 L312,122 L8,122 Z" fill="rgba(67,190,142,.40)"/><path d="M8,92.7 L51.4,89 L94.9,114.7 L138.3,74.3 L181.7,78 L225.1,92.7 L268.6,41.3 L312,111" fill="none" stroke="#3CC23F" stroke-width="2" stroke-linejoin="round"/><path d="M8,100 L51.4,96.3 L94.9,114.7 L138.3,85.3 L181.7,89 L225.1,100 L268.6,48.7 L312,114.7 L312,122 L8,122 Z" fill="rgba(150,222,190,.55)"/><path d="M8,100 L51.4,96.3 L94.9,114.7 L138.3,85.3 L181.7,89 L225.1,100 L268.6,48.7 L312,114.7" fill="none" stroke="#85D653" stroke-width="2" stroke-linejoin="round"/></svg><div class="hm-xlabels"><span>05-29</span><span>05-30</span><span>05-31</span><span>06-01</span><span>06-02</span><span>06-03</span><span>06-04</span><span>06-05</span></div></div>
+          </div>
+        </section>
+
+        <!-- ============ DASHBOARD PANE ============ -->
+        <section class="app-pane" id="app-dashboard" data-screen-label="Dashboard">
+          <div class="d2-head">
+            <div class="d2-topbar">
+              <button class="d2-iconbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+              <div class="d2-title">Leads Dashboard</div>
+              <button class="d2-iconbtn" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5 2 6H4c.5-1 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></button>
+            </div>
+          </div>
+          <div class="d2-sheet">
+
+            <!-- OVERVIEW / PERFORMANCE TOGGLE -->
+            <div class="d2-segtoggle">
+              <button class="active" data-dash="overview">Overview</button>
+              <button data-dash="performance">Performance</button>
+            </div>
+
+            <div data-dash-body="overview">
+            <!-- FILTER ROW -->
+            <div class="d2-filterrow">
+              <span class="lbl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Last 30 days</span>
+              <button class="d2-filterbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filters</button>
+            </div>
+
+            <!-- KPI GRID -->
+            <div class="d2-kpigrid" id="d2KpiGrid">
+              <div class="d2-kpi"><div class="l">Hot Leads</div><div class="row"><span class="ic tint-red"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a6 6 0 0 0 6-6c0-2.2-1-3.9-2.6-5.4-.4 1.1-1 1.6-1.7 1.7.6-2.6-.4-4.9-3-6.8.3 2.6-.9 3.9-2.2 5.2C6.8 12.4 6 13.9 6 16a6 6 0 0 0 6 6Z"/></svg></span><span class="v">1</span></div></div>
+              <div class="d2-kpi"><div class="l">Customers</div><div class="row"><span class="ic tint-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-width="1.8"/><path d="m8 12 2.6 2.6L16 9.5"/></svg></span><span class="v">2</span></div></div>
+              <div class="d2-kpi"><div class="l">Conversion Rate</div><div class="row"><span class="ic tint-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-7"/><path d="M21 8v5h-5"/></svg></span><span class="v">28.6%</span></div></div>
+              <div class="d2-kpi"><div class="l">Achieved Value</div><div class="row"><span class="ic tint-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16.5 14.5h1.5"/></svg></span><span class="v">&#8377;0</span></div></div>
+              <div class="d2-kpi"><div class="l">Total Value</div><div class="row"><span class="ic tint-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16.5 14.5h1.5"/></svg></span><span class="v">&#8377;0</span></div></div>
+              <div class="d2-kpi"><div class="l">Total Leads</div><div class="row"><span class="ic tint-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-2.7 2.5-4.2 5.5-4.2s5.5 1.5 5.5 4.2"/><path d="M16 5.6a3 3 0 0 1 0 5.7M17.6 14.9c2 .6 3.4 1.8 3.4 4.1"/></svg></span><span class="v">7</span></div></div>
+            </div>
+
+            <!-- LEAD STATUS -->
+            <div class="d2-sec"><span class="si"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 1 0 9 9h-9z" fill="#2BA84A"/><path d="M13 3.05A9 9 0 0 1 20.95 11H13z" fill="#8FD63B"/></svg></span><h3>Lead Status</h3></div>
+            <div class="d2-card" id="d2StatusCard">
+              <div class="d2-statwrap">
+                <div class="d2-donut status"><div class="c"><b>7</b><span>LEADS</span></div></div>
+                <div class="d2-leggrid">
+                  <div class="d2-legrow" data-st="new"><span class="ld" style="background:#2563EB"></span>New<span class="v">0</span></div>
+                  <div class="d2-legrow" data-st="hot"><span class="ld" style="background:#DB4324"></span>Hot<span class="v">0</span></div>
+                  <div class="d2-legrow" data-st="warm"><span class="ld" style="background:#B5790A"></span>Warm<span class="v">0</span></div>
+                  <div class="d2-legrow" data-st="cold"><span class="ld" style="background:#2E90C4"></span>Cold<span class="v">0</span></div>
+                  <div class="d2-legrow" data-st="converted"><span class="ld" style="background:#1F8A3B"></span>Customer<span class="v">0</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 30-DAY TREND -->
+            <div class="d2-sec"><span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="#2BA84A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-7"/><path d="M21 8v5h-5"/></svg></span><h3>30-Day Trend</h3></div>
+            <div class="d2-card d2-trendcard" id="d2TrendCard"></div>
+
+            <!-- TOP PERFORMERS -->
+            <div class="d2-sec"><span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="#2BA84A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/></svg></span><h3>Top Performers</h3></div>
+            <div class="d2-card" id="d2TopPerf"></div>
+
+            </div><!-- /overview -->
+
+            <div data-dash-body="performance" hidden id="d2PerfBody">
+              <!-- AGENTS PERFORMANCE -->
+              <div class="d2-sec"><span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="#2BA84A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-2.7 2.5-4.2 5.5-4.2s5.5 1.5 5.5 4.2"/><path d="M16 5.6a3 3 0 0 1 0 5.7M17.6 14.9c2 .6 3.4 1.8 3.4 4.1"/></svg></span><h3>Agents Performance</h3></div>
+              <div id="d2AgentsWrap">
+              <div class="d2-card lxp-agent"><div class="lxp-ahd"><span class="av" style="background:#9AA39C">e</span><span class="em">eshan@tunepath.com</span><span class="lxp-leads">1</span></div><div class="lxp-conv"><div class="lxp-track"><i style="width:100%"></i></div><span class="lxp-pct">100%</span></div><div class="lxp-row2"><span class="lxp-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.4"/><path d="M6 9.5v5M18 9.5v5"/></svg>&#8377;0</span><button class="lxp-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>View Details</button></div><div class="lxp-stchips"><span class="lxp-stchip new">0 New</span><span class="lxp-stchip hot">0 Hot</span><span class="lxp-stchip warm">0 Warm</span><span class="lxp-stchip cold">0 Cold</span><span class="lxp-stchip converted">1 Converted</span></div></div><div class="d2-card lxp-agent"><div class="lxp-ahd"><span class="av" style="background:#9AA39C">t</span><span class="em">testerr@gmail.com</span><span class="lxp-leads">3</span></div><div class="lxp-conv"><div class="lxp-track"><i style="width:33%"></i></div><span class="lxp-pct">33%</span></div><div class="lxp-row2"><span class="lxp-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.4"/><path d="M6 9.5v5M18 9.5v5"/></svg>&#8377;0</span><button class="lxp-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>View Details</button></div><div class="lxp-stchips"><span class="lxp-stchip new">0 New</span><span class="lxp-stchip hot">1 Hot</span><span class="lxp-stchip warm">0 Warm</span><span class="lxp-stchip cold">1 Cold</span><span class="lxp-stchip converted">1 Converted</span></div></div><div class="d2-card lxp-agent"><div class="lxp-ahd"><span class="av" style="background:#9AA39C">U</span><span class="em">Unassigned</span><span class="lxp-leads">3</span></div><div class="lxp-conv"><div class="lxp-track"><i style="width:0%"></i></div><span class="lxp-pct">0%</span></div><div class="lxp-row2"><span class="lxp-val"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.4"/><path d="M6 9.5v5M18 9.5v5"/></svg>&#8377;0</span><button class="lxp-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>View Details</button></div><div class="lxp-stchips"><span class="lxp-stchip new">3 New</span><span class="lxp-stchip hot">0 Hot</span><span class="lxp-stchip warm">0 Warm</span><span class="lxp-stchip cold">0 Cold</span><span class="lxp-stchip converted">0 Converted</span></div></div>
+
+              </div>
+            </div>
+
+          </div>
+          <button class="d2-scan" aria-label="Scan Card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/></svg>Scan Card</button>
+        </section>
+
+        <!-- ============ APPOINTMENTS PANE ============ -->
+        <section class="app-pane" id="app-appointments" data-screen-label="Appointments">
+          <div class="lp-head" style="padding-bottom:26px;">
+            <div class="lp-topbar" style="position:relative;">
+              <button class="lp-iconbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+              <div class="lp-title" style="position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;white-space:nowrap;">Appointments</div>
+              <span class="lp-pill" id="axPill" style="font-size:12px;padding:6px 12px;white-space:nowrap;">All Agents ▾</span>
+            </div>
+            <div class="lp-seg four" id="axTabs">
+              <button data-tab="dashboard" class="active">Dashboard</button>
+              <button data-tab="bookings">Bookings</button>
+              <button data-tab="payments">Payments</button>
+              <button data-tab="settings">Settings</button>
+            </div>
+          </div>
+          <div class="lp-sheet" style="padding-bottom:96px;">
+            <div id="axView"></div>
+          </div>
+          <button class="appt-fab" id="axFab" aria-label="New appointment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <div class="ax-overlay" id="axDetail"></div>
+          <div class="ax-overlay" id="axForm"></div>
+        </section>
+
+        <!-- ============ TICKETING PANE ============ -->
+        <section class="app-pane" id="app-ticketing" data-screen-label="Ticketing">
+          <div class="lp-head" style="padding-bottom:26px;">
+            <div class="lp-topbar">
+              <button class="lp-iconbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+              <div class="lp-title" style="flex:1;text-align:center;">Ticketing</div>
+              <span class="lp-iconbtn" style="background:transparent;border:none;"></span>
+            </div>
+            <span id="txPrioPill" style="display:none;"></span>
+            <div class="lp-seg three" id="txTabs">
+              <button data-sec="dashboard" class="active">Dashboard</button>
+              <button data-sec="tickets">Tickets</button>
+              <button data-sec="settings">Settings</button>
+            </div>
+          </div>
+          <div class="lp-sheet" style="padding-bottom:96px;">
+            <div id="txDashView"></div>
+            <div id="txSettingsView" style="display:none;"></div>
+            <div id="txTicketsWrap" style="display:none;">
+              <div class="tx-chips">
+                <button class="tx-chip on" data-f="open">Open<span class="n">0</span></button>
+                <button class="tx-chip" data-f="pending">Pending<span class="n">0</span></button>
+                <button class="tx-chip" data-f="resolved">Resolved<span class="n">0</span></button>
+                <button class="tx-chip" data-f="all">All<span class="n">0</span></button>
+              </div>
+              <div class="set-secrow"><span class="h" id="txHead">Open tickets</span><span class="st" id="txCount">3 active</span></div>
+              <div id="txList"></div>
+            </div>
+          </div>
+          <div class="ax-overlay" id="txDetail"></div>
+          <div class="ax-overlay" id="txForm"></div>
+          <div class="ax-overlay" id="txBulk"></div>
+        </section>
+
+        <!-- ============ COMPOSE MESSAGE PANE ============ -->
+        <section class="app-pane" id="app-compose" data-screen-label="Compose Message">
+          <div class="lp-head" style="padding-bottom:26px;">
+            <div class="lp-topbar">
+              <button class="lp-iconbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+              <div class="lp-title" style="flex:1;text-align:center;">Compose Message</div>
+              <span class="lp-iconbtn" style="background:transparent;border:none;"></span>
+            </div>
+            <div class="lp-seg three" id="cmTabs">
+              <button data-tab="single" class="active">Single MSG</button>
+              <button data-tab="group">Group</button>
+              <button data-tab="csv">CSV</button>
+            </div>
+          </div>
+          <div class="lp-sheet" style="padding-bottom:96px;">
+            <div id="cmView"></div>
+          </div>
+        </section>
+
+        <!-- ============ SETTINGS PANE ============ -->
+        <section class="app-pane" id="app-settings" data-screen-label="Settings">
+          <div class="lp-head" style="padding-bottom:26px;">
+            <div class="lp-topbar">
+              <button class="lp-iconbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+              <div class="lp-title" style="flex:1;text-align:center;">Settings</div>
+              <span class="lp-iconbtn" style="background:transparent;border:none;"></span>
+            </div>
+          </div>
+          <div class="lp-sheet" style="padding-bottom:96px;">
+            <div class="set-grouplbl">Workspace</div>
+            <div class="set-menu">
+              <button class="set-row" data-sub="agents">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.2 2.7-5 6-5s6 1.8 6 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6M17.5 15c2 .6 3.5 1.7 3.5 4"/></svg></span>
+                <span class="txt"><span class="lab">Agents</span><span class="sub">Manage agents &amp; role configuration</span></span>
+                <span class="trail"><span class="cbadge" id="agentsCountBadge">10 agents</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></span>
+              </button>
+              <button class="set-row" data-sub="qr">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M20 14v.01M14 20h.01M17 20h.01M20 17v3"/></svg></span>
+                <span class="txt"><span class="lab">QR Code</span><span class="sub">Generate chat QR codes</span></span>
+                <span class="trail"><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></span>
+              </button>
+              <button class="set-row" data-sub="userattrs">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 14l2 2 4-4"/></svg></span>
+                <span class="txt"><span class="lab">User Attributes</span><span class="sub">Manage template variables</span></span>
+                <span class="trail"><span class="cbadge" id="uaCountBadge">25</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></span>
+              </button>
+            </div>
+
+            <div class="set-grouplbl">Security &amp; Preferences</div>
+            <div class="set-menu">
+              <button class="set-row" data-sub="security">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 8 7 9 4-1 7-4.5 7-9V6l-7-3Z"/><path d="m9.5 12 1.8 1.8L15 10"/></svg></span>
+                <span class="txt"><span class="lab">Securities</span><span class="sub">Two-factor authentication</span></span>
+                <span class="trail"><span class="set-pill warn" id="twofaPill"><span class="d"></span>Not Enabled</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></span>
+              </button>
+              <button class="set-row" data-sub="login">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
+                <span class="txt"><span class="lab">Login Activity</span><span class="sub">Last login 12 Jan, 2:31 pm</span></span>
+                <span class="trail"><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></span>
+              </button>
+              <button class="set-row" data-sub="notifications">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5 2 6H4c.5-1 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span>
+                <span class="txt"><span class="lab">Notifications</span><span class="sub">Push, email &amp; sounds</span></span>
+                <span class="trail"><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></span>
+              </button>
+              <button class="set-row" data-sub="about">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg></span>
+                <span class="txt"><span class="lab">About</span><span class="sub">Version, Meta partner &amp; terms</span></span>
+                <span class="trail"><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span></span>
+              </button>
+            </div>
+
+            <div class="set-menu" style="margin-top:20px;">
+              <button class="set-row danger" id="setLogout">
+                <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 8 6 12l4 4M6 12h9"/></svg></span>
+                <span class="txt"><span class="lab">Logout</span></span>
+              </button>
+            </div>
+            <div class="set-version" id="setVersion" style="text-align:center;color:var(--ink-4);font-size:12px;font-weight:700;letter-spacing:.02em;padding:20px 0 8px;">AskEva</div>
+          </div>
+
+          <!-- ===== Settings sub-views ===== -->
+          <div class="set-sub" id="sub-about">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="set-bar-ttl">About</span></div>
+            <div class="set-scroll">
+              <div class="set-kv" style="margin-bottom:16px;">
+                <div class="kvr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6l-8-4Z"/></svg></span><div class="b"><div class="k">App Version</div><div class="v" id="aboutVersion">—</div></div></div>
+                <div class="kvr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 3.5V6a1 1 0 0 1 1-1Z"/></svg></span><div class="b"><div class="k">Meta Partner</div><div class="v">Official WhatsApp Business Solution Provider</div></div></div>
+              </div>
+              <div class="set-grouplbl">Terms &amp; Conditions</div>
+              <div class="set-menu" style="padding:15px 16px;">
+                <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--eva-green-deep);margin-bottom:10px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4 10-11"/></svg>Terms and conditions accepted</div>
+                <ul style="margin:0;padding-left:18px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.7;"><li>Important Billing Changes — Effective July 1, 2025</li><li>Pricing Update — Effective January 1, 2026</li><li>Messaging limits follow your Meta WhatsApp tier and policy.</li><li>Data is processed per our Privacy Policy &amp; WhatsApp Business terms.</li></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="set-sub" id="sub-security">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="set-bar-ttl">Securities</span></div>
+            <div class="set-scroll"><div id="secView"></div></div>
+          </div>
+
+          <div class="set-sub" id="sub-userattrs">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="set-bar-ttl">Manage User Attributes</span></div>
+            <div class="set-scroll"><div id="uaView"></div></div>
+          </div>
+
+          <div class="set-sub" id="sub-qr">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="set-bar-ttl">QR Code</span></div>
+            <div class="set-scroll"><div id="qrView"></div></div>
+          </div>
+
+          <div class="set-sub" id="sub-agents">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="set-bar-ttl">Agents</span></div>
+            <div class="set-scroll"><div id="agentsView"></div></div>
+            <div class="ax-overlay" id="agentDetail"></div>
+            <div class="ax-overlay" id="agentForm"></div>
+            <div class="ax-overlay" id="roleEditor"></div>
+          </div>
+
+          <div class="set-sub" id="sub-account">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="ttl">Account Details</div><span class="spacer"></span></div>
+            <div class="set-scroll">
+              <div class="set-kv">
+                <div class="kvr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span><div class="b"><div class="k">Account Status</div><div class="v"><span class="set-pill"><span class="d"></span>Active</span></div></div><button class="set-switch on" data-tgl></button></div>
+                <div class="kvr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M8 3v4M16 3v4"/></svg></span><div class="b"><div class="k">Creation Date</div><div class="v">25 Feb 2025</div></div></div>
+                <div class="kvr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 19c0-3 3-4.5 7-4.5s7 1.5 7 4.5"/></svg></span><div class="b"><div class="k">Primary Contact</div><div class="v">Eshan</div></div></div>
+                <div class="kvr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 3.5V6a1 1 0 0 1 1-1Z"/></svg></span><div class="b"><div class="k">WhatsApp API No</div><div class="v">+91 72004 40497</div></div></div>
+                <div class="kvr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h3l1.5 4-2 1.5a12 12 0 0 0 5 5L14 12l4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 5 6Z"/></svg></span><div class="b"><div class="k">Primary Mobile</div><div class="v">+91 92042 99328</div></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="set-sub" id="sub-team">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="ttl">Team Members</div><button class="iconbtn" id="teamInviteIcon" aria-label="Invite member"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+            <div class="set-scroll">
+              <div class="set-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="teamSearch" type="text" placeholder="Search by name, email or role"></div>
+
+              <div class="dept-row" id="deptRow">
+                <button class="f-chip on" data-dept="all">All</button>
+                <button class="f-chip" data-dept="Sales">Sales</button>
+                <button class="f-chip" data-dept="Support">Support</button>
+                <button class="f-chip" data-dept="Management">Management</button>
+                <button class="dept-new" id="deptNewBtn">+ Department</button>
+              </div>
+              <div class="dept-form" id="deptForm" hidden>
+                <input id="deptInput" type="text" placeholder="New department name" maxlength="22">
+                <button id="deptAdd">Add</button>
+              </div>
+
+              <div class="invite-form" id="inviteForm" hidden>
+                <div class="fld"><div class="fl">Full name</div><input id="invName" type="text" placeholder="e.g. Meera Pillai"></div>
+                <div class="fld"><div class="fl">Email</div><input id="invEmail" type="email" placeholder="name@company.com"></div>
+                <div class="two">
+                  <div class="fld"><div class="fl">Role</div><select id="invRole"><option>Agent</option><option>Admin</option><option>Super Admin</option></select></div>
+                  <div class="fld"><div class="fl">Department</div><select id="invDept"><option>Sales</option><option>Support</option><option>Management</option></select></div>
+                </div>
+                <div class="invite-actions">
+                  <button class="invite-cancel" id="invCancel">Cancel</button>
+                  <button class="invite-save" id="invSave">Add member</button>
+                </div>
+              </div>
+
+              <div class="set-secrow"><span class="h">All members</span><span class="st" id="memCount">3 total · 2 active</span></div>
+              <div id="memList">
+                <div class="mem" data-q="eshan tunepath super admin management" data-dept="Management">
+                  <div class="mem-top"><div class="mem-av" style="background:var(--eva-gradient)">E</div><div class="mem-id"><div class="row1"><span class="nm">Eshan</span><span class="mem-role super">Super Admin</span></div><div class="mem-you">Management · You</div></div></div>
+                  <div class="mem-contact"><div class="ln"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 5 8-5"/></svg>eshan@tunepath.com</div></div>
+                  <div class="mem-foot"><div class="mem-mods"><span class="mem-mod all">All modules</span></div><div class="swrap"><span class="l">Active</span><button class="set-switch on" data-tgl></button></div></div>
+                </div>
+                <div class="mem" data-q="ananthu gmail admin support" data-dept="Support">
+                  <div class="mem-top"><div class="mem-av" style="background:#22B0E8">a</div><div class="mem-id"><div class="row1"><span class="nm">ananthu</span><span class="mem-role admin">Admin</span></div><div class="mem-you">Support</div></div></div>
+                  <div class="mem-contact"><div class="ln"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 5 8-5"/></svg>ananthu@gmail.com</div></div>
+                  <div class="mem-foot"><div class="mem-mods"><span class="mem-mod">Chat</span><span class="mem-mod">Leads</span><span class="mem-mod">Tickets</span></div><div class="swrap"><span class="l">Active</span><button class="set-switch on" data-tgl></button></div></div>
+                </div>
+                <div class="mem" data-q="priya sharma agent sales" data-dept="Sales">
+                  <div class="mem-top"><div class="mem-av" style="background:#7C5CFF">P</div><div class="mem-id"><div class="row1"><span class="nm">Priya Sharma</span><span class="mem-role agent">Agent</span></div><div class="mem-you">Sales</div></div></div>
+                  <div class="mem-contact"><div class="ln"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 5 8-5"/></svg>priya.s@gmail.com</div></div>
+                  <div class="mem-foot"><div class="mem-mods"><span class="mem-mod">Chat</span><span class="mem-mod">Leads</span></div><div class="swrap"><span class="l">Inactive</span><button class="set-switch" data-tgl></button></div></div>
+                </div>
+              </div>
+              <button class="set-btn" id="inviteBtn" style="margin-top:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Invite Member</button>
+            </div>
+          </div>
+
+          <div class="set-sub" id="sub-password">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="ttl">Change Password</div><span class="spacer"></span></div>
+            <div class="set-scroll">
+              <div class="set-field"><div class="fl">Current Password</div><div class="set-input"><input type="password" id="curPw" placeholder="Enter current password"><span class="eye" data-eye><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span></div></div>
+              <div class="set-field"><div class="fl">New Password</div><div class="set-input"><input type="password" id="newPw" placeholder="Enter new password"><span class="eye" data-eye><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span></div><div class="set-strength" id="pwStrength"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div><div class="set-stxt" id="pwStxt">Use 8+ characters with a mix of letters &amp; numbers</div></div>
+              <div class="set-field"><div class="fl">Confirm New Password</div><div class="set-input"><input type="password" id="confPw" placeholder="Re-enter new password"><span class="eye" data-eye><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span></div></div>
+              <div style="margin-top:22px;"><button class="set-btn" id="updatePwBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 12 3 3 5-6"/></svg>Update Password</button></div>
+            </div>
+          </div>
+
+          <div class="set-sub" id="sub-pricing">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="ttl">Pricing &amp; Plan</div><span class="spacer"></span></div>
+            <div class="set-scroll">
+              <div class="plan-card"><div class="tier">Current plan</div><div class="nm">Growth</div><div class="price">₹4,999<span> / month</span></div><div class="renew">Renews 25 Feb 2026 · billed annually</div></div>
+              <div class="set-grouplbl">What's included</div>
+              <div class="feat">
+                <div class="fr"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 4 4 8-9"/></svg></span>Up to 15 team members</div>
+                <div class="fr"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 4 4 8-9"/></svg></span>Unlimited leads &amp; companies</div>
+                <div class="fr"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 4 4 8-9"/></svg></span>WhatsApp Business API</div>
+                <div class="fr"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 12 4 4 8-9"/></svg></span>Priority support</div>
+              </div>
+              <div style="margin-top:20px;"><button class="set-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Upgrade Plan</button></div>
+            </div>
+          </div>
+
+          <div class="set-sub" id="sub-txn">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="ttl">Transactions</div><span class="spacer"></span></div>
+            <div class="set-scroll">
+              <div class="set-secrow"><span class="h">Payment history</span></div>
+              <div class="txn"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span><div class="ti"><div class="tt">Growth Plan · Annual</div><div class="td">25 Feb 2025 · UPI</div></div><div><div class="amt">₹59,988</div><div class="stt">Paid</div></div></div>
+              <div class="txn"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span><div class="ti"><div class="tt">Add-on · Extra seats (×5)</div><div class="td">12 Jun 2025 · Card</div></div><div><div class="amt">₹4,500</div><div class="stt">Paid</div></div></div>
+              <div class="txn"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2"/></svg></span><div class="ti"><div class="tt">WhatsApp credits top-up</div><div class="td">28 Nov 2025 · UPI</div></div><div><div class="amt">₹1,200</div><div class="stt pend">Pending</div></div></div>
+            </div>
+          </div>
+
+          <div class="set-sub" id="sub-login">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="ttl">Login Activity</div><span class="spacer"></span></div>
+            <div class="set-scroll">
+              <div class="set-secrow"><span class="h">Recent sessions</span></div>
+              <div class="sesn"><span class="dv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="10" rx="1.5"/><path d="M2 18h13"/><rect x="17" y="9" width="5" height="9" rx="1.5"/></svg></span><div class="si"><div class="wn">12 Jan 2026 · 2:31 PM</div><div class="dt">IP 49.204.147.5 · Desktop · Chrome</div><span class="cur"><span class="d"></span>Current session</span></div></div>
+              <div class="sesn"><span class="dv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg></span><div class="si"><div class="wn">12 Jan 2026 · 2:20 PM</div><div class="dt">IP 49.204.147.5 · Mobile · Android App</div></div></div>
+              <div class="sesn"><span class="dv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="10" rx="1.5"/><path d="M2 18h13"/><rect x="17" y="9" width="5" height="9" rx="1.5"/></svg></span><div class="si"><div class="wn">11 Jan 2026 · 9:04 AM</div><div class="dt">IP 122.171.18.92 · Desktop · Safari</div></div></div>
+            </div>
+          </div>
+
+          <div class="set-sub" id="sub-notifications">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="ttl">Notifications</div><span class="spacer"></span></div>
+            <div class="set-scroll">
+              <div class="set-kv">
+                <div class="set-tgl"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5 2 6H4c.5-1 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span><div class="tt"><div class="l">Push notifications</div><div class="s">New messages &amp; leads</div></div><button class="set-switch on" data-tgl data-pref="notif.push"></button></div>
+                <div class="set-tgl"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15 9a3 3 0 0 1 0 6"/></svg></span><div class="tt"><div class="l">In-app sounds</div><div class="s">Play a chime on new chat</div></div><button class="set-switch" data-tgl data-pref="notif.sound"></button></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="set-sub" id="sub-appearance">
+            <div class="set-bar"><button class="iconbtn set-back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div class="ttl">Appearance</div><span class="spacer"></span></div>
+            <div class="set-scroll">
+              <div class="set-kv">
+                <div class="set-tgl"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></span><div class="tt"><div class="l">Dark mode</div><div class="s">Easier on the eyes at night</div></div><button class="set-switch" data-tgl data-pref="appearance.dark" id="darkModeTgl"></button></div>
+                <div class="set-tgl"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><div class="tt"><div class="l">Compact density</div><div class="s">Show more in less space</div></div><button class="set-switch" data-tgl data-pref="appearance.compact"></button></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      <div class="screens">
+
+        <!-- ============ CHAT LIST SCREEN ============ -->
+        <div class="screen-view hide-left" id="listView" data-screen-label="Chat list">
+          <div class="list-header">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button class="iconbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+              <div class="wm">Chats</div>
+            </div>
+            <div class="hicons">
+              <button class="iconbtn" id="listMenuBtn" aria-label="More options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+            </div>
+          </div>
+          <div class="list-menu-scrim" id="listMenuScrim"></div>
+          <div class="list-menu" id="listMenu">
+            <button data-lmenu="all"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>All</button>
+            <button data-lmenu="unread"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="m4 7 8 6 8-6"/><circle cx="19" cy="6" r="3" fill="currentColor" stroke="none"/></svg>Unread</button>
+            <button data-lmenu="read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="m4 7 8 6 8-6"/></svg>Read</button>
+            <button data-lmenu="intervened"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9"/><path d="m9 12 2 2 4-4"/></svg>Intervened</button>
+            <button data-lmenu="prospects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>Prospects</button>
+            <button data-lmenu="tags"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11V5a2 2 0 0 1 2-2h6l9 9-8 8z"/><circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" stroke="none"/></svg>Tags</button>
+            <button data-lmenu="agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.2 2.7-5 6-5s6 1.8 6 5"/><path d="M16 5.5a3 3 0 0 1 0 5M21 20c0-2.5-1.5-4-3.5-4.6"/></svg>Agents</button>
+          </div>
+          <div class="list-sheet">
+          <div class="chat-scope">
+            <button class="on" data-scope="live">Live Chat</button>
+            <button data-scope="history">History</button>
+          </div>
+          <div class="list-search">
+            <div class="search-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="chatListSearch" placeholder="Search chat" autocomplete="off" spellcheck="false"><button class="ls-clear" aria-label="Clear search">&times;</button></div>
+          </div>
+          <div class="list-filters">
+            <button class="filter-chip on" data-filter="all">All</button>
+            <button class="filter-chip" data-filter="unread">Unread</button>
+            <button class="filter-chip" data-filter="read">Read</button>
+            <button class="filter-chip" data-filter="intervened">Intervened</button>
+            <button class="filter-chip" data-filter="prospects">Prospects</button>
+            <button class="filter-chip" data-filter="tags">Tags<span class="fc-pick"></span><svg class="fc-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+            <button class="filter-chip" data-filter="agents">Agents<span class="fc-pick"></span><svg class="fc-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <div class="list-scroll" id="listScroll"></div>
+          </div>
+          <button class="list-fab" id="listFab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/><circle cx="5.2" cy="6.4" r=".8" fill="currentColor" stroke="none"/><circle cx="8" cy="6.4" r=".8" fill="currentColor" stroke="none"/><circle cx="10.8" cy="6.4" r=".8" fill="currentColor" stroke="none"/></svg></button>
+          <nav class="list-tabs">
+            <button class="active" data-tab="chats"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/><circle cx="5.2" cy="6.4" r=".7" fill="currentColor" stroke="none"/><circle cx="8" cy="6.4" r=".7" fill="currentColor" stroke="none"/><circle cx="10.8" cy="6.4" r=".7" fill="currentColor" stroke="none"/></svg></span><span class="tl">Chats</span></button>
+            <button data-tab="updates"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/></svg></span><span class="tl">Updates</span></button>
+            <button data-tab="comm"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12h8M12 8v8"/></svg></span><span class="tl">Communities</span></button>
+            <button data-tab="calls"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.8 2.1z"/></svg></span><span class="tl">Calls</span></button>
+          </nav>
+        </div>
+
+        <!-- ============ CONVERSATION SCREEN ============ -->
+        <div class="screen-view" id="convView" data-screen-label="Conversation">
+          <div class="chat-header">
+            <button class="iconbtn" id="reopenBtn" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <div class="ch-avatar" id="chAvatar">AM</div>
+            <div class="ch-id" id="chProfile">
+              <div class="ch-name" id="chName">Aarav Mehta</div>
+              <div class="ch-status" id="chStatus">online</div>
+            </div>
+            <button class="iconbtn" id="headSearchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+            <button class="iconbtn" id="headMenuBtn"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+          </div>
+
+          <div class="chat-area">
+            <div class="chat-scroll" id="chatScroll"></div>
+            <div class="order-draft" id="orderDraft"></div>
+            <div class="cat-tray" id="catTray"></div>
+            <div class="chat-composer" id="composer">
+              <div class="field" id="composerField">
+                <button class="c-emoji" id="emojiBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button>
+                <textarea id="msgInput" rows="1" placeholder="Message"></textarea>
+                <div class="c-trailing">
+                  <button class="c-attach" id="attachBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.5 8.5a5 5 0 0 1-7-7l9-9a3.3 3.3 0 0 1 4.7 4.7l-9 9a1.7 1.7 0 0 1-2.4-2.4l8-8"/></svg></button>
+                  <button class="c-camera" id="cameraBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l-1.5 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.5L15 4z"/><circle cx="12" cy="13" r="3.4"/></svg></button>
+                </div>
+              </div>
+              <div class="rec-bar" id="recBar" hidden>
+                <div class="rec-top"><span class="rt" id="recTime">0:00</span><span class="rec-wave" id="recWave" aria-hidden="true"></span></div>
+                <div class="rec-actions">
+                  <button class="rec-del" id="recCancel" aria-label="Delete recording"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+                  <button class="rec-pause" id="recPause" aria-label="Pause"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="6" width="3.4" height="12" rx="1"/><rect x="13.6" y="6" width="3.4" height="12" rx="1"/></svg></button>
+                  <button class="rec-send" id="recSend" aria-label="Send recording"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 12l16-8-6 16-3-7-7-1Z"/></svg></button>
+                </div>
+              </div>
+              <button class="mic" id="micSend">
+                <span class="ic-mic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg></span>
+                <span class="ic-send"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 20l18-8L3 4l3 8-3 8zM6 12h6"/></svg></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ EMOJI PANEL ============ -->
+        <div class="emoji-panel" id="emojiPanel">
+          <div class="emoji-cats"></div>
+          <div class="emoji-grid"></div>
+        </div>
+
+        <!-- ============ ATTACHMENT SHEET ============ -->
+        <div class="attach-scrim" id="sheetScrim"></div>
+        <div class="attach-sheet" id="attachSheet">
+          <div class="attach-grid">
+            <button class="attach-item" data-act="document"><span class="ic ic-document"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z"/><path d="M9 13h6M9 17h4"/></svg></span><span class="lbl">Document</span></button>
+            <button class="attach-item" data-act="gallery"><span class="ic ic-gallery"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></span><span class="lbl">Picture</span></button>
+            <button class="attach-item" data-act="video"><span class="ic ic-video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10 5-3v10l-5-3z"/></svg></span><span class="lbl">Video</span></button>
+            <button class="attach-item" data-act="audio"><span class="ic ic-audio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg></span><span class="lbl">Audio</span></button>
+            <button class="attach-item" data-act="template"><span class="ic ic-template"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M7 13h7M7 16h4"/></svg></span><span class="lbl">Template</span></button>
+            <button class="attach-item" data-act="quick"><span class="ic ic-quick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="lbl">Quick Reply</span></button>
+            <button class="attach-item" data-act="catalog"><span class="ic ic-quick" style="background:var(--accent-soft);color:var(--accent-deep)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9M8 13h8"/></svg></span><span class="lbl">Catalogue</span></button>
+          </div>
+        </div>
+
+        <!-- ============ HEADER MENU ============ -->
+        <div class="menu-scrim" id="menuScrim"></div>
+        <div class="head-menu" id="headMenu">
+          <button data-menu="media"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>Media, links and docs</button>
+          <button data-menu="addlead" id="hmAddLead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>Add to Leads</button>
+          <button data-menu="markunread"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/><circle cx="19" cy="6" r="3" fill="currentColor" stroke="none"/></svg>Mark as unread</button>
+          <button data-menu="download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 4 5-4M4 21h16"/></svg>Download chat</button>
+          <div class="menu-sep"></div>
+          <button class="danger" data-menu="block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>Block</button>
+        </div>
+
+        <!-- ============ SUB-PANEL HOST ============ -->
+        <div class="panel-host" id="panelHost"></div>
+
+        <!-- ============ CAMERA SCREEN ============ -->
+        <div class="camera-screen" id="cameraScreen">
+          <div class="cam-viewfinder"></div>
+          <div class="cam-flash" id="camFlash"></div>
+          <div class="cam-top">
+            <button class="cam-rbtn" id="camClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+            <div class="cam-timer" id="camTimer">0:00</div>
+            <button class="cam-rbtn" id="camFlash2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg></button>
+          </div>
+          <div class="cam-bottom">
+            <div class="cam-controls">
+              <button class="cam-sbtn" id="camGallery"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></button>
+              <button class="cam-shutter" id="camShutter"><span class="inner"></span></button>
+              <button class="cam-sbtn" id="camFlip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 21v-5h5M21 3v5h-5"/></svg></button>
+            </div>
+            <div class="cam-modes">
+              <button class="cam-mode" data-mode="video">Video</button>
+              <button class="cam-mode active" data-mode="photo">Photo</button>
+              <button class="cam-mode" data-mode="vnote">Video note</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Scrim -->
+      <div class="scrim" id="scrim"></div>
+
+      <!-- Profile drawer -->
+      <aside class="drawer closed" id="drawer">
+        <div class="drawer-head">
+          <h2>Profile Details</h2>
+          <button class="iconbtn" id="closeBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="drawer-body" id="drawerBody">
+          <!-- Hero -->
+          <div class="hero">
+            <div class="avatar">AM<span class="pres"></span></div>
+            <div class="name">Aarav Mehta</div>
+            <div class="phone" id="copyPhone">
+              <span>+91 90431 80025</span>
+              <span class="copy" id="copyIcon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="quick-actions">
+            <button class="qa"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.8 2.1z"/></svg></span><span class="qa-lbl">Call</span></button>
+            <button class="qa" id="muteQa"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><span class="qa-lbl">Mute</span></button>
+          </div>
+
+          <!-- Accordion -->
+          <div class="accordion" id="accordion">
+
+            <!-- ASSIGNED AGENT -->
+            <div class="section open" data-sec="agent">
+              <button class="sec-head">
+                <span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M17 11l2 2 4-4"/></svg></span>
+                <span class="sec-title">Assigned Agent</span>
+                <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </button>
+              <div class="sec-body"><div class="sec-inner"><div class="sec-pad">
+                <label class="field-lbl">Conversation owner</label>
+                <select class="select js-uxdd-skip" id="agentSelect">
+                  <option value="">Select agent to assign</option>
+                  <option value="Priya Nair">Priya Nair · Sales</option>
+                  <option value="Rohan Das" selected>Rohan Das · Support</option>
+                  <option value="Sneha Iyer">Sneha Iyer · Support</option>
+                  <option value="Vikram Joshi">Vikram Joshi · Manager</option>
+                </select>
+                <div id="agentAssigned" style="margin-top:14px;"></div>
+              </div></div></div>
+            </div>
+
+            <!-- STATUS DETAILS -->
+            <div class="section open" data-sec="status">
+              <button class="sec-head">
+                <span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+                <span class="sec-title">Status Details</span>
+                <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </button>
+              <div class="sec-body"><div class="sec-inner"><div class="sec-pad">
+                <div class="kv-list">
+                  <div class="kv"><span class="k">User Active Status</span><span class="v">1 hr ago</span></div>
+                  <div class="kv"><span class="k">Last Conversation</span><span class="v">02 Jun, 11:00 AM</span></div>
+                  <div class="kv"><span class="k">Template Messages</span><span class="v muted">0</span></div>
+                  <div class="kv"><span class="k">Session Messages</span><span class="v">88</span></div>
+                  <div class="kv"><span class="k">First User Message</span><span class="v muted">—</span></div>
+                  <div class="kv"><span class="k">Lead Status</span>
+                    <div class="lead-status-wrap" id="leadStatusWrap"></div>
+                  </div>
+                  <div class="kv"><span class="k">Groups</span>
+                    <span class="group-row">
+                      <span class="group-chip">VK</span>
+                      <button class="icon-add" id="addGroup" title="Add to group">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                      </button>
+                    </span>
+                  </div>
+                </div>
+              </div></div></div>
+            </div>
+
+            <!-- ACTIVE SESSIONS -->
+            <div class="section" data-sec="sessions">
+              <button class="sec-head">
+                <span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+                <span class="sec-title">Active Sessions</span>
+                <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </button>
+              <div class="sec-body"><div class="sec-inner"><div class="sec-pad">
+                <div class="session-block">
+                  <div class="session-lbl"><span class="dot"></span>Service Window · Utility</div>
+                  <div class="timer-grid" data-timer="utility" data-deadline-h="22" data-deadline-m="35" data-deadline-s="25">
+                    <div class="timer-cell"><div class="num" data-hh>22</div><div class="unit">HOURS</div></div>
+                    <div class="timer-cell"><div class="num" data-mm>35</div><div class="unit">MINS</div></div>
+                    <div class="timer-cell"><div class="num" data-ss>25</div><div class="unit">SECS</div></div>
+                  </div>
+                </div>
+              </div></div></div>
+            </div>
+
+            <!-- PAYMENTS -->
+            <div class="section" data-sec="payments">
+              <button class="sec-head">
+                <span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+                <span class="sec-title">Payments</span>
+                <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </button>
+              <div class="sec-body"><div class="sec-inner"><div class="sec-pad">
+                <div id="invItems"></div>
+                <div class="add-row">
+                  <button class="btn btn-ghost" id="addItem">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    Add Item
+                  </button>
+                  <div class="subtotal"><div class="l">Subtotal</div><div class="v" id="subtotalView">₹0.00</div></div>
+                </div>
+                <label class="field-lbl">Description <span style="color:var(--ink-4);font-weight:500">(optional)</span></label>
+                <textarea class="textarea" rows="2" placeholder="Add some details…"></textarea>
+                <div class="adj-grid">
+                  <div><label class="field-lbl">Discount (₹)</label><input class="input pay-adj" id="discount" type="number" min="0" value="0"></div>
+                  <div><label class="field-lbl">Shipping (₹)</label><input class="input pay-adj" id="shipping" type="number" min="0" value="0"></div>
+                </div>
+                <div style="margin-top:12px;"><label class="field-lbl">Tax Rate (%)</label><input class="input pay-adj" id="taxRate" type="number" min="0" value="5"></div>
+                <div class="totals">
+                  <div class="tr"><span>Subtotal</span><span class="amt" id="tSub">₹0.00</span></div>
+                  <div class="tr"><span>Discount</span><span class="amt" id="tDisc">−₹0.00</span></div>
+                  <div class="tr"><span>Shipping</span><span class="amt" id="tShip">₹0.00</span></div>
+                  <div class="tr"><span>Tax</span><span class="amt" id="tTax">₹0.00</span></div>
+                  <div class="tr grand"><span>Total</span><span class="amt" id="tGrand">₹0.00</span></div>
+                </div>
+                <button class="btn btn-primary btn-block" style="margin-top:16px;" id="sendInvoice">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                  Send Payment Link
+                </button>
+              </div></div></div>
+            </div>
+
+            <!-- CATALOGS -->
+            <div class="section" data-sec="catalogs">
+              <button class="sec-head">
+                <span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></span>
+                <span class="sec-title">Catalogs</span>
+                <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </button>
+              <div class="sec-body"><div class="sec-inner"><div class="sec-pad">
+                <div class="catalog-card" id="catalogCard">
+                  <div class="thumb">🍔</div>
+                  <div class="ci"><div class="t">Burger Street</div><div class="s">12 products · synced 2h ago</div></div>
+                  <span class="chev" style="color:var(--ink-4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+                </div>
+                <div id="catalogProducts" style="display:none;margin-top:10px;"></div>
+              </div></div></div>
+            </div>
+
+            <!-- CUSTOMER JOURNEY -->
+            <div class="section" data-sec="journey">
+              <button class="sec-head">
+                <span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M6 9v6M20 6h-7a4 4 0 0 0-4 4v8"/></svg></span>
+                <span class="sec-title">Customer Journey</span>
+                <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </button>
+              <div class="sec-body"><div class="sec-inner"><div class="sec-pad">
+                <div class="timeline" id="timeline"></div>
+              </div></div></div>
+            </div>
+
+            <!-- TAGS -->
+            <div class="section" data-sec="tags">
+              <button class="sec-head">
+                <span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.4V4a2 2 0 0 1 2-2h7.6a2 2 0 0 1 1.4.6l6.8 6.8a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span>
+                <span class="sec-title">Tags</span>
+                <span class="sec-count" id="tagCount">2</span>
+                <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </button>
+              <div class="sec-body"><div class="sec-inner"><div class="sec-pad">
+                <div class="chips" id="tagChips"></div>
+                <div class="tag-input-row">
+                  <input class="input" id="tagInput" placeholder="Add a tag…" maxlength="24">
+                  <button class="icon-add" id="addTag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                </div>
+              </div></div></div>
+            </div>
+
+            <!-- NOTES -->
+            <div class="section" data-sec="notes">
+              <button class="sec-head">
+                <span class="sec-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M19 8v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7z"/><path d="M9 13h6M9 17h4"/></svg></span>
+                <span class="sec-title">Notes</span>
+                <span class="sec-count" id="noteCount">1</span>
+                <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+              </button>
+              <div class="sec-body"><div class="sec-inner"><div class="sec-pad">
+                <div class="note-list" id="noteList"></div>
+                <div class="tag-input-row" style="align-items:flex-start;">
+                  <textarea class="textarea" id="noteInput" rows="2" maxlength="500" placeholder="Type a note…"></textarea>
+                  <button class="icon-add" id="addNote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                </div>
+                <div class="note-counter" id="noteCounter">0/500</div>
+              </div></div></div>
+            </div>
+
+          </div>
+        </div>
+      </aside>
+
+      <!-- ============ LEAD SETTINGS PANE ============ -->
+        <section class="app-pane" id="app-leadsettings" data-screen-label="Lead Settings"></section>
+
+      <!-- ============ GLOBAL SIDEBAR ============ -->
+      <div class="side-scrim" id="sideScrim"></div>
+      <aside class="sidebar" id="sidebar">
+        <div class="side-logo" data-route="profile" role="button" tabindex="0" title="Open profile" style="cursor:pointer">
+          <img class="mark" src="assets/askeva-logo.png" alt="AskEva">
+          <span><span class="wm">Eshan</span></span>
+        </div>
+        <nav class="side-nav">
+          <button class="side-item" data-route="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+            <span class="lbl">Dashboard</span>
+          </button>
+          <button class="side-item" data-route="contacts">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z"/><path d="M4 4v16"/><circle cx="11" cy="10" r="2.3"/><path d="M7.5 16c0-1.8 1.6-2.7 3.5-2.7s3.5.9 3.5 2.7"/></svg>
+            <span class="lbl">Contacts</span>
+          </button>
+          <button class="side-item" data-route="compose">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-8-6 16-3-7-7-1Z"/><path d="M11 13l9-9"/></svg>
+            <span class="lbl">Compose Message</span>
+          </button>
+          <button class="side-item" data-route="chats">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/><circle cx="5.2" cy="6.4" r=".7" fill="currentColor" stroke="none"/><circle cx="8" cy="6.4" r=".7" fill="currentColor" stroke="none"/><circle cx="10.8" cy="6.4" r=".7" fill="currentColor" stroke="none"/></svg>
+            <span class="lbl">Chats</span><span class="badge">3</span>
+          </button>
+          <button class="side-item" data-route="leads">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-2.7 2.5-4.2 5.5-4.2s5.5 1.5 5.5 4.2"/><path d="M16 5.5a3 3 0 0 1 0 5.8M17.5 14.8c2 .6 3.5 1.8 3.5 4.2"/></svg>
+            <span class="lbl">Leads</span><span class="badge">6</span>
+          </button>
+          <button class="side-item" data-route="appointments">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span class="lbl">Appointments</span>
+          </button>
+          <button class="side-item" data-route="ticketing">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 6v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-6z"/><path d="M14 5v14" stroke-dasharray="2 2"/></svg>
+            <span class="lbl">Ticketing</span>
+          </button>
+          <button class="side-item" data-route="profile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg>
+            <span class="lbl">Profile</span>
+          </button>
+          <button class="side-item" data-route="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="lbl">Settings</span>
+          </button>
+        </nav>
+        <div class="side-foot">
+          <button class="side-logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 8 6 12l4 4M6 12h9"/></svg>
+            <span class="lbl">Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ============ PICKER SHEET (month / priority) ============ -->
+      <div class="picker-scrim" id="pickerScrim"></div>
+      <div class="picker-sheet" id="pickerSheet">
+        <div class="picker-grab"></div>
+        <div class="picker-title" id="pickerTitle">Select</div>
+        <div class="picker-list" id="pickerList"></div>
+      </div>
+
+      <!-- ============ LOGOUT CONFIRM ============ -->
+      <div class="lo-scrim" id="logoutModal">
+        <div class="lo-modal">
+          <div class="lo-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 8 6 12l4 4M6 12h9"/></svg></div>
+          <div class="lo-ttl">Log out?</div>
+          <div class="lo-sub">You'll need to sign in again to access your AskEva workspace.</div>
+          <div class="lo-actions">
+            <button class="lo-btn ghost" id="logoutCancel">Cancel</button>
+            <button class="lo-btn danger" id="logoutConfirm">Log out</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ OTP — VERIFY PHONE ============ -->
+      <div class="lo-scrim" id="otpVerifyModal">
+        <div class="lo-modal vp-modal">
+          <button type="button" class="vp-close" id="otpVerifyClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <div class="vp-ttl">verify your phone number!!</div>
+          <div class="vp-sub">Your registered phone number is: <b id="otpVerifyPhone">********4322</b></div>
+          <button type="button" class="login-btn" id="otpVerifySend">Send OTP</button>
+        </div>
+      </div>
+
+      <!-- ============ SPLASH SCREEN (boot animation) ============ -->
+      <div class="splash-screen" id="splashScreen" data-screen-label="Splash">
+        <div class="splash-bg"></div>
+        <img class="splash-logo" src="assets/askeva-logo.png" alt="ASK EVA">
+        <div class="splash-orb">
+          <span class="orb-ring"></span>
+          <span class="orb-ring r2"></span>
+          <span class="orb-ring r3"></span>
+          <div class="orb-disc"><img class="orb-robot" src="assets/eva-robot.png" alt="Eva"></div>
+          <span class="orb-spark s1"></span>
+          <span class="orb-spark s2"></span>
+          <span class="orb-spark s3"></span>
+          <span class="orb-spark s4"></span>
+        </div>
+        <div class="splash-cap">
+          <div class="splash-load"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+
+      <!-- ============ LOGIN / SIGN-IN SCREEN ============ -->
+      <div class="login-screen" id="loginScreen" data-screen-label="Login">
+
+        <div class="login-top">
+          <div class="login-brand">
+            <img class="brand-logo" src="assets/askeva-logo.png" alt="ASK EVA">
+            <div class="brand-welcome">Welcome</div>
+          </div>
+        </div>
+
+        <div class="login-content">
+          <h1 class="signin-title" id="signinTitle">Sign in<span class="ul"></span></h1>
+
+          <!-- password sign-in -->
+          <form class="login-form" id="loginPwForm" autocomplete="off" novalidate>
+            <div class="ufield">
+              <label class="ufield-lab" for="loginEmail">Email</label>
+              <div class="uf" id="lfEmail">
+                <span class="uf-lead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 5.5L20 7"/></svg></span>
+                <span class="uf-div"></span>
+                <input type="email" id="loginEmail" value="eshan@tunepath.com" placeholder="demo@email.com" autocomplete="username">
+              </div>
+            </div>
+            <div class="ufield">
+              <label class="ufield-lab" for="loginPw">Password</label>
+              <div class="uf" id="lfPw">
+                <span class="uf-lead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+                <span class="uf-div"></span>
+                <input type="password" id="loginPw" value="AEint0497" placeholder="enter your password" autocomplete="current-password">
+                <button type="button" class="uf-eye" id="loginEye" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" class="eye-slash"/></svg></button>
+              </div>
+            </div>
+            <div class="login-row">
+              <label class="remember"><input type="checkbox" id="rememberMe" checked><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4 10-11"/></svg></span>Remember Me</label>
+              <button type="button" class="link" id="forgotPw">Forgot Password?</button>
+            </div>
+            <div class="login-err" id="loginErr"></div>
+            <button type="submit" class="login-btn" id="loginSubmit">Login</button>
+            <button type="button" class="login-btn otp-btn" id="loginToOtp">Login with OTP</button>
+          </form>
+
+          <!-- OTP sign-in -->
+          <form class="login-form" id="loginOtpForm" autocomplete="off" novalidate hidden>
+            <div id="otpEmailStep">
+              <div class="otp-hint">Enter your registered email — we'll text a 6-digit code to the mobile number linked to it.</div>
+              <div class="ufield"><label class="ufield-lab" for="otpEmailInput">Registered email</label>
+                <div class="uf"><input type="email" id="otpEmailInput" placeholder="you@company.com" autocomplete="email" spellcheck="false"></div></div>
+              <div class="login-err" id="otpEmailErr"></div>
+              <button type="button" class="login-btn" id="otpSendBtn">Send OTP</button>
+              <button type="button" class="otp-link" id="otpToPw">Use password instead</button>
+            </div>
+            <div id="otpCodeStep" hidden>
+              <div class="otp-hint">Code sent to <b id="otpPhone">your registered number</b><br><span style="color:var(--ink-3);font-weight:600">registered with <b id="otpEmail">eshan@tunepath.com</b></span></div>
+              <div class="otp-row" id="otpRow">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 1">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 2">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 3">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 5">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 6">
+              </div>
+              <div class="login-err" id="otpErr"></div>
+              <button type="submit" class="login-btn" id="otpSubmit">Verify &amp; Sign In</button>
+            </div>
+          </form>
+
+          <!-- Two-Factor Authentication (authenticator app) -->
+          <form class="login-form" id="login2faForm" autocomplete="off" novalidate hidden>
+            <div class="twofa-h">Two-Factor Authentication</div>
+            <div class="otp-hint">Enter the code from your authenticator app</div>
+            <div class="ufield"><label class="ufield-lab">Authentication Code</label>
+              <div class="otp-row" id="twofaRow">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 1">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 2">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 3">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 5">
+                <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 6">
+              </div></div>
+            <div class="otp-sub">Enter the 6-digit code from your authenticator app</div>
+            <div class="login-err" id="twofaErr"></div>
+            <button type="submit" class="login-btn" id="twofaSubmit">Verify Code</button>
+            <div class="twofa-foot"><button type="button" class="otp-link" id="twofaBack">&larr; Back to login</button><button type="button" class="otp-link" id="twofaUseBackup">Use backup code instead</button></div>
+          </form>
+
+          <!-- Two-Factor Authentication (backup code) -->
+          <form class="login-form" id="loginBkForm" autocomplete="off" novalidate hidden>
+            <div class="twofa-h">Two-Factor Authentication</div>
+            <div class="otp-hint">Enter one of your backup codes</div>
+            <div class="ufield"><label class="ufield-lab">Backup Code</label>
+              <div class="uf" id="lfBk"><input type="text" id="bkCodeInput" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"></div></div>
+            <div class="otp-sub">Enter one of your backup codes (e.g., ae8c-61b8)</div>
+            <div class="login-err" id="bkErr"></div>
+            <button type="submit" class="login-btn" id="bkSubmit">Verify Code</button>
+            <div class="twofa-foot"><button type="button" class="otp-link" id="bkBack">&larr; Back to login</button><button type="button" class="otp-link" id="bkUseAuth">Use authenticator app</button></div>
+          </form>
+
+          <!-- Sign up -->
+          <form class="login-form" id="loginSignupForm" autocomplete="off" novalidate hidden>
+            <div class="ufield">
+              <label class="ufield-lab" for="suCompany">Company Name</label>
+              <div class="uf" id="suCompanyWrap"><input type="text" id="suCompany" placeholder="Enter company name" autocomplete="off"></div>
+            </div>
+            <div class="ufield">
+              <label class="ufield-lab" for="suContact">Primary Contact Name</label>
+              <div class="uf" id="suContactWrap"><input type="text" id="suContact" placeholder="Enter primary contact name" autocomplete="off"></div>
+            </div>
+            <div class="ufield">
+              <label class="ufield-lab">Phone Number</label>
+              <div class="uf-row">
+                <div class="uf uf-cc"><select id="suCC" aria-label="Country code">
+                  <option value="+91">+91</option><option value="+1">+1</option><option value="+44">+44</option><option value="+971">+971</option><option value="+61">+61</option><option value="+65">+65</option>
+                </select></div>
+                <div class="uf" id="suPhoneWrap"><input type="tel" id="suPhone" inputmode="numeric" placeholder="Enter WhatsApp number" autocomplete="off"></div>
+              </div>
+            </div>
+            <div class="ufield">
+              <label class="ufield-lab" for="suEmail">Email</label>
+              <div class="uf" id="suEmailWrap">
+                <span class="uf-lead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 5.5L20 7"/></svg></span>
+                <span class="uf-div"></span>
+                <input type="email" id="suEmail" placeholder="Enter email address" autocomplete="off">
+              </div>
+            </div>
+            <div class="ufield">
+              <label class="ufield-lab" for="suPw">Password</label>
+              <div class="uf" id="suPwWrap">
+                <span class="uf-lead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+                <span class="uf-div"></span>
+                <input type="password" id="suPw" placeholder="Create a password" autocomplete="new-password">
+                <button type="button" class="uf-eye" data-eye="suPw" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" class="eye-slash"/></svg></button>
+              </div>
+            </div>
+            <div class="ufield">
+              <label class="ufield-lab" for="suPw2">Confirm Password</label>
+              <div class="uf" id="suPw2Wrap">
+                <span class="uf-lead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+                <span class="uf-div"></span>
+                <input type="password" id="suPw2" placeholder="Confirm your password" autocomplete="new-password">
+                <button type="button" class="uf-eye" data-eye="suPw2" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18" class="eye-slash"/></svg></button>
+              </div>
+            </div>
+            <div class="login-err" id="signupErr"></div>
+            <button type="submit" class="login-btn" id="signupSubmit">Sign up</button>
+            <div class="signup-line">Already have an account? <button type="button" class="link" id="toLoginFromSignup">Login instead</button></div>
+          </form>
+
+          <!-- Forgot password -->
+          <form class="login-form" id="loginForgotForm" autocomplete="off" novalidate hidden>
+            <div class="otp-hint">Enter your registered email — we'll send an OTP to the mobile number linked to it.</div>
+            <div class="ufield">
+              <label class="ufield-lab" for="fpEmail">Email</label>
+              <div class="uf" id="fpEmailWrap">
+                <span class="uf-lead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 5.5L20 7"/></svg></span>
+                <span class="uf-div"></span>
+                <input type="email" id="fpEmail" placeholder="Enter your email address" autocomplete="username">
+              </div>
+            </div>
+            <div class="login-err" id="forgotErr"></div>
+            <button type="submit" class="login-btn" id="forgotSubmit">Send</button>
+            <div class="signup-line">Remembered it? <button type="button" class="link" id="toLoginFromForgot">Back to login</button></div>
+          </form>
+
+          <div class="signup-line" id="signupLine">Don't have an Account? <button type="button" class="link" id="signUp">Sign up</button></div>
+          <div class="login-pb">powered by askeva</div>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+  <!-- toast (moved inside #screen so it anchors to the phone, not the viewport) -->
+</div>
+
+<script src="profile.js?v=13"></script>
+<script src="chat.js?v=43"></script>
+<script src="app-shell.merged.js?v=16"></script>
+<script src="settings-roles.js?v=6"></script>
+<script src="settings-agents.js?v=16"></script>
+<script src="appointments.js?v=15"></script>
+<script src="appointments-detail.js?v=31"></script>
+<script src="audio-note.js?v=3"></script>
+<script src="appointments-detail2.js?v=25"></script>
+<script src="appointments-dashboard.js?v=6"></script>
+<script src="appointments-bookings.js?v=20"></script>
+<script src="appointments-payments.js?v=2"></script>
+<script src="appointments-settings.js?v=14"></script>
+<script src="ticketing.js?v=7"></script>
+<script src="chart-theme.js?v=3"></script>
+<script src="ticketing-dashboard.js?v=11"></script>
+<script src="ticketing-tickets.js?v=39"></script>
+<script src="ticketing-detail.js?v=27"></script>
+<script src="ticketing-settings.js?v=12"></script>
+<script src="ticketing-settings2.js?v=7"></script>
+<script src="settings-qr.js?v=6"></script>
+<script src="settings-userattrs.js?v=4"></script>
+<script src="settings-security.js?v=5"></script>
+<script src="team-people.js?v=3"></script>
+<script src="shared-library.js?v=8"></script>
+<script src="country-codes.js?v=10"></script>
+<script src="leads-module.js?v=65"></script>
+<script src="dash-perf.js?v=17"></script>
+<script src="lead-settings.js?v=19"></script>
+<script src="home-dashboard.js?v=12"></script>
+<script src="notifications.js?v=7"></script>
+<script src="push-alerts.js?v=6"></script>
+<script src="profile-page.js?v=12"></script>
+<script src="merge-unify.js?v=5"></script>
+<script src="leads-interactions.js?v=10"></script>
+<script src="subscription.js?v=11"></script>
+<script src="datepicker.js?v=9"></script>
+<script src="compose-message.js?v=14"></script>
+<script src="contacts.js?v=14"></script>
+<script src="contacts2.js?v=13"></script>
+<script src="sync-layer.js?v=4"></script>
+<script src="web-refine.js?v=4"></script>
+<script>
+/* live status-bar clock in Indian Standard Time (GMT+5:30) */
+(function () {
+  function tickClock() {
+    var el = document.querySelector(".status-bar .clock");
+    if (!el) return;
+    var o = new Date();
+    var d = new Date(o.getTime() + (o.getTimezoneOffset() + 330) * 60000);
+    var h = d.getHours(), m = d.getMinutes();
+    h = h % 12 || 12;
+    var txt = h + ":" + (m < 10 ? "0" + m : m);
+    // keep any child nodes (sync chip) intact — only update the leading time text node
+    if (el.firstChild && el.firstChild.nodeType === 3) el.firstChild.nodeValue = txt;
+    else el.textContent = txt;
+  }
+  tickClock();
+  setInterval(tickClock, 15000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) tickClock(); });
+})();
+
+/* ------------------------------------------------------------------
+   Suppress the browser's autofill / saved-email / password dropdown
+   on every text field across the app. Chrome ignores autocomplete="off"
+   for fields it heuristically treats as username/email, so each field
+   gets a unique non-standard autocomplete token (which matches no known
+   field type → no dropdown), plus the password-manager opt-out hints.
+   Re-applied as modules render new inputs.
+   ------------------------------------------------------------------ */
+(function () {
+  var SKIP = { checkbox: 1, radio: 1, file: 1, range: 1, color: 1, submit: 1, button: 1, hidden: 1 };
+  var seed = 0;
+  function stamp(el) {
+    if (!el || el.__noAutofill) return;
+    var tag = el.tagName;
+    if (tag !== "INPUT" && tag !== "TEXTAREA") return;
+    if (tag === "INPUT" && SKIP[(el.type || "text").toLowerCase()]) return;
+    el.__noAutofill = true;
+    // a unique, non-standard token defeats Chrome's field-type heuristics
+    el.setAttribute("autocomplete", "off-" + (Date.now().toString(36)) + (seed++).toString(36));
+    el.setAttribute("autocorrect", "off");
+    el.setAttribute("autocapitalize", "off");
+    el.setAttribute("spellcheck", "false");
+    el.setAttribute("data-1p-ignore", "true");   // 1Password
+    el.setAttribute("data-lpignore", "true");     // LastPass
+    el.setAttribute("data-bwignore", "true");     // Bitwarden
+    el.setAttribute("data-form-type", "other");
+  }
+  // Decoy username/password pair: Chrome binds its "saved password / email"
+  // dropdown to a recognised username+password field. With every visible field
+  // carrying a bogus autocomplete token, Chrome falls back to offering the saved
+  // login on whatever input is focused. These hidden, focusable decoys give it a
+  // proper pair to attach to instead, so the popup never lands on real fields.
+  function addDecoys() {
+    if (!document.body || document.getElementById("__af_decoy")) return;
+    var d = document.createElement("div");
+    d.id = "__af_decoy";
+    d.setAttribute("aria-hidden", "true");
+    d.style.cssText = "position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;";
+    var u = document.createElement("input");
+    u.type = "text"; u.name = "username"; u.tabIndex = -1; u.setAttribute("autocomplete", "username"); u.__noAutofill = true;
+    var p = document.createElement("input");
+    p.type = "password"; p.name = "password"; p.tabIndex = -1; p.setAttribute("autocomplete", "current-password"); p.__noAutofill = true;
+    d.appendChild(u); d.appendChild(p);
+    document.body.insertBefore(d, document.body.firstChild);
+  }
+  function sweep(root) {
+    try { (root || document).querySelectorAll("input, textarea").forEach(stamp); } catch (e) {}
+  }
+  // also neutralise any <form> so it isn't treated as a login form
+  function sweepForms(root) {
+    try { (root || document).querySelectorAll("form").forEach(function (f) { if (!f.getAttribute("autocomplete")) f.setAttribute("autocomplete", "off"); }); } catch (e) {}
+  }
+  function run() { addDecoys(); sweep(); sweepForms(); }
+  if (document.readyState !== "loading") run();
+  else document.addEventListener("DOMContentLoaded", run);
+  // catch dynamically-rendered inputs the instant they're added
+  try {
+    var obs = new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var ns = muts[i].addedNodes;
+        for (var j = 0; j < ns.length; j++) {
+          var n = ns[j]; if (n.nodeType !== 1) continue;
+          if (n.tagName === "INPUT" || n.tagName === "TEXTAREA") stamp(n);
+          else { sweep(n); sweepForms(n); }
+        }
+      }
+    });
+    obs.observe(document.documentElement, { childList: true, subtree: true });
+  } catch (e) {}
+  // belt-and-braces: re-stamp the field right as it's focused, before the
+  // browser has a chance to render its dropdown
+  document.addEventListener("focusin", function (e) { stamp(e.target); }, true);
+})();
+</script>
+
+<template id="__bundler_thumbnail" data-bg-color="#3DC838">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#3DC838"/>
+    <g fill="#ffffff">
+      <rect x="360" y="250" width="480" height="300" rx="28"/>
+      <path d="M520 550 L520 640 L610 550 Z"/>
+    </g>
+    <text x="600" y="375" font-family="Arial, sans-serif" font-size="120" font-weight="900" fill="#3DC838" text-anchor="middle">ASK</text>
+    <text x="600" y="500" font-family="Arial, sans-serif" font-size="120" font-weight="900" fill="#3DC838" text-anchor="middle">EVA</text>
+  </svg>
+</template>
+</body>
+</html>

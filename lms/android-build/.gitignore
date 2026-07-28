@@ -1,0 +1,6 @@
+# Build artifacts
+node_modules/
+android/
+*.log
+.DS_Store
+.gradle/

@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "AskEva",
+    "slug": "askeva-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTabletMode": false,
+      "bundleIdentifier": "io.askeva.mobile"
+    },
+    "android": {
+      "package": "io.askeva.mobile",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      
+    ]
+  }
+}

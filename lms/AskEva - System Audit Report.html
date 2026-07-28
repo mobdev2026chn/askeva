@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AskEva · System Audit Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand-300:#85D653; --brand-400:#5BCC4A; --brand-500:#3CC23F; --brand-600:#2BA84A; --brand-700:#177A36;
+    --tint-50:#EAF9E6; --tint-100:#DCF3D6; --tint-border:#CDEAC4;
+    --canvas:#F6F8F5; --surface:#fff; --line:#EEF1EC;
+    --ink:#15231A; --ink-2:#4D5D52; --ink-3:#8A978D;
+    --info:#3B82F6; --hot:#F2542D; --warm:#F5B829; --cold:#5AB6E8; --grey:#9AA39C; --coral:#EF5350;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; background:var(--canvas); color:var(--ink); font-family:var(--sans);
+    font-size:15px; line-height:1.55; letter-spacing:-.005em;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:40px 26px 90px; }
+
+  /* ---- header ---- */
+  .masthead{
+    background:linear-gradient(135deg,#2BA84A 0%,#3CC23F 48%,#5BCC4A 100%);
+    border-radius:26px; padding:34px 34px 30px; color:#fff; position:relative; overflow:hidden;
+    box-shadow:0 24px 50px -26px rgba(23,122,54,.7);
+  }
+  .masthead::after{
+    content:""; position:absolute; inset:0; opacity:.16; pointer-events:none;
+    background-image:repeating-linear-gradient(125deg,#fff 0 1px,transparent 1px 26px),repeating-linear-gradient(55deg,#fff 0 1px,transparent 1px 26px);
+    mask-image:radial-gradient(120% 120% at 85% 10%,#000,transparent 70%);
+  }
+  .mh-eyebrow{ font-size:12px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; opacity:.9; }
+  .mh-title{ font-size:34px; font-weight:800; letter-spacing:-.025em; margin:8px 0 6px; line-height:1.05; }
+  .mh-sub{ font-size:14.5px; font-weight:600; opacity:.95; max-width:54ch; }
+  .mh-meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; position:relative; z-index:1; }
+  .mh-chip{
+    background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:700;
+  }
+
+  /* ---- section ---- */
+  section{ margin-top:38px; }
+  .sec-h{ display:flex; align-items:baseline; gap:12px; margin:0 4px 14px; }
+  .sec-n{ font-family:var(--mono); font-size:13px; font-weight:600; color:var(--brand-600); }
+  .sec-h h2{ font-size:20px; font-weight:800; letter-spacing:-.02em; margin:0; }
+  .lead-p{ margin:0 4px 16px; color:var(--ink-2); font-size:15px; font-weight:500; max-width:74ch; }
+  .lead-p strong{ color:var(--ink); font-weight:700; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:22px 24px;
+    box-shadow:0 1px 2px rgba(21,35,26,.04),0 12px 28px -22px rgba(21,35,26,.4);
+  }
+  .card + .card{ margin-top:14px; }
+
+  /* ---- stat strip ---- */
+  .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .stat{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 16px 14px; }
+  .stat b{ display:block; font-size:26px; font-weight:800; letter-spacing:-.03em; color:var(--brand-700); }
+  .stat span{ font-size:12px; font-weight:700; color:var(--ink-3); letter-spacing:.01em; }
+
+  /* ---- tables ---- */
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{ text-align:left; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); padding:0 12px 9px; border-bottom:1px solid var(--line); }
+  td{ padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); font-weight:500; }
+  tr:last-child td{ border-bottom:none; }
+  td b, td .nm{ color:var(--ink); font-weight:700; }
+  code{ font-family:var(--mono); font-size:12px; background:var(--tint-50); color:var(--brand-700); padding:2px 6px; border-radius:6px; font-weight:600; }
+  .tbl-card{ overflow:hidden; padding:18px 12px 8px; }
+
+  /* ---- pills ---- */
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; letter-spacing:.02em; white-space:nowrap; }
+  .pill.ok{ background:var(--tint-50); color:var(--brand-700); border:1px solid var(--tint-border); }
+  .pill.no{ background:#FDECEC; color:#C1352F; border:1px solid #F6D4D2; }
+  .pill.part{ background:#FFF4DC; color:#9A6B00; border:1px solid #F6E2AE; }
+  .sev{ display:inline-block; font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:6px; letter-spacing:.04em; text-transform:uppercase; }
+  .sev.high{ background:#FDECEC; color:#C1352F; }
+  .sev.med{ background:#FFF4DC; color:#9A6B00; }
+  .sev.low{ background:var(--tint-50); color:var(--brand-700); }
+  .sev.info{ background:#EAF1FB; color:#2B6CB0; }
+
+  /* ---- finding ---- */
+  .finding{ border:1px solid var(--line); border-radius:18px; padding:18px 20px; background:var(--surface); }
+  .finding + .finding{ margin-top:12px; }
+  .finding.done{ border-color:var(--tint-border); background:linear-gradient(180deg,#FBFEF9,#fff); }
+  .f-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .f-top h3{ font-size:15.5px; font-weight:800; margin:0; letter-spacing:-.01em; }
+  .f-tag{ font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+  .f-tag.fixed{ color:var(--brand-700); }
+  .f-tag.open{ color:#9A6B00; }
+  .finding p{ margin:6px 0; color:var(--ink-2); font-size:13.8px; }
+  .finding .why{ color:var(--ink-3); font-size:12.5px; }
+  .finding .ev{ font-family:var(--mono); font-size:11.5px; color:var(--ink-3); }
+  .finding .fix{ color:var(--ink); font-weight:600; font-size:13.5px; }
+  .finding .fix::before{ content:"→ "; color:var(--brand-600); font-weight:800; }
+
+  ul.clean{ margin:8px 0 0; padding-left:20px; }
+  ul.clean li{ margin:5px 0; color:var(--ink-2); font-size:13.8px; }
+  ul.clean li b{ color:var(--ink); }
+
+  .note{ font-size:12.5px; color:var(--ink-3); margin-top:10px; font-style:italic; }
+  .map-flow{ font-family:var(--mono); font-size:12.5px; color:var(--brand-700); background:var(--tint-50); border:1px solid var(--tint-border); border-radius:10px; padding:9px 13px; margin:6px 0; }
+  .map-flow.gap{ color:#9A6B00; background:#FFF7E6; border-color:#F6E2AE; }
+
+  .foot{ margin-top:46px; text-align:center; color:var(--ink-3); font-size:12px; }
+  .foot b{ color:var(--brand-700); }
+
+  @media (max-width:620px){
+    .stats{ grid-template-columns:repeat(2,1fr); }
+    .mh-title{ font-size:27px; }
+    .tbl-card{ overflow-x:auto; }
+    table{ min-width:540px; }
+  }
+  @media print{
+    body{ background:#fff; }
+    .wrap{ padding:0; max-width:none; }
+    .masthead{ box-shadow:none; }
+    .card,.finding,.stat{ box-shadow:none; }
+    section{ break-inside:avoid; }
+    .finding{ break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="mh-eyebrow">System Audit · Pass 1</div>
+    <div class="mh-title">AskEva CRM — End-to-End Audit</div>
+    <div class="mh-sub">Full discovery of the merged application, a single-source-of-truth analysis of every data store, and the fixes implemented in this pass.</div>
+    <div class="mh-meta">
+      <span class="mh-chip">Target · AskEva App - Merged.html</span>
+      <span class="mh-chip">1 shell · 28 JS modules · 25 stylesheets</span>
+      <span class="mh-chip">9 Jun 2026</span>
+    </div>
+  </header>
+
+  <!-- EXEC SUMMARY -->
+  <section>
+    <div class="sec-h"><span class="sec-n">00</span><h2>Executive summary</h2></div>
+    <p class="lead-p">
+      AskEva is a <strong>client-side mobile CRM</strong>: an HTML shell that loads 28 self-contained JavaScript modules, each owning one screen and persisting its own state to the browser's <code>localStorage</code>. There is no server, database, or network API in the codebase — so &ldquo;database&rdquo;, &ldquo;API&rdquo; and &ldquo;sync&rdquo; in the brief all resolve to <strong>localStorage reads/writes and in-memory state</strong>.
+    </p>
+    <p class="lead-p">
+      The app is <strong>substantially more complete and connected than a typical prototype</strong>. Create flows are real (including a working camera business-card scanner), most settings persist, the dashboard computes from live lead data, navigation already preserves scroll position and offers a &ldquo;back to&rdquo; return pill, and subscription is a clean single source of truth feeding both Profile and Dashboard. The audit therefore focused on finding the <strong>genuine</strong> gaps rather than rebuilding working features.
+    </p>
+    <div class="stats">
+      <div class="stat"><b>9</b><span>Persisted stores audited</span></div>
+      <div class="stat"><b>3</b><span>Defects fixed this pass</span></div>
+      <div class="stat"><b>1</b><span>Core entity had no persistence</span></div>
+      <div class="stat"><b>2</b><span>Open items for next pass</span></div>
+    </div>
+    <p class="note">Headline issue: <b>Leads</b> — the hub entity every other module references — was the one major store with <b>no persistence at all</b>. Fixed in this pass.</p>
+  </section>
+
+  <!-- MODULE INVENTORY -->
+  <section>
+    <div class="sec-h"><span class="sec-n">01</span><h2>Module inventory</h2></div>
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Area</th><th>Modules (live)</th><th>Owns</th></tr></thead>
+        <tbody>
+          <tr><td><b>Shell &amp; Auth</b></td><td><code>app-shell.merged.js</code>, <code>merge-unify.js</code></td><td>Routing, sidebar, settings drill-in, toggles, team, login/OTP/logout, filters</td></tr>
+          <tr><td><b>Leads</b></td><td><code>leads-module.js</code>, <code>leads-interactions.js</code>, <code>dash-perf.js</code>, <code>lead-settings.js</code></td><td>List, detail, create/edit, companies, filters, CSV, card scanner, lead dashboard</td></tr>
+          <tr><td><b>Chat</b></td><td><code>chat.js</code></td><td>Conversation list, thread, composer, wallpaper, lead deep-links</td></tr>
+          <tr><td><b>Appointments</b></td><td><code>appointments.js</code> + <code>-detail / -dashboard / -bookings / -payments / -settings</code></td><td>Calendar, booking, payment, custom fields, settings</td></tr>
+          <tr><td><b>Ticketing</b></td><td><code>ticketing.js</code> + <code>-dashboard / -tickets / -detail / -settings / -settings2</code></td><td>Tickets, thread, SLA/quick-reply/dept settings</td></tr>
+          <tr><td><b>Settings</b></td><td><code>settings-agents.js</code>, <code>settings-qr.js</code>, <code>settings-userattrs.js</code>, <code>settings-security.js</code></td><td>Agents/roles, WhatsApp QR, user attributes, 2FA</td></tr>
+          <tr><td><b>Profile &amp; Billing</b></td><td><code>profile.js</code>, <code>profile-page.js</code>, <code>subscription.js</code></td><td>Profile, plan management, pricing, billing, payment gateway</td></tr>
+          <tr><td><b>Home &amp; Notifs</b></td><td><code>home-dashboard.js</code>, <code>notifications.js</code></td><td>Home overview, notification feed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">The project root and <code>uploads/</code> also contain ~30 non-loaded duplicate copies (<code>AskEva App.html</code>, <code>app-shell.js</code>, <code>lead-profile.js</code>, <code>uploads/LMS&nbsp;(Copy)/…</code>). They are not referenced by the merged app and can be archived — see Housekeeping.</p>
+  </section>
+
+  <!-- SSOT MAP -->
+  <section>
+    <div class="sec-h"><span class="sec-n">02</span><h2>Single source of truth &mdash; data stores</h2></div>
+    <p class="lead-p">Every business entity and where it actually lives. &ldquo;Persists&rdquo; = survives a page refresh.</p>
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Entity</th><th>Store key</th><th>Owner</th><th>Persists</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><b>Leads</b></td><td><code>askeva.leads.v1</code></td><td>leads-module.js</td><td><span class="pill ok">Yes</span></td><td><span class="pill ok">Fixed this pass</span></td></tr>
+          <tr><td><b>Appointments</b></td><td><code>askeva.appointments.v2</code></td><td>appointments.js</td><td><span class="pill ok">Yes</span></td><td><span class="pill ok">Single source</span></td></tr>
+          <tr><td><b>Tickets</b></td><td><code>askeva.tickets.v1</code></td><td>ticketing.js</td><td><span class="pill ok">Yes</span></td><td><span class="pill ok">Single source</span></td></tr>
+          <tr><td><b>Subscription / Billing</b></td><td><code>askeva.sub.* / .bill.*</code></td><td>subscription.js</td><td><span class="pill ok">Yes</span></td><td><span class="pill ok">Single source</span></td></tr>
+          <tr><td><b>Agents &amp; Roles</b></td><td><code>askeva.set.agents.v1</code></td><td>settings-agents.js</td><td><span class="pill ok">Yes</span></td><td><span class="pill part">Duplicated by Team</span></td></tr>
+          <tr><td><b>2FA / Security</b></td><td><code>askeva.set.2fa.v1</code></td><td>settings-security.js</td><td><span class="pill ok">Yes</span></td><td><span class="pill ok">Single source</span></td></tr>
+          <tr><td><b>QR history</b></td><td><code>askeva.qr.*</code></td><td>settings-qr.js</td><td><span class="pill ok">Yes</span></td><td><span class="pill ok">Single source</span></td></tr>
+          <tr><td><b>User attributes</b></td><td><code>askeva.userattrs.*</code></td><td>settings-userattrs.js</td><td><span class="pill ok">Yes</span></td><td><span class="pill ok">Single source</span></td></tr>
+          <tr><td><b>Preferences</b> (dark, push…)</td><td><code>askeva.pref.*</code></td><td>app-shell.merged.js</td><td><span class="pill ok">Yes</span></td><td><span class="pill ok">Single source</span></td></tr>
+          <tr><td><b>Team members</b> (Settings&nbsp;&rarr;&nbsp;Team)</td><td><span class="pill no">none</span></td><td>app-shell.merged.js</td><td><span class="pill no">No</span></td><td><span class="pill part">Open — see F4</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FINDINGS / FIXES -->
+  <section>
+    <div class="sec-h"><span class="sec-n">03</span><h2>Findings &amp; fixes</h2></div>
+
+    <div class="finding done">
+      <div class="f-top"><span class="sev high">High</span><span class="f-tag fixed">✓ Fixed</span><h3>F1 — Leads were never persisted</h3></div>
+      <p><b>Leads are the hub entity</b> — chat sync, the card scanner, the dashboard, companies and lead detail all read the same in-memory array (<code>window.AskEvaLeads</code>). But <code>leads-module.js</code> contained <span class="ev">no localStorage calls at all</span>. Every new lead (manual add, card scan, chat sync) and every edit (status, stage, notes, follow-ups, tags) was <b>lost on refresh</b>, while every other major entity persisted.</p>
+      <p class="fix">Added a persisted store <code>askeva.leads.v1</code>: load-into-the-same-array on boot, save after every render and after note/follow-up writes, plus a save on <code>pagehide</code>/tab-hide. Leads now survive refresh and remain the single source of truth.</p>
+    </div>
+
+    <div class="finding done">
+      <div class="f-top"><span class="sev high">High</span><span class="f-tag fixed">✓ Fixed</span><h3>F2 — Bulk delete orphaned the source of truth</h3></div>
+      <p>The multi-select <em>Delete</em> action ran <span class="ev">LEADS = LEADS.filter(…)</span>, <b>reassigning</b> the array. <code>window.AskEvaLeads</code> (and the dashboard's reference) kept pointing at the <b>old</b> array, so deleted leads would silently reappear in other modules — a textbook duplicate-source-of-truth bug.</p>
+      <p class="fix">Switched to an in-place mutation (<code>LEADS.length = 0; push(kept)</code>) so the one shared array reference stays authoritative everywhere, then persist.</p>
+    </div>
+
+    <div class="finding done">
+      <div class="f-top"><span class="sev low">Low</span><span class="f-tag fixed">✓ Fixed</span><h3>F3 — Duplicate / misleading lead toolbar actions</h3></div>
+      <p>Export / Sample / Import on the leads toolbar were wired <b>twice</b>: <code>leads-interactions.js</code> does the real work (CSV download, file import), while <code>leads-module.js</code> also fired placeholder toasts (&ldquo;Exporting all leads…&rdquo;) that did nothing. Two handlers, one fake.</p>
+      <p class="fix">Removed the placeholder toasts from <code>leads-module.js</code>; the real CSV handlers now own those buttons cleanly.</p>
+    </div>
+
+    <div class="finding">
+      <div class="f-top"><span class="sev med">Medium</span><span class="f-tag open">Open</span><h3>F4 — &ldquo;Team&rdquo; duplicates &ldquo;Agents&rdquo; and doesn't persist</h3></div>
+      <p>There are two people-management surfaces. <b>Settings&nbsp;&rarr;&nbsp;Agents</b> (<code>settings-agents.js</code>) is real, persisted CRUD on <code>askeva.set.agents.v1</code>. <b>Settings&nbsp;&rarr;&nbsp;Team</b> (<code>#memList</code> in the shell) is a separate hardcoded list whose <em>Invite</em>, <em>Add department</em> and <em>active</em> toggles update the DOM only — <b>nothing persists</b>, and it's disconnected from the Agents store.</p>
+      <p class="why">Recommendation: make <em>Agents</em> the single source for people and have <em>Team</em> render from the same store (or retire Team). Deferred because consolidating two UIs safely warrants a focused pass with interactive testing.</p>
+    </div>
+
+    <div class="finding">
+      <div class="f-top"><span class="sev med">Medium</span><span class="f-tag open">Open</span><h3>F5 — Lead dashboard reads a one-time snapshot</h3></div>
+      <p><code>dash-perf.js</code> snapshots leads with <span class="ev">(window.AskEvaLeads || []).slice()</span> at load. After the persistence fix this is <b>correct across refreshes</b>, but in-session edits (new lead, status change) won't reflect in the dashboard until the next reload.</p>
+      <p class="why">Recommendation: expose a lightweight <code>leads:changed</code> event from <code>leads-module.js</code> and have the dashboard recompute on it. Low risk, additive.</p>
+    </div>
+
+    <div class="finding">
+      <div class="f-top"><span class="sev info">Info</span><span class="f-tag open">Housekeeping</span><h3>F6 — Dead handler &amp; duplicate files</h3></div>
+      <ul class="clean">
+        <li>The shell's <code>.fab-add</code> toast handler matches <b>no elements</b> in the live HTML (appointments/ticketing use their own <code>.appt-fab</code>/<code>.tk-fab</code> with real handlers). Harmless, but it can be removed.</li>
+        <li>~30 non-loaded duplicate files sit in the project root and <code>uploads/</code> (<code>AskEva App.html</code>, <code>app-shell.js</code>, <code>lead-profile.js</code>, <code>leads-tools.js</code>, <code>uploads/LMS&nbsp;(Copy)/…</code>). None are referenced by the merged app; archive to reduce confusion.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CROSS MODULE -->
+  <section>
+    <div class="sec-h"><span class="sec-n">04</span><h2>Cross-module synchronization</h2></div>
+    <p class="lead-p"><strong>Already wired</strong> — these links exist and work:</p>
+    <div class="card">
+      <div class="map-flow">Chat → Leads&nbsp;&nbsp; new WhatsApp chat queues via window.__pendingChatLeads → Leads sync picks it up, de-duped by mobile</div>
+      <div class="map-flow">Leads → Chat&nbsp;&nbsp; lead card → window.__openChatFrom() opens the thread and shows a &ldquo;Back to Lead&rdquo; return pill</div>
+      <div class="map-flow">Subscription → Profile + Dashboard&nbsp;&nbsp; one store (window.__sub) renders plan into both; Upgrade routes Dashboard → Profile → pricing</div>
+      <div class="map-flow">Leads → Dashboard&nbsp;&nbsp; dash-perf computes KPIs, pipeline &amp; trends from the live lead dataset</div>
+    </div>
+    <p class="lead-p" style="margin-top:18px;"><strong>Missing</strong> — recommended for a future pass (each is additive; none blocks today's flows):</p>
+    <div class="card">
+      <div class="map-flow gap">Appointment ↔ Lead&nbsp;&nbsp; booking an appointment for a lead should drop an entry on that lead's activity timeline</div>
+      <div class="map-flow gap">Ticket ↔ Lead&nbsp;&nbsp; raising a ticket for a customer should log on the lead's activity (the detail view already mocks ticket rows)</div>
+      <div class="map-flow gap">Chat → Appointment / Ticket timeline&nbsp;&nbsp; creating either from a chat should annotate the chat thread</div>
+    </div>
+    <p class="note">These require a shared activity model on the lead. Best done as one deliberate pass with a small event bus, after F4/F5 land.</p>
+  </section>
+
+  <!-- NAV -->
+  <section>
+    <div class="sec-h"><span class="sec-n">05</span><h2>Navigation state</h2></div>
+    <div class="card">
+      <ul class="clean">
+        <li><b>Scroll position</b> is already remembered per route (<code>scrollMem</code> in the shell) and restored on return.</li>
+        <li><b>Return context</b> works: opening Chat from Leads shows a &ldquo;Back to Lead&rdquo; pill that returns to the exact origin.</li>
+        <li><b>Filters &amp; selected record</b> persist within a session because each module keeps its own <code>state</code> object and re-renders from it.</li>
+        <li><b>Panels close cleanly</b> on navigation (subscription wraps the router to dismiss open sheets) — no stale overlays.</li>
+      </ul>
+      <p class="note">Verdict: navigation-state preservation is in good shape. The one enhancement worth making is persisting the active filter set across refresh (today it resets to defaults), which pairs naturally with the F5 live-sync work.</p>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section>
+    <div class="sec-h"><span class="sec-n">06</span><h2>Recommended next passes</h2></div>
+    <div class="card">
+      <ul class="clean">
+        <li><b>Pass 2 — People SSOT (F4):</b> unify Team into the Agents store; persist invites, departments and active state.</li>
+        <li><b>Pass 3 — Live lead sync (F5):</b> emit <code>leads:changed</code>; dashboard, companies and counts recompute without a refresh; persist active filters.</li>
+        <li><b>Pass 4 — Shared activity timeline:</b> add appointment ↔ lead and ticket ↔ lead links via one small event bus.</li>
+        <li><b>Pass 5 — Housekeeping (F6):</b> remove the dead <code>.fab-add</code> handler; archive the ~30 unused duplicate files.</li>
+      </ul>
+      <p class="note">Each pass is self-contained and independently verifiable — give the word and I'll take them in order.</p>
+    </div>
+  </section>
+
+  <div class="foot">
+    <b>AskEva</b> System Audit · Pass 1 of 5 · Fixes live in <b>AskEva App - Merged.html</b> (<code>leads-module.js?v=4</code>)
+  </div>
+
+</div>
+
+<template id="__bundler_thumbnail" data-bg-color="#2BA84A">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="22" fill="#2BA84A"/>
+    <path d="M30 62 L45 40 L58 56 L70 38" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="70" cy="38" r="4.5" fill="#85D653"/>
+  </svg>
+</template>
+</body>
+</html>

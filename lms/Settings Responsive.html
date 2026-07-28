@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings — Responsive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --green-700:#177a36; --green-600:#2ba84a; --green-500:#3cc23f;
+    --green-400:#5bcc4a; --lime-300:#85d653;
+    --tint-50:#eaf9e6; --tint-100:#dcf3d6; --tint-bd:#cdeac4;
+    --ink:#15231a; --ink-2:#4d5d52; --ink-3:#8a978d;
+    --line:#eef1ec; --surface:#fff; --canvas:#f6f8f5;
+    --blue:#3b82f6; --amber:#f5b829; --coral:#ef5350;
+    --shadow-card:0 8px 26px -16px rgba(20,50,28,.16);
+    --shadow-hero:0 22px 44px -22px rgba(23,122,54,.5);
+    --shadow-rail:0 1px 0 rgba(20,50,28,.04);
+    --rail-w:288px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--canvas);color:var(--ink);-webkit-font-smoothing:antialiased;
+    min-height:100%;
+  }
+  button{font-family:inherit;}
+  ::-webkit-scrollbar{width:9px;height:9px;}
+  ::-webkit-scrollbar-thumb{background:#dde4dd;border-radius:6px;}
+
+  /* ============ shell ============ */
+  .app{
+    display:grid;grid-template-columns:var(--rail-w) 1fr;
+    min-height:100vh;
+  }
+
+  /* ---- top bar (mobile only) ---- */
+  .topbar{
+    display:none;position:sticky;top:0;z-index:40;
+    align-items:center;gap:12px;height:62px;padding:0 16px;
+    background:rgba(255,255,255,.86);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar .burger{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);
+    background:#fff;display:grid;place-items:center;cursor:pointer;}
+  .topbar .tb-title{font-size:17px;font-weight:800;letter-spacing:-.01em;flex:1;}
+  .topbar .tb-logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(150deg,var(--green-500),var(--green-700));color:#fff;font-size:9px;font-weight:800;line-height:1;text-align:center;}
+
+  /* ============ sidebar rail ============ */
+  .rail{
+    background:#fff;border-right:1px solid var(--line);
+    display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+    z-index:50;
+  }
+  .rail-head{padding:24px 22px 18px;border-bottom:1px solid var(--line);}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .brand .logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;line-height:1;
+    background:linear-gradient(150deg,var(--green-500),var(--green-700));color:#fff;font-size:10px;font-weight:800;text-align:center;}
+  .brand .logo b{display:block;font-size:13px;}
+  .brand .bt{font-size:16px;font-weight:800;letter-spacing:-.01em;}
+  .brand .bs{font-size:11.5px;font-weight:600;color:var(--ink-3);margin-top:1px;}
+
+  .rail-user{display:flex;align-items:center;gap:12px;margin-top:18px;padding:12px;
+    border-radius:16px;background:var(--canvas);border:1px solid var(--line);}
+  .rail-user .av{width:42px;height:42px;border-radius:12px;flex:0 0 42px;display:grid;place-items:center;
+    font-size:17px;font-weight:800;color:#fff;background:linear-gradient(150deg,var(--green-500),var(--green-700));}
+  .rail-user .ru-i{min-width:0;}
+  .rail-user .nm{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rail-user .rl{font-size:11px;font-weight:700;color:var(--green-700);text-transform:uppercase;letter-spacing:.05em;margin-top:1px;}
+
+  .rail-nav{flex:1;overflow-y:auto;padding:16px 14px 20px;}
+  .nav-grp{margin-top:14px;}
+  .nav-grp:first-child{margin-top:0;}
+  .nav-grp .gl{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--ink-3);padding:0 12px;margin-bottom:8px;}
+  .nav-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:none;cursor:pointer;
+    background:transparent;border-radius:13px;padding:11px 12px;color:var(--ink-2);position:relative;}
+  .nav-item + .nav-item{margin-top:2px;}
+  .nav-item .ni-ic{width:34px;height:34px;border-radius:10px;flex:0 0 34px;display:grid;place-items:center;
+    background:var(--canvas);color:var(--ink-3);transition:.15s;}
+  .nav-item .ni-lab{flex:1;font-size:14.5px;font-weight:700;letter-spacing:-.01em;}
+  .nav-item .ni-badge{font-size:10.5px;font-weight:800;color:var(--green-700);background:var(--tint-50);
+    border:1px solid var(--tint-bd);padding:2px 8px;border-radius:999px;}
+  .nav-item:hover{background:var(--canvas);color:var(--ink);}
+  .nav-item.active{background:var(--tint-50);color:var(--green-700);}
+  .nav-item.active .ni-ic{background:linear-gradient(150deg,var(--green-500),var(--green-600));color:#fff;
+    box-shadow:0 6px 14px -6px rgba(43,168,74,.7);}
+  .nav-item.active::before{content:"";position:absolute;left:-14px;top:50%;transform:translateY(-50%);
+    width:4px;height:24px;border-radius:0 4px 4px 0;background:var(--green-500);}
+  .nav-item.danger{color:var(--coral);}
+  .nav-item.danger .ni-ic{background:#fde9e9;color:var(--coral);}
+  .nav-item.danger:hover{background:#fdeeee;}
+
+  /* ============ content ============ */
+  .content{min-width:0;display:flex;flex-direction:column;}
+  .panel{display:none;flex-direction:column;flex:1;}
+  .panel.active{display:flex;}
+
+  .phead{padding:30px 38px 0;}
+  .phead .crumb{font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.04em;margin-bottom:8px;}
+  .phead .crumb b{color:var(--green-700);}
+  .phead h1{font-size:27px;font-weight:800;letter-spacing:-.02em;}
+  .phead p{margin-top:6px;color:var(--ink-2);font-size:14px;font-weight:500;max-width:560px;line-height:1.5;}
+  .phead .actions{margin-top:0;}
+
+  .pbody{padding:24px 38px 48px;max-width:920px;width:100%;}
+
+  /* primary button */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:none;cursor:pointer;
+    font-size:14.5px;font-weight:800;border-radius:13px;padding:13px 20px;letter-spacing:-.01em;}
+  .btn-primary{color:#fff;background:linear-gradient(135deg,var(--green-500),var(--green-600));
+    box-shadow:0 12px 26px -12px rgba(43,168,74,.7);}
+  .btn-primary:active{transform:translateY(1px);}
+  .btn-ghost{color:var(--ink);background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-card);}
+  .btn-ghost:hover{background:var(--canvas);}
+
+  /* hero banner inside account */
+  .hero{position:relative;border-radius:22px;overflow:hidden;color:#fff;
+    background-image:linear-gradient(135deg,rgba(0,0,0,.16),rgba(0,0,0,0) 60%),url('assets/bg-green.jpg');
+    background-size:cover;background-position:center 32%;box-shadow:var(--shadow-hero);
+    padding:26px 28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+  .hero .h-av{width:74px;height:74px;border-radius:50%;flex:0 0 74px;
+    background:linear-gradient(160deg,#fff,#eef5ec);display:grid;place-items:center;
+    box-shadow:0 12px 26px -12px rgba(0,0,0,.45),0 0 0 5px rgba(255,255,255,.22);}
+  .hero .h-av .lg{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;line-height:1;
+    background:linear-gradient(155deg,var(--green-500),var(--green-700));color:#fff;text-align:center;
+    font-size:10px;font-weight:700;}
+  .hero .h-av .lg b{display:block;font-size:14px;}
+  .hero .h-i{min-width:0;}
+  .hero .h-nm{font-size:23px;font-weight:800;letter-spacing:-.02em;}
+  .hero .h-em{font-size:13.5px;font-weight:600;color:rgba(255,255,255,.9);margin-top:3px;}
+  .hero .h-badges{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .hb{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#fff;
+    background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);padding:6px 12px;border-radius:999px;backdrop-filter:blur(6px);}
+  .hb .d{width:7px;height:7px;border-radius:50%;background:#eaffe4;box-shadow:0 0 0 3px rgba(255,255,255,.25);}
+
+  /* section label */
+  .sec-label{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:26px 2px 12px;}
+
+  /* info grid (account) */
+  .info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  .info-cell{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-card);
+    padding:18px;display:flex;align-items:flex-start;gap:13px;}
+  .info-cell .ic{width:40px;height:40px;border-radius:12px;flex:0 0 40px;display:grid;place-items:center;
+    background:var(--tint-50);color:var(--green-600);}
+  .info-cell .k{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);}
+  .info-cell .v{font-size:16px;font-weight:700;color:var(--ink);margin-top:4px;}
+  .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--green-700);
+    background:var(--tint-50);padding:5px 11px;border-radius:999px;}
+  .status-pill .d{width:7px;height:7px;border-radius:50%;background:var(--green-500);}
+
+  /* toggle */
+  .switch{width:46px;height:27px;border-radius:999px;background:#d6ddd6;position:relative;cursor:pointer;
+    flex:0 0 46px;transition:background .2s;border:none;margin-left:auto;}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+    background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.25);transition:transform .2s;}
+  .switch.on{background:linear-gradient(90deg,var(--green-500),var(--green-600));}
+  .switch.on::after{transform:translateX(19px);}
+
+  /* ---- team ---- */
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;}
+  .search{flex:1;min-width:220px;display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);
+    border-radius:14px;padding:12px 15px;box-shadow:var(--shadow-card);}
+  .search input{border:none;outline:none;font-family:inherit;font-size:14.5px;font-weight:600;color:var(--ink);width:100%;background:transparent;}
+  .search input::placeholder{color:var(--ink-3);font-weight:600;}
+
+  .team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+  .member{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-card);padding:18px;}
+  .member.hidden{display:none;}
+  .m-top{display:flex;align-items:center;gap:13px;}
+  .m-av{width:48px;height:48px;border-radius:14px;flex:0 0 48px;display:grid;place-items:center;
+    font-size:19px;font-weight:800;color:#fff;background:linear-gradient(150deg,var(--green-500),var(--green-700));}
+  .m-av.g2{background:linear-gradient(150deg,#3aa0d8,#1f6fa8);}
+  .m-av.g3{background:linear-gradient(150deg,#e0922a,#b96a12);}
+  .m-av.g4{background:linear-gradient(150deg,#8a64d8,#5a36a8);}
+  .m-id{flex:1;min-width:0;}
+  .m-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .m-name .nm{font-size:16px;font-weight:800;letter-spacing:-.01em;}
+  .role-tag{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;}
+  .role-tag.super{color:#fff;background:linear-gradient(90deg,var(--green-500),var(--green-600));}
+  .role-tag.admin{color:var(--green-700);background:var(--tint-50);border:1px solid var(--tint-bd);}
+  .role-tag.agent{color:var(--ink-2);background:#eef1ec;}
+  .m-you{font-size:11px;font-weight:700;color:var(--ink-3);margin-top:2px;}
+  .icon-mini{width:34px;height:34px;border-radius:10px;border:none;background:transparent;cursor:pointer;
+    display:grid;place-items:center;flex:0 0 34px;}
+  .icon-mini:hover{background:var(--canvas);}
+  .m-contact{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+  .m-contact .line{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--ink-2);}
+  .m-contact .line svg{flex:0 0 auto;opacity:.7;}
+  .m-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:15px;padding-top:14px;border-top:1px solid var(--line);}
+  .mods{display:flex;gap:6px;flex-wrap:wrap;}
+  .mod{font-size:11px;font-weight:700;color:var(--green-700);background:var(--tint-50);border:1px solid var(--tint-bd);padding:4px 9px;border-radius:8px;}
+  .mod.all{color:#fff;background:var(--green-600);border-color:transparent;}
+  .sw-wrap{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+  .sw-wrap .lbl{font-size:11.5px;font-weight:700;color:var(--ink-3);}
+
+  /* ---- forms (password) ---- */
+  .form-card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-card);padding:26px;max-width:520px;}
+  .field{margin-bottom:18px;}
+  .field:last-child{margin-bottom:0;}
+  .flab{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin:0 2px 8px;}
+  .input-wrap{display:flex;align-items:center;gap:10px;background:var(--canvas);border:1.5px solid var(--line);
+    border-radius:13px;padding:13px 15px;transition:border-color .15s,background .15s;}
+  .input-wrap:focus-within{border-color:var(--green-500);background:#fff;}
+  .input-wrap input{border:none;outline:none;font-family:inherit;font-size:15px;font-weight:600;color:var(--ink);width:100%;background:transparent;}
+  .input-wrap .eye{cursor:pointer;color:var(--ink-3);display:flex;flex:0 0 auto;}
+  .strength{display:flex;gap:6px;margin:10px 2px 4px;}
+  .strength .bar{flex:1;height:5px;border-radius:3px;background:#e2e8e2;transition:background .2s;}
+  .strength-txt{font-size:12px;font-weight:700;margin:6px 2px 0;color:var(--ink-3);}
+  .pw-hint{font-size:12.5px;font-weight:500;color:var(--ink-3);line-height:1.5;margin:18px 2px 0;display:flex;gap:9px;}
+  .pw-hint svg{flex:0 0 auto;margin-top:1px;}
+
+  /* ---- login activity ---- */
+  .session{display:flex;gap:15px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-card);padding:16px 18px;margin-bottom:12px;}
+  .session .dev{width:44px;height:44px;border-radius:13px;flex:0 0 44px;display:grid;place-items:center;background:var(--tint-50);color:var(--green-600);}
+  .session .si{flex:1;min-width:0;}
+  .session .when{font-size:15px;font-weight:800;color:var(--ink);}
+  .session .det{font-size:13px;font-weight:500;color:var(--ink-2);margin-top:4px;}
+  .session .cur{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--green-700);
+    background:var(--tint-50);border:1px solid var(--tint-bd);padding:4px 9px;border-radius:999px;margin-top:9px;letter-spacing:.03em;}
+
+  /* ---- pricing ---- */
+  .pricing-wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;align-items:start;}
+  .plan-card{border-radius:22px;overflow:hidden;color:#fff;position:relative;
+    background-image:linear-gradient(150deg,rgba(0,0,0,.14),rgba(0,0,0,0) 62%),url('assets/bg-green.jpg');
+    background-size:cover;background-position:center;box-shadow:var(--shadow-hero);padding:26px 26px;}
+  .plan-card .tier{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.92;}
+  .plan-card .nm{font-size:22px;font-weight:800;margin-top:5px;}
+  .plan-card .price{font-size:38px;font-weight:800;letter-spacing:-.02em;margin-top:10px;}
+  .plan-card .price span{font-size:16px;font-weight:600;opacity:.85;}
+  .plan-card .renew{font-size:13px;font-weight:600;opacity:.9;margin-top:8px;}
+  .plan-card .pc-actions{margin-top:20px;display:flex;gap:10px;}
+  .plan-card .pc-actions .btn{padding:11px 18px;font-size:13.5px;}
+  .pc-up{background:#fff;color:var(--green-700);}
+  .pc-mng{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.3);}
+  .feat{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-card);padding:8px 20px;}
+  .feat .fr{display:flex;align-items:center;gap:12px;padding:14px 0;font-size:14.5px;font-weight:600;color:var(--ink);}
+  .feat .fr + .fr{border-top:1px solid var(--line);}
+  .feat .ck{width:26px;height:26px;border-radius:8px;flex:0 0 26px;display:grid;place-items:center;background:var(--tint-50);color:var(--green-600);}
+
+  /* ---- transactions ---- */
+  .txn-table{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-card);overflow:hidden;}
+  .txn{display:flex;align-items:center;gap:15px;padding:16px 18px;}
+  .txn + .txn{border-top:1px solid var(--line);}
+  .txn .tic{width:42px;height:42px;border-radius:12px;flex:0 0 42px;display:grid;place-items:center;background:var(--tint-50);color:var(--green-600);}
+  .txn .ti{flex:1;min-width:0;}
+  .txn .tt{font-size:14.5px;font-weight:700;color:var(--ink);}
+  .txn .td{font-size:12.5px;font-weight:600;color:var(--ink-3);margin-top:2px;}
+  .txn .right{text-align:right;flex:0 0 auto;}
+  .txn .amt{font-size:15.5px;font-weight:800;color:var(--ink);}
+  .txn .st{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--green-700);margin-top:3px;}
+  .txn .st.pend{color:var(--amber);}
+
+  /* scrim for mobile drawer */
+  .scrim{display:none;position:fixed;inset:0;background:rgba(15,30,20,.42);z-index:45;opacity:0;transition:opacity .25s;}
+  .scrim.show{display:block;opacity:1;}
+
+  /* ============ responsive ============ */
+  @media (max-width:1080px){
+    .info-grid,.team-grid{grid-template-columns:1fr;}
+    .pricing-wrap{grid-template-columns:1fr;}
+  }
+  @media (max-width:860px){
+    :root{--rail-w:0px;}
+    .app{grid-template-columns:1fr;}
+    .topbar{display:flex;}
+    .rail{position:fixed;top:0;left:0;width:300px;height:100vh;
+      transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+      box-shadow:0 30px 60px -20px rgba(20,50,28,.4);}
+    .rail.open{transform:translateX(0);}
+    .phead{padding:22px 20px 0;}
+    .pbody{padding:18px 20px 40px;}
+    .phead h1{font-size:23px;}
+    .hero{padding:22px 20px;}
+  }
+  @media (max-width:520px){
+    .toolbar{flex-direction:column;align-items:stretch;}
+    .hero .h-nm{font-size:20px;}
+  }
+</style>
+</head>
+<body>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="app">
+
+    <!-- mobile top bar -->
+    <header class="topbar">
+      <button class="burger" id="burger" aria-label="Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="#15231a" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <span class="tb-title" id="tbTitle">Account</span>
+      <span class="tb-logo">ASK<br/>EVA</span>
+    </header>
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="rail" id="rail">
+      <div class="rail-head">
+        <div class="brand">
+          <div class="logo">ASK<b>EVA</b></div>
+          <div>
+            <div class="bt">Settings</div>
+            <div class="bs">Workspace &amp; account</div>
+          </div>
+        </div>
+        <div class="rail-user">
+          <div class="av">E</div>
+          <div class="ru-i">
+            <div class="nm">Eshan</div>
+            <div class="rl">Super Admin</div>
+          </div>
+        </div>
+      </div>
+      <nav class="rail-nav">
+        <div class="nav-grp">
+          <div class="gl">Account</div>
+          <button class="nav-item active" data-go="account">
+            <span class="ni-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <span class="ni-lab">Account Details</span>
+          </button>
+          <button class="nav-item" data-go="team">
+            <span class="ni-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="2"/><path d="M3.5 19c0-2.7 2.5-4.2 5.5-4.2s5.5 1.5 5.5 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 5.5a3 3 0 0 1 0 5.8M17.5 14.8c2 .6 3.5 1.8 3.5 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <span class="ni-lab">Team Members</span>
+            <span class="ni-badge">11</span>
+          </button>
+          <button class="nav-item" data-go="password">
+            <span class="ni-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/></svg></span>
+            <span class="ni-lab">Change Password</span>
+          </button>
+        </div>
+        <div class="nav-grp">
+          <div class="gl">Billing</div>
+          <button class="nav-item" data-go="pricing">
+            <span class="ni-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M3 10h18" stroke="currentColor" stroke-width="2"/></svg></span>
+            <span class="ni-lab">Pricing &amp; Plan</span>
+            <span class="ni-badge">Growth</span>
+          </button>
+          <button class="nav-item" data-go="txn">
+            <span class="ni-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M7 3h7l4 4v14H7V3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 3v4h4M10 12h5M10 16h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <span class="ni-lab">Transactions</span>
+          </button>
+        </div>
+        <div class="nav-grp">
+          <div class="gl">Security</div>
+          <button class="nav-item" data-go="login">
+            <span class="ni-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="ni-lab">Login Activity</span>
+          </button>
+        </div>
+        <div class="nav-grp">
+          <div class="gl">Session</div>
+          <button class="nav-item danger" data-go="logout">
+            <span class="ni-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 8 6 12l4 4M6 12h9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="ni-lab">Logout</span>
+          </button>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- ============ CONTENT ============ -->
+    <main class="content">
+
+      <!-- ACCOUNT -->
+      <section class="panel active" id="p-account" data-screen-label="Account">
+        <div class="phead">
+          <div class="crumb">Settings · <b>Account Details</b></div>
+          <h1>Account Details</h1>
+          <p>Your organisation identity, contact channels and account status.</p>
+        </div>
+        <div class="pbody">
+          <div class="hero">
+            <div class="h-av"><div class="lg">ASK<b>EVA</b></div></div>
+            <div class="h-i">
+              <div class="h-nm">Eshan</div>
+              <div class="h-em">eshan@tunepath.com</div>
+              <div class="h-badges">
+                <span class="hb"><span class="d"></span>Active</span>
+                <span class="hb">Super Admin</span>
+                <span class="hb">Hotel &amp; Lodging</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec-label">Account Information</div>
+          <div class="info-grid">
+            <div class="info-cell">
+              <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#2ba84a" stroke-width="2"/><path d="m8 12 3 3 5-6" stroke="#2ba84a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <div style="flex:1;"><div class="k">Account Status</div><div class="v"><span class="status-pill"><span class="d"></span>Active</span></div></div>
+              <button class="switch on" data-toggle aria-label="Toggle"></button>
+            </div>
+            <div class="info-cell"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="15" rx="2" stroke="#2ba84a" stroke-width="2"/><path d="M4 9h16M8 3v4M16 3v4" stroke="#2ba84a" stroke-width="2" stroke-linecap="round"/></svg></span><div><div class="k">Creation Date</div><div class="v">25 Feb 2025</div></div></div>
+            <div class="info-cell"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3v9l5 3" stroke="#2ba84a" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#2ba84a" stroke-width="2"/></svg></span><div><div class="k">Activation Date</div><div class="v">25 Feb 2025</div></div></div>
+            <div class="info-cell"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6l-8-3Z" stroke="#2ba84a" stroke-width="2" stroke-linejoin="round"/></svg></span><div><div class="k">Reseller ID</div><div class="v" style="color:var(--ink-3);">N/A</div></div></div>
+            <div class="info-cell"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 3.5V6a1 1 0 0 1 1-1Z" stroke="#2ba84a" stroke-width="2" stroke-linejoin="round"/></svg></span><div><div class="k">WhatsApp API No</div><div class="v">+91 72004 40497</div></div></div>
+            <div class="info-cell"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a12 12 0 0 0 5 5L14 12l4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 5 6Z" stroke="#2ba84a" stroke-width="2" stroke-linejoin="round"/></svg></span><div><div class="k">Primary Mobile</div><div class="v">+91 92042 99328</div></div></div>
+          </div>
+          <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L19 9l-4-4L4 16v4Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="m14 6 4 4" stroke="#fff" stroke-width="2"/></svg>Edit Details</button>
+            <button class="btn btn-ghost">Export Data</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TEAM -->
+      <section class="panel" id="p-team" data-screen-label="Team Members">
+        <div class="phead">
+          <div class="crumb">Settings · <b>Team Members</b></div>
+          <h1>Team Members</h1>
+          <p>Manage who has access, their roles and which modules they can use.</p>
+        </div>
+        <div class="pbody">
+          <div class="toolbar">
+            <div class="search">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#8a978d" stroke-width="2"/><path d="m20 20-3.2-3.2" stroke="#8a978d" stroke-width="2" stroke-linecap="round"/></svg>
+              <input id="teamSearch" type="text" placeholder="Search by name, email or role" />
+            </div>
+            <button class="btn btn-primary"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>Invite Member</button>
+          </div>
+
+          <div class="team-grid" id="teamGrid">
+            <div class="member" data-q="eshan tunepath superadmin">
+              <div class="m-top">
+                <div class="m-av">E</div>
+                <div class="m-id"><div class="m-name"><span class="nm">Eshan</span><span class="role-tag super">Super Admin</span></div><div class="m-you">You</div></div>
+                <button class="icon-mini" aria-label="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="#8a978d"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+              </div>
+              <div class="m-contact">
+                <div class="line"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#8a978d" stroke-width="2"/><path d="m4 7 8 5 8-5" stroke="#8a978d" stroke-width="2"/></svg>eshan@tunepath.com</div>
+                <div class="line"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a12 12 0 0 0 5 5L14 12l4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 5 6Z" stroke="#8a978d" stroke-width="2" stroke-linejoin="round"/></svg>+91 97867 42563</div>
+              </div>
+              <div class="m-foot"><div class="mods"><span class="mod all">All modules</span></div><div class="sw-wrap"><span class="lbl">Active</span><button class="switch on" data-toggle></button></div></div>
+            </div>
+
+            <div class="member" data-q="ananthu gmail admin">
+              <div class="m-top">
+                <div class="m-av g2">a</div>
+                <div class="m-id"><div class="m-name"><span class="nm">ananthu</span><span class="role-tag admin">Admin</span></div></div>
+                <button class="icon-mini" aria-label="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="#8a978d"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+              </div>
+              <div class="m-contact">
+                <div class="line"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#8a978d" stroke-width="2"/><path d="m4 7 8 5 8-5" stroke="#8a978d" stroke-width="2"/></svg>ananthu@gmail.com</div>
+                <div class="line"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a12 12 0 0 0 5 5L14 12l4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 5 6Z" stroke="#8a978d" stroke-width="2" stroke-linejoin="round"/></svg>+91 94952 04766</div>
+              </div>
+              <div class="m-foot"><div class="mods"><span class="mod">Chat</span><span class="mod">Leads</span><span class="mod">Appt</span><span class="mod">Tickets</span></div><div class="sw-wrap"><span class="lbl">Active</span><button class="switch on" data-toggle></button></div></div>
+            </div>
+
+            <div class="member" data-q="dj testbytest agent">
+              <div class="m-top">
+                <div class="m-av g3">d</div>
+                <div class="m-id"><div class="m-name"><span class="nm">dj</span><span class="role-tag agent">Agent</span></div></div>
+                <button class="icon-mini" aria-label="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="#8a978d"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+              </div>
+              <div class="m-contact">
+                <div class="line"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#8a978d" stroke-width="2"/><path d="m4 7 8 5 8-5" stroke="#8a978d" stroke-width="2"/></svg>testbytest@gmail.com</div>
+                <div class="line"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a12 12 0 0 0 5 5L14 12l4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 5 6Z" stroke="#8a978d" stroke-width="2" stroke-linejoin="round"/></svg>+91 90452 46766</div>
+              </div>
+              <div class="m-foot"><div class="mods"><span class="mod">Chat</span></div><div class="sw-wrap"><span class="lbl">Inactive</span><button class="switch" data-toggle></button></div></div>
+            </div>
+
+            <div class="member" data-q="priya sharma agent">
+              <div class="m-top">
+                <div class="m-av g4">P</div>
+                <div class="m-id"><div class="m-name"><span class="nm">Priya Sharma</span><span class="role-tag agent">Agent</span></div></div>
+                <button class="icon-mini" aria-label="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="#8a978d"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+              </div>
+              <div class="m-contact">
+                <div class="line"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="#8a978d" stroke-width="2"/><path d="m4 7 8 5 8-5" stroke="#8a978d" stroke-width="2"/></svg>priya.s@gmail.com</div>
+                <div class="line"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l1.5 4-2 1.5a12 12 0 0 0 5 5L14 12l4 1.5V17a2 2 0 0 1-2 2A14 14 0 0 1 5 6Z" stroke="#8a978d" stroke-width="2" stroke-linejoin="round"/></svg>+91 98765 11234</div>
+              </div>
+              <div class="m-foot"><div class="mods"><span class="mod">Chat</span><span class="mod">Leads</span></div><div class="sw-wrap"><span class="lbl">Active</span><button class="switch on" data-toggle></button></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASSWORD -->
+      <section class="panel" id="p-password" data-screen-label="Change Password">
+        <div class="phead">
+          <div class="crumb">Settings · <b>Change Password</b></div>
+          <h1>Change Password</h1>
+          <p>Choose a strong password you don't use anywhere else.</p>
+        </div>
+        <div class="pbody">
+          <div class="form-card">
+            <div class="field">
+              <div class="flab">Current Password</div>
+              <div class="input-wrap"><input type="password" value="oldsecret" /><span class="eye" data-eye><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="#8a978d" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="#8a978d" stroke-width="2"/></svg></span></div>
+            </div>
+            <div class="field">
+              <div class="flab">New Password</div>
+              <div class="input-wrap"><input type="password" id="newPw" placeholder="Enter new password" /><span class="eye" data-eye><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="#8a978d" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="#8a978d" stroke-width="2"/></svg></span></div>
+              <div class="strength" id="strength"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
+              <div class="strength-txt" id="strengthTxt">Use 8+ characters with a mix of letters &amp; numbers</div>
+            </div>
+            <div class="field">
+              <div class="flab">Confirm New Password</div>
+              <div class="input-wrap"><input type="password" placeholder="Re-enter new password" /><span class="eye" data-eye><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="#8a978d" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="#8a978d" stroke-width="2"/></svg></span></div>
+            </div>
+            <div class="pw-hint">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#8a978d" stroke-width="2"/><path d="M12 11v5" stroke="#8a978d" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.8" r="1.1" fill="#8a978d"/></svg>
+              <span>Include at least one uppercase letter, a number and a symbol. Avoid reusing previous passwords.</span>
+            </div>
+            <div style="margin-top:24px;"><button class="btn btn-primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m8 12 3 3 5-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Update Password</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRICING -->
+      <section class="panel" id="p-pricing" data-screen-label="Pricing">
+        <div class="phead">
+          <div class="crumb">Settings · <b>Pricing &amp; Plan</b></div>
+          <h1>Pricing &amp; Plan</h1>
+          <p>Your current subscription and what's included.</p>
+        </div>
+        <div class="pbody">
+          <div class="pricing-wrap">
+            <div class="plan-card">
+              <div class="tier">Current Plan</div>
+              <div class="nm">Growth</div>
+              <div class="price">₹4,999<span> / month</span></div>
+              <div class="renew">Renews 25 Feb 2026 · billed annually</div>
+              <div class="pc-actions">
+                <button class="btn pc-up">Upgrade</button>
+                <button class="btn pc-mng">Manage</button>
+              </div>
+            </div>
+            <div class="feat">
+              <div class="fr"><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m6 12 4 4 8-9" stroke="#2ba84a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Up to 15 team members</div>
+              <div class="fr"><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m6 12 4 4 8-9" stroke="#2ba84a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Unlimited leads &amp; companies</div>
+              <div class="fr"><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m6 12 4 4 8-9" stroke="#2ba84a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>WhatsApp Business API</div>
+              <div class="fr"><span class="ck"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="m6 12 4 4 8-9" stroke="#2ba84a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Priority support</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRANSACTIONS -->
+      <section class="panel" id="p-txn" data-screen-label="Transactions">
+        <div class="phead">
+          <div class="crumb">Settings · <b>Transactions</b></div>
+          <h1>Transactions</h1>
+          <p>Your invoices and payment history.</p>
+        </div>
+        <div class="pbody">
+          <div class="txn-table">
+            <div class="txn"><span class="tic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m8 12 3 3 5-6" stroke="#2ba84a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#2ba84a" stroke-width="2"/></svg></span><div class="ti"><div class="tt">Growth Plan · Annual</div><div class="td">25 Feb 2025 · UPI</div></div><div class="right"><div class="amt">₹59,988</div><div class="st">Paid</div></div></div>
+            <div class="txn"><span class="tic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m8 12 3 3 5-6" stroke="#2ba84a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#2ba84a" stroke-width="2"/></svg></span><div class="ti"><div class="tt">Add-on · Extra seats (×5)</div><div class="td">12 Jun 2025 · Card</div></div><div class="right"><div class="amt">₹4,500</div><div class="st">Paid</div></div></div>
+            <div class="txn"><span class="tic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l2.5 2" stroke="#f5b829" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="#f5b829" stroke-width="2"/></svg></span><div class="ti"><div class="tt">WhatsApp credits top-up</div><div class="td">28 Nov 2025 · UPI</div></div><div class="right"><div class="amt">₹1,200</div><div class="st pend">Pending</div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LOGIN -->
+      <section class="panel" id="p-login" data-screen-label="Login Activity">
+        <div class="phead">
+          <div class="crumb">Settings · <b>Login Activity</b></div>
+          <h1>Login Activity</h1>
+          <p>Recent sign-ins across your devices. Sign out anything you don't recognise.</p>
+        </div>
+        <div class="pbody">
+          <div class="session">
+            <span class="dev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="14" height="10" rx="1.5" stroke="#2ba84a" stroke-width="2"/><path d="M2 18h13" stroke="#2ba84a" stroke-width="2" stroke-linecap="round"/><rect x="17" y="9" width="5" height="9" rx="1.5" stroke="#2ba84a" stroke-width="2"/></svg></span>
+            <div class="si"><div class="when">12 Jan 2026 · 2:31 PM</div><div class="det">IP 49.204.147.5 · Desktop · Chrome on macOS</div><span class="cur"><span style="width:6px;height:6px;border-radius:50%;background:var(--green-500);"></span>Current session</span></div>
+          </div>
+          <div class="session">
+            <span class="dev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="7" y="3" width="10" height="18" rx="2" stroke="#2ba84a" stroke-width="2"/><path d="M11 18h2" stroke="#2ba84a" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <div class="si"><div class="when">12 Jan 2026 · 2:20 PM</div><div class="det">IP 49.204.147.5 · Mobile · Android App</div></div>
+          </div>
+          <div class="session">
+            <span class="dev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="14" height="10" rx="1.5" stroke="#2ba84a" stroke-width="2"/><path d="M2 18h13" stroke="#2ba84a" stroke-width="2" stroke-linecap="round"/><rect x="17" y="9" width="5" height="9" rx="1.5" stroke="#2ba84a" stroke-width="2"/></svg></span>
+            <div class="si"><div class="when">11 Jan 2026 · 9:04 AM</div><div class="det">IP 122.171.18.92 · Desktop · Safari</div></div>
+          </div>
+          <div class="session">
+            <span class="dev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="7" y="3" width="10" height="18" rx="2" stroke="#2ba84a" stroke-width="2"/><path d="M11 18h2" stroke="#2ba84a" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <div class="si"><div class="when">9 Jan 2026 · 6:47 PM</div><div class="det">IP 122.171.18.92 · Mobile · iOS App</div></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+<script>
+(function(){
+  var rail = document.getElementById('rail');
+  var scrim = document.getElementById('scrim');
+  var burger = document.getElementById('burger');
+  var tbTitle = document.getElementById('tbTitle');
+
+  function closeDrawer(){ rail.classList.remove('open'); scrim.classList.remove('show'); }
+  function openDrawer(){ rail.classList.add('open'); scrim.classList.add('show'); }
+  burger.addEventListener('click', openDrawer);
+  scrim.addEventListener('click', closeDrawer);
+
+  var items = document.querySelectorAll('.nav-item');
+  items.forEach(function(it){
+    it.addEventListener('click', function(){
+      var go = it.getAttribute('data-go');
+      if(go === 'logout'){ return; }
+      items.forEach(function(x){ x.classList.remove('active'); });
+      it.classList.add('active');
+      document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+      var panel = document.getElementById('p-'+go);
+      if(panel){ panel.classList.add('active'); panel.scrollTop = 0; }
+      var lab = it.querySelector('.ni-lab');
+      if(lab){ tbTitle.textContent = lab.textContent; }
+      window.scrollTo(0,0);
+      closeDrawer();
+    });
+  });
+
+  // toggles
+  document.querySelectorAll('[data-toggle]').forEach(function(sw){
+    sw.addEventListener('click', function(e){
+      e.stopPropagation();
+      sw.classList.toggle('on');
+      var wrap = sw.closest('.sw-wrap');
+      if(wrap){ wrap.querySelector('.lbl').textContent = sw.classList.contains('on') ? 'Active' : 'Inactive'; }
+    });
+  });
+
+  // password eye
+  document.querySelectorAll('[data-eye]').forEach(function(eye){
+    eye.addEventListener('click', function(){
+      var inp = eye.parentElement.querySelector('input');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      eye.style.color = inp.type === 'text' ? '#2ba84a' : '#8a978d';
+    });
+  });
+
+  // strength
+  var newPw = document.getElementById('newPw');
+  if(newPw){
+    var bars = document.querySelectorAll('#strength .bar');
+    var txt = document.getElementById('strengthTxt');
+    var labels = ['Too weak','Weak','Good','Strong'];
+    var colors = ['#ef5350','#f5b829','#5bcc4a','#2ba84a'];
+    newPw.addEventListener('input', function(){
+      var v = newPw.value, s = 0;
+      if(v.length >= 8) s++;
+      if(/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+      if(/[0-9]/.test(v)) s++;
+      if(/[^A-Za-z0-9]/.test(v)) s++;
+      if(v.length === 0) s = 0;
+      bars.forEach(function(b,i){ b.style.background = i < s ? colors[Math.max(0,s-1)] : '#e2e8e2'; });
+      txt.textContent = v.length === 0 ? 'Use 8+ characters with a mix of letters & numbers' : labels[Math.max(0,s-1)];
+      txt.style.color = v.length === 0 ? '#8a978d' : colors[Math.max(0,s-1)];
+    });
+  }
+
+  // team search
+  var ts = document.getElementById('teamSearch');
+  if(ts){
+    ts.addEventListener('input', function(){
+      var q = ts.value.trim().toLowerCase();
+      document.querySelectorAll('#teamGrid .member').forEach(function(m){
+        var hay = (m.getAttribute('data-q')||'').toLowerCase();
+        m.classList.toggle('hidden', q && hay.indexOf(q) === -1);
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

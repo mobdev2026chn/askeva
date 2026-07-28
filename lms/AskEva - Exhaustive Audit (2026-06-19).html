@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AskEva · Exhaustive Audit · 2026-06-19</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --brand-700:#177A36; --brand-600:#2BA84A; --brand-500:#3CC23F; --brand-300:#85D653;
+    --tint-50:#EAF9E6; --tint-100:#DCF3D6; --tint-border:#CDEAC4;
+    --canvas:#F6F8F5; --surface:#FFFFFF; --line:#EEF1EC;
+    --ink:#15231A; --ink-2:#4D5D52; --ink-3:#8A978D;
+    --crit:#C2341C; --crit-bg:#FBE7E2; --high:#D9701A; --high-bg:#FBEEDD;
+    --med:#9A6B05; --med-bg:#FBF1D8; --low:#1E7FB0; --low-bg:#E3F2FB;
+    --cos:#6B7280; --cos-bg:#EEF0ED;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+    --font:"Plus Jakarta Sans",system-ui,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{ background:var(--canvas); color:var(--ink); font-family:var(--font);
+    font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:1000px; margin:0 auto; padding:0 24px 96px; }
+
+  /* header */
+  header.top{ background:linear-gradient(135deg,#2BA84A,#3CC23F 55%,#85D653); color:#fff;
+    padding:54px 0 40px; margin-bottom:40px; box-shadow:0 18px 40px -22px rgba(23,122,54,.6); }
+  header.top .wrap{ padding-bottom:0; }
+  .eyebrow{ font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:.18em;
+    text-transform:uppercase; opacity:.92; }
+  header.top h1{ font-size:38px; font-weight:800; letter-spacing:-.02em; margin:12px 0 8px; line-height:1.05; }
+  header.top p{ font-size:15.5px; font-weight:500; max-width:64ch; margin:0; color:rgba(255,255,255,.95); }
+  .meta-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
+  .meta-row .pill{ background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3);
+    border-radius:999px; padding:6px 13px; font-size:12.5px; font-weight:700; }
+
+  /* summary counts */
+  .counts{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:0 0 36px; }
+  .count{ background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:16px 14px; text-align:center; box-shadow:0 1px 0 rgba(21,35,26,.03); }
+  .count b{ display:block; font-size:30px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+  .count span{ display:block; font-size:11px; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; margin-top:8px; color:var(--ink-3); }
+  .count.c-crit b{ color:var(--crit); } .count.c-high b{ color:var(--high); }
+  .count.c-med b{ color:var(--med); } .count.c-low b{ color:var(--low); } .count.c-cos b{ color:var(--cos); }
+
+  /* callout */
+  .callout{ background:var(--tint-50); border:1px solid var(--tint-border); border-radius:18px;
+    padding:20px 22px; margin:0 0 40px; }
+  .callout h3{ margin:0 0 8px; font-size:15px; font-weight:800; color:var(--brand-700); }
+  .callout p{ margin:0 0 10px; font-size:14px; color:var(--ink-2); }
+  .callout p:last-child{ margin-bottom:0; }
+  .callout ul{ margin:6px 0 0; padding-left:20px; font-size:14px; color:var(--ink-2); }
+  .callout li{ margin-bottom:4px; }
+
+  /* sections */
+  section.cat{ margin:0 0 48px; }
+  .cat-head{ display:flex; align-items:baseline; gap:12px; margin:0 0 18px;
+    padding-bottom:12px; border-bottom:2px solid var(--line); }
+  .cat-head .num{ font-family:var(--mono); font-size:13px; font-weight:600; color:var(--brand-600); }
+  .cat-head h2{ font-size:22px; font-weight:800; letter-spacing:-.01em; margin:0; }
+  .cat-head .tag{ margin-left:auto; font-size:12px; font-weight:700; color:var(--ink-3); }
+
+  /* finding card */
+  .find{ background:var(--surface); border:1px solid var(--line); border-left-width:4px;
+    border-radius:14px; padding:18px 20px; margin-bottom:14px; box-shadow:0 1px 0 rgba(21,35,26,.03); }
+  .find.sev-critical{ border-left-color:var(--crit); }
+  .find.sev-high{ border-left-color:var(--high); }
+  .find.sev-medium{ border-left-color:var(--med); }
+  .find.sev-low{ border-left-color:var(--low); }
+  .find.sev-cosmetic{ border-left-color:var(--cos); }
+  .find-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .sev{ font-size:10.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase;
+    padding:4px 9px; border-radius:7px; }
+  .sev-critical .sev{ background:var(--crit-bg); color:var(--crit); }
+  .sev-high .sev{ background:var(--high-bg); color:var(--high); }
+  .sev-medium .sev{ background:var(--med-bg); color:var(--med); }
+  .sev-low .sev{ background:var(--low-bg); color:var(--low); }
+  .sev-cosmetic .sev{ background:var(--cos-bg); color:var(--cos); }
+  .fid{ font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink-3); }
+  .find-top h4{ font-size:16px; font-weight:800; margin:0; letter-spacing:-.01em; flex:1 1 100%; }
+  .loc{ font-family:var(--mono); font-size:12px; color:var(--brand-700); background:var(--tint-50);
+    border:1px solid var(--tint-border); border-radius:6px; padding:2px 7px; }
+  dl{ margin:0; display:grid; grid-template-columns:88px 1fr; gap:4px 14px; }
+  dl dt{ font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-3); padding-top:2px; }
+  dl dd{ margin:0; font-size:14px; color:var(--ink-2); }
+  dl dd code, p code, li code{ font-family:var(--mono); font-size:12.5px; background:var(--canvas);
+    border:1px solid var(--line); border-radius:5px; padding:1px 5px; color:var(--ink); }
+  .conf{ font-weight:700; }
+  .conf.high{ color:var(--brand-700); } .conf.med{ color:var(--med); } .conf.low{ color:var(--ink-3); }
+
+  footer{ margin-top:40px; padding-top:24px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--ink-3); }
+  @media (max-width:680px){
+    .counts{ grid-template-columns:repeat(3,1fr); }
+    dl{ grid-template-columns:1fr; gap:1px; } dl dt{ padding-top:8px; }
+    header.top h1{ font-size:30px; }
+  }
+  @media print{
+    body{ background:#fff; } header.top{ box-shadow:none; }
+    .find{ break-inside:avoid; } section.cat{ break-inside:avoid-page; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">QA · Security · A11y · Performance Audit</div>
+    <h1>AskEva CRM — Exhaustive Audit</h1>
+    <p>A deep, code-level review of <strong>AskEva App&nbsp;-&nbsp;Merged.html</strong> and its ~45 linked JavaScript modules and ~30 stylesheets. Findings are grouped by the ten requested categories, each with severity, location, impact, root cause, a concrete fix, and a confidence rating.</p>
+    <div class="meta-row">
+      <span class="pill">Target: AskEva App - Merged.html</span>
+      <span class="pill">~28,000 lines JS</span>
+      <span class="pill">Date: 19 Jun 2026</span>
+      <span class="pill">Method: static read + pattern scan</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="counts">
+    <div class="count c-crit"><b>1</b><span>Critical</span></div>
+    <div class="count c-high"><b>3</b><span>High</span></div>
+    <div class="count c-med"><b>17</b><span>Medium</span></div>
+    <div class="count c-low"><b>16</b><span>Low</span></div>
+    <div class="count c-cos"><b>6</b><span>Cosmetic</span></div>
+  </div>
+
+  <div class="callout">
+    <h3>Read this first — scope &amp; method (honesty note)</h3>
+    <p>This report is a <strong>deep, targeted audit</strong>, not a literal line-by-line transcription of all ~28k lines. Coverage was: full read of the integration shell (<code>app-shell.merged.js</code>) and the sync/real-time core (<code>sync-layer.js</code>); the persistence layer of <code>leads-module.js</code>; the merged HTML shell + inline scripts; plus high-signal pattern scans (<code>innerHTML</code>, <code>JSON.parse</code>, <code>setInterval</code>, document/window listeners, duplicate IDs, missing <code>alt</code>, filename collisions) across every root module.</p>
+    <p>Two framing facts that change how several requested checks apply:</p>
+    <ul>
+      <li><strong>This is a fixed-size phone mockup</strong> (<code>.device</code> = 412×892) centered in <code>#stage</code> and scaled to fit by <code>fitStage()</code> in <code>profile.js</code>. It does not reflow into a desktop layout, so the requested 768–1920px "layout break" checks mostly reduce to "does the scale-to-fit behave" — covered in §3.</li>
+      <li><strong>This is a prototype with no backend.</strong> Auth, OTP, 2FA and sync are partly simulated. The §6 auth findings are real per your security brief, but several are by-design for a demo — flagged as such.</li>
+    </ul>
+    <p>Confidence is marked per finding. <span class="conf high">High</span> = directly verified in source. <span class="conf med">Medium</span> = behavior reasoned from verified code. <span class="conf low">Low</span> = needs runtime confirmation.</p>
+  </div>
+
+  <!-- ============ 1. FUNCTIONAL BUGS ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">01</span><h2>Functional Bugs</h2></div>
+
+    <div class="find sev-high">
+      <div class="find-top"><span class="sev">High</span><span class="fid">F-01</span>
+        <span class="loc">app-shell.merged.js · otpForm submit</span>
+        <h4>OTP code is never verified — any 6 digits sign you in</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The OTP form's submit handler only checks <code>code.length &lt; 6</code>, then calls <code>maybe2FA()</code>. The actual digits entered are never compared to a sent code.</dd>
+        <dt>Impact</dt><dd>Login-with-OTP is bypassable with <code>000000</code> or any six digits. The "Verify it's you" step gives a false sense of security.</dd>
+        <dt>Root cause</dt><dd>No code is generated/stored when "Send OTP" fires (<code>proceedToOtpCode</code> just toasts), so there is nothing to validate against.</dd>
+        <dt>Fix</dt><dd>Generate and store a one-time code in <code>sendOtp()</code>, then in the submit handler compare <code>code</code> to it (and expire it). For a demo, hardcode an expected value and reject mismatches so the flow reads as real.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span> — handler reads <code>if (code.length &lt; 6) {…} hideErr(err); maybe2FA();</code></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">F-02</span>
+        <span class="loc">app-shell.merged.js · maybe2FA / twofaForm</span>
+        <h4>2FA gate silently bypasses when the security module is absent</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>maybe2FA()</code> calls <code>doLogin()</code> directly unless <code>window.__security.enabled()</code> is truthy; the 2FA submit also does <code>if (!window.__security || !window.__security.verifyCode) { doLogin(); }</code>.</dd>
+        <dt>Impact</dt><dd>If <code>settings-security.js</code> fails to load (CDN/cache/script error) the entire 2FA requirement vanishes and any credential-format passes.</dd>
+        <dt>Root cause</dt><dd>Fail-open default. Missing dependency is treated as "no 2FA required" instead of "cannot verify → block".</dd>
+        <dt>Fix</dt><dd>Fail closed: if a user has 2FA enrolled but the verifier is unavailable, show an error and refuse login rather than waving them through.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">F-03</span>
+        <span class="loc">app-shell.merged.js · registeredPhone()</span>
+        <h4>Only one email can ever log in via OTP / reset password</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>registeredPhone()</code> hardcodes a single map: <code>{ "eshan@tunepath.com": "9876544322" }</code>. Every other address is rejected with "No account is registered with this email" in both Login-with-OTP and Forgot-password.</dd>
+        <dt>Impact</dt><dd>If a demo viewer signs up (the sign-up flow accepts any email) and then tries OTP login or password reset, they are permanently locked out — the sign-up never adds them to this map.</dd>
+        <dt>Root cause</dt><dd>Sign-up, OTP and reset are three disconnected flows; the "registered" check ignores accounts created in-session.</dd>
+        <dt>Fix</dt><dd>Have sign-up persist the new email→phone pair (e.g. localStorage) and have <code>registeredPhone()</code> consult it, or relax the gate for the prototype.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">F-04</span>
+        <span class="loc">profile.js · fitStage() (line ~42)</span>
+        <h4>Device rescales mid-typing when the mobile keyboard opens</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>fitStage()</code> is bound to <code>window resize</code> and computes scale from <code>window.innerHeight</code>. On a real phone, focusing an input opens the soft keyboard, which shrinks <code>innerHeight</code> and fires <code>resize</code> → the whole phone visibly shrinks while the user types.</dd>
+        <dt>Impact</dt><dd>Jarring shrink/zoom on every text-field focus on touch devices; can also scroll the focused field out of view.</dd>
+        <dt>Root cause</dt><dd>No distinction between a true viewport resize and a keyboard-driven <code>innerHeight</code> change; no use of <code>visualViewport</code>.</dd>
+        <dt>Fix</dt><dd>Debounce, and ignore height-only shrinks while an input/textarea is focused; or base the fit on <code>visualViewport</code> and skip re-fit when <code>document.activeElement</code> is an editable field.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span> — logic verified; behavior is device-dependent.</dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">F-05</span>
+        <span class="loc">app-shell.merged.js · setTitle()</span>
+        <h4><code>signinTitle.firstChild.textContent</code> assumes a text node</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>setTitle(t)</code> writes to <code>signinTitle.firstChild.textContent</code>. If the title's first child is ever an element (icon/span) rather than a leading text node, this writes into the wrong node or throws.</dd>
+        <dt>Impact</dt><dd>Brittle to markup edits; a future title tweak could blank the heading or error silently.</dd>
+        <dt>Root cause</dt><dd>Relies on undocumented DOM ordering instead of a dedicated text target.</dd>
+        <dt>Fix</dt><dd>Wrap the title text in its own <code>&lt;span&gt;</code> and set that span's <code>textContent</code>.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">F-06</span>
+        <span class="loc">app-shell.merged.js · filterTickets()</span>
+        <h4>Ticket priority filter is coupled to CSS class probing</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Priority is derived by reading the badge's classes (<code>prioEl.classList.contains("high")…</code>) rather than a <code>data-</code> attribute. Status uses <code>data-status</code>, priority does not.</dd>
+        <dt>Impact</dt><dd>A purely visual class rename on <code>.tk-prio</code> silently breaks filtering with no error.</dd>
+        <dt>Root cause</dt><dd>Logic reads from presentation. Inconsistent with the status path right next to it.</dd>
+        <dt>Fix</dt><dd>Stamp <code>data-priority</code> on each <code>.tk-card</code> and filter on that.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 2. UI / UX ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">02</span><h2>UI / UX Issues</h2></div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">U-01</span>
+        <span class="loc">AskEva App - Merged.html · bootSplash()</span>
+        <h4>~5.4s unskippable boot splash on every load</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>bootSplash()</code> hardcodes <code>setTimeout(startLeave, 4300)</code> followed by a ~1120ms logo hand-off — roughly 5.4s before the login screen is interactive, every single load, with no tap-to-skip.</dd>
+        <dt>Impact</dt><dd>Returning users and reviewers wait 5+ seconds each visit; feels slow and blocks rapid iteration.</dd>
+        <dt>Root cause</dt><dd>Fixed timers tuned for first-impression animation, no "seen it" short-circuit.</dd>
+        <dt>Fix</dt><dd>Allow tap/click to skip; shorten on repeat visits (localStorage flag); or gate the long timeline behind a reduced-motion / "first run" check.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">U-02</span>
+        <span class="loc">AskEva App - Merged.html · .status-bar</span>
+        <h4>Status bar flashes hardcoded "12:24 / 23" before JS runs</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The clock is authored as static text <code>&lt;div class="clock"&gt;12:24&lt;/div&gt;</code> and battery as <code>23</code>. On load the real IST clock script overwrites the time, producing a visible flip from 12:24 to the actual time.</dd>
+        <dt>Impact</dt><dd>Minor flash of incorrect content (FOUC-style) on the status bar at every boot.</dd>
+        <dt>Root cause</dt><dd>Placeholder content shipped in markup; JS updates after first paint.</dd>
+        <dt>Fix</dt><dd>Render the clock empty (or run <code>tickClock()</code> synchronously inline before paint).</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">U-03</span>
+        <span class="loc">Integration &lt;style&gt; · merge-green-header / dash2</span>
+        <h4>Heavy <code>!important</code> override layer signals specificity wars</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The merge layer overrides dozens of properties with <code>!important</code> (e.g. <code>#convView .chat-header{ padding-top:46px !important }</code>, the entire <code>merge-green-header</code> block). The inline comments literally describe it as "CACHE-PROOF … wins regardless of external CSS cache state."</dd>
+        <dt>Impact</dt><dd>Any future style change to these components must also fight <code>!important</code>; per the project's own editing rules, this also blocks direct-manipulation style edits from taking effect.</dd>
+        <dt>Root cause</dt><dd>Multiple design systems (chat vs appointments vs dashboard) merged by force rather than reconciled into shared tokens.</dd>
+        <dt>Fix</dt><dd>Promote the merged chrome to a single source-of-truth component class set and delete the override layer once the underlying CSS agrees.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-cosmetic">
+      <div class="find-top"><span class="sev">Cosmetic</span><span class="fid">U-04</span>
+        <span class="loc">sync-layer.js · renderChip()</span>
+        <h4>Dead ternary: both branches return "Offline"</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>txt.textContent = n &gt; 0 ? "Offline" : "Offline";</code> — the conditional has no effect.</dd>
+        <dt>Impact</dt><dd>None functionally; a queued-while-offline count isn't reflected in the chip label even though the code looks like it intends to.</dd>
+        <dt>Root cause</dt><dd>Leftover from an edit that dropped the "Offline · N" variant.</dd>
+        <dt>Fix</dt><dd>Either show <code>"Offline · " + n</code> when <code>n &gt; 0</code> or collapse to a single literal.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 3. RESPONSIVENESS ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">03</span><h2>Responsiveness</h2><span class="tag">fixed device · scale-to-fit</span></div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">R-01</span>
+        <span class="loc">profile.js · fitStage()</span>
+        <h4>Scale only shrinks, never enlarges — tiny phone on large monitors</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>scale = Math.min(sx, sy, 1)</code> caps at 1, so at 1440px/1920px the 412×892 device sits at native size in a large empty field. Intended, but the surrounding canvas is unused space.</dd>
+        <dt>Impact</dt><dd>On desktop the app looks like a small phone floating in a void; reviewers may expect it to fill more of the screen.</dd>
+        <dt>Root cause</dt><dd>Deliberate "phone mock" framing; acceptable, noted for completeness against the 1280–1920 checks.</dd>
+        <dt>Fix</dt><dd>If a larger preview is wanted, allow scaling above 1 up to a sensible cap, or add a subtle device shadow/background to fill the stage.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">R-02</span>
+        <span class="loc">profile.css · .device (412×892 fixed)</span>
+        <h4>Short viewports (≈≤520px tall) scale text below comfortable size</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Because the entire 892px-tall device is scaled uniformly to fit height, a short window (laptop with browser chrome, or landscape phone ~375px tall) drives <code>scale</code> well below 0.5, shrinking 24px body text to ~11px effective.</dd>
+        <dt>Impact</dt><dd>At 320–414px-tall / landscape orientations, content becomes hard to read and 44px touch targets shrink below the tap-friendly threshold.</dd>
+        <dt>Root cause</dt><dd>Whole-frame uniform scale rather than internal responsive reflow (expected for a device mock, but worth a minimum-scale guard).</dd>
+        <dt>Fix</dt><dd>Clamp a minimum scale and allow the device to scroll within the stage below it, so text never drops under a legible floor.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">R-03</span>
+        <span class="loc">.leads-secondary / #pfTabs (overflow-x:auto)</span>
+        <h4>Horizontally-scrollable tab rows have no scroll affordance</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Secondary tab rows and the profile tab strip use <code>overflow-x:auto; scrollbar-width:none</code>. With 6 profile tabs at 412px width, later tabs (Subscription, Transactions) are off-screen with no visible cue that more exist.</dd>
+        <dt>Impact</dt><dd>Discoverability: users may not realize tabs scroll; hidden tabs feel missing.</dd>
+        <dt>Root cause</dt><dd>Scrollbar hidden for aesthetics, no fade/chevron edge hint.</dd>
+        <dt>Fix</dt><dd>Add a right-edge gradient fade or a peeking partial tab so the overflow is visible.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 4. ACCESSIBILITY ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">04</span><h2>Accessibility</h2></div>
+
+    <div class="find sev-high">
+      <div class="find-top"><span class="sev">High</span><span class="fid">A-01</span>
+        <span class="loc">CSS: .lp-secrow span, .cp-row .v.link, et al.</span>
+        <h4>Interactive <code>&lt;span&gt;</code>s are not keyboard- or screen-reader-operable</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Several click targets are bare <code>&lt;span&gt;</code>/<code>&lt;div&gt;</code> with <code>cursor:pointer</code> and a JS click handler but no <code>role</code>, <code>tabindex</code>, or key handler — e.g. the "See all" link (<code>.lp-secrow span</code>) and linkified field values.</dd>
+        <dt>Impact</dt><dd>Keyboard and screen-reader users cannot reach or activate these actions; they're invisible to assistive tech.</dd>
+        <dt>Root cause</dt><dd>Styled-as-link spans instead of real <code>&lt;button&gt;</code>/<code>&lt;a&gt;</code>.</dd>
+        <dt>Fix</dt><dd>Use <code>&lt;button type="button"&gt;</code> (or <code>&lt;a&gt;</code>) for these actions; if markup must stay, add <code>role="button" tabindex="0"</code> and an Enter/Space handler.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">A-02</span>
+        <span class="loc">sync-layer.js · sync chip</span>
+        <h4>Sync state changes are not announced (no aria-live)</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The status chip toggles between Synced / Syncing / Pending / Failed / Offline visually, but its only a11y hook is a static <code>aria-label="Sync status"</code>. The offline banner and toasts likewise aren't live regions.</dd>
+        <dt>Impact</dt><dd>Screen-reader users get no notification when they go offline, a sync fails, or changes are queued — exactly the states that matter most.</dd>
+        <dt>Root cause</dt><dd>State is conveyed purely through class/colour changes.</dd>
+        <dt>Fix</dt><dd>Add <code>aria-live="polite"</code> to the chip text / banner / toast container, and update an accessible text value on each state change.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">A-03</span>
+        <span class="loc">Green photo headers (.lp-head, .d2-hero, secondary tabs)</span>
+        <h4>White / translucent-white text over a photographic gradient risks failing AA contrast</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Sub-labels use <code>rgba(255,255,255,.82–.88)</code> over <code>assets/bg-green.jpg</code>. Where the photo is light (the lime highlights), white-on-light can drop below the 4.5:1 AA ratio for small text.</dd>
+        <dt>Impact</dt><dd>Low-vision users may struggle to read sub-titles, segment labels, and chips on the hero.</dd>
+        <dt>Root cause</dt><dd>Text contrast depends on a variable background image rather than a guaranteed dark scrim.</dd>
+        <dt>Fix</dt><dd>Strengthen the existing top-gradient scrim under text zones, or use solid white (not translucent) for small labels and verify ≥4.5:1 against the lightest pixels.</dd>
+        <dt>Confidence</dt><dd><span class="conf low">Low</span> — depends on the image; verify with a contrast tool.</dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">A-04</span>
+        <span class="loc">AskEva App - Merged.html · .status-bar icons</span>
+        <h4>Decorative status-bar (signal/battery/clock) is exposed to screen readers</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The fake system status bar (clock "12:24", signal bars, "23" battery) carries no <code>aria-hidden</code>, so it's read aloud as content.</dd>
+        <dt>Impact</dt><dd>Screen-reader users hear meaningless chrome ("12 24, 23") before real content on every screen.</dd>
+        <dt>Root cause</dt><dd>Device-mock chrome treated as content.</dd>
+        <dt>Fix</dt><dd>Add <code>aria-hidden="true"</code> to <code>.status-bar</code> (the real sync chip can live outside it or keep its own label).</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">A-05</span>
+        <span class="loc">app-shell.merged.js · OTP / 2FA inputs</span>
+        <h4>Six split single-digit inputs lack grouping labels</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The OTP/2FA rows are six separate <code>&lt;input maxlength=1&gt;</code> with auto-advance but no <code>aria-label</code> per box and no group <code>role="group" aria-labelledby</code>.</dd>
+        <dt>Impact</dt><dd>Screen readers announce six unlabeled edit fields; users can't tell position ("digit 3 of 6").</dd>
+        <dt>Root cause</dt><dd>Visual-only segmented code entry.</dd>
+        <dt>Fix</dt><dd>Wrap in <code>role="group"</code> with a label, give each input <code>aria-label="Digit N"</code>, and consider <code>inputmode="numeric" autocomplete="one-time-code"</code> on the first.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 5. PERFORMANCE ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">05</span><h2>Performance</h2></div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">P-01</span>
+        <span class="loc">AskEva App - Merged.html · autofill MutationObserver</span>
+        <h4>App-wide observer runs on every DOM insertion across the whole document</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The anti-autofill IIFE does <code>obs.observe(document.documentElement, { childList:true, subtree:true })</code> and, for every added subtree, calls <code>querySelectorAll("input, textarea")</code> + form sweeps. Modules rebuild large lists via <code>innerHTML</code> (ticketing, leads, dashboards) constantly.</dd>
+        <dt>Impact</dt><dd>Every list re-render triggers a full-subtree query and attribute stamping — measurable main-thread churn on big lists and rapid navigation.</dd>
+        <dt>Root cause</dt><dd>Broadest-possible observer scope to catch dynamically-rendered inputs.</dd>
+        <dt>Fix</dt><dd>Scope the observer to form-bearing containers, throttle/batch via <code>requestIdleCallback</code>, or stamp inputs at render time in each module instead of globally.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span> — mechanism verified; cost scales with render frequency.</dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">P-02</span>
+        <span class="loc">notifications.js:263 · profile.js:262</span>
+        <h4>Always-on 1–1.5s polling timers run regardless of route</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>setInterval(syncBadges, 1500)</code> (notifications) and <code>setInterval(tickTimers, 1000)</code> (profile) run for the page's whole lifetime, even when their UI isn't visible. They join sync's 52s + 15s heartbeats and leads' 15s reminder poll.</dd>
+        <dt>Impact</dt><dd>Continuous wakeups → wasted battery/CPU on a long-lived SPA; <code>syncBadges</code> is a DOM poll that could be event-driven.</dd>
+        <dt>Root cause</dt><dd>Polling chosen over event-driven updates.</dd>
+        <dt>Fix</dt><dd>Pause timers on <code>visibilitychange</code> (hidden) and when the owning route isn't active; convert <code>syncBadges</code> to fire on the existing <code>leads:changed</code> / notification events.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span> (existence) / <span class="conf med">Medium</span> (impact).</dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">P-03</span>
+        <span class="loc">&lt;head&gt; · 30 CSS + 45 JS requests</span>
+        <h4>~75 separate, manually cache-busted subresources</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The shell loads ~30 stylesheets and ~45 scripts, each with a hand-maintained <code>?v=NN</code>. No bundling/minification; render-blocking CSS in the head.</dd>
+        <dt>Impact</dt><dd>Many round-trips on first load; easy to ship a stale module by forgetting one version bump (the inline "CACHE-PROOF" notes show this has bitten before).</dd>
+        <dt>Root cause</dt><dd>Module-per-feature authoring without a build step.</dd>
+        <dt>Fix</dt><dd>Add a bundle/minify step for production (the offline/standalone variants already inline everything — use that path for releases).</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-cosmetic">
+      <div class="find-top"><span class="sev">Cosmetic</span><span class="fid">P-04</span>
+        <span class="loc">Multiple modules · innerHTML list rebuilds</span>
+        <h4>Full-list <code>innerHTML</code> re-renders on every filter keystroke</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>List views (ticketing, contacts, leads) rebuild the entire list via <code>host.innerHTML = list.map(...).join("")</code> on each search/filter change rather than diffing.</dd>
+        <dt>Impact</dt><dd>Layout thrash and lost input focus/scroll on large lists; fine at demo data sizes, costly at scale.</dd>
+        <dt>Root cause</dt><dd>Stringly-typed rendering without a virtual DOM.</dd>
+        <dt>Fix</dt><dd>Debounce search input and, for large lists, update only changed rows.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 6. SECURITY ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">06</span><h2>Security</h2><span class="tag">prototype · no backend</span></div>
+
+    <div class="find sev-critical">
+      <div class="find-top"><span class="sev">Critical</span><span class="fid">S-01</span>
+        <span class="loc">app-shell.merged.js · pwForm / otpForm / maybe2FA</span>
+        <h4>Authentication accepts any well-formed credentials (client-only)</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Password sign-in passes for <em>any</em> RFC-ish email + any ≥4-char password (<code>okEmail</code>/<code>okPw</code> are format checks only). Combined with F-01 (OTP not verified) and F-02 (2FA fail-open), there is no real authentication anywhere.</dd>
+        <dt>Impact</dt><dd>Anyone reaching the page is "logged in" as Eshan with full CRM data. All lead/customer/ticket data lives unprotected in <code>localStorage</code>.</dd>
+        <dt>Root cause</dt><dd>By design for a no-backend prototype — but it fully satisfies your "weak authentication logic" check and must not ship as-is.</dd>
+        <dt>Fix</dt><dd>For production, move auth to a server with real credential verification, signed sessions, and server-side 2FA. For the demo, at minimum gate on a known credential so the flow is honest.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-high">
+      <div class="find-top"><span class="sev">High</span><span class="fid">S-02</span>
+        <span class="loc">Many modules · innerHTML with field data</span>
+        <h4>Stored-XSS surface: audit every <code>innerHTML</code> that interpolates user text</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Rendering is string-concatenated <code>innerHTML</code> throughout. Most paths correctly wrap user values in <code>esc()</code>/<code>escapeHtml()</code>, but the pattern is easy to get wrong: a single unescaped lead <code>name</code>, tag, note, company, or ticket subject becomes stored XSS, persisted via <code>localStorage</code> and re-injected on every load. Note also that <code>esc()</code> in <code>sync-layer.js</code>/<code>ticketing.js</code> escapes <code>&amp; &lt; &gt; "</code> but not <code>'</code> — safe only while values never land in single-quoted attributes.</dd>
+        <dt>Impact</dt><dd>If any field reaches <code>innerHTML</code> unescaped, a malicious value typed once executes on every subsequent load for that user.</dd>
+        <dt>Root cause</dt><dd>No central templating/escaping guarantee; escaping is per-call discipline.</dd>
+        <dt>Fix</dt><dd>Standardize one escaping helper that also handles <code>'</code>, route all dynamic text through it (or use <code>textContent</code>/<code>createElement</code> for user data), and add a lint rule flagging raw interpolation into <code>innerHTML</code>.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span> — escaping is widespread; a full path-by-path verification of every field was not exhaustively completed.</dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">S-03</span>
+        <span class="loc">leads-module.js · localStorage stores</span>
+        <h4>Sensitive CRM data persisted unencrypted in localStorage</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Leads, customers, activity, and preferences are stored in plain <code>localStorage</code> (<code>askeva.leads.v1</code>, <code>askeva.customers.v1</code>, etc.) including names, phone numbers, emails, and notes.</dd>
+        <dt>Impact</dt><dd>Any script on the origin, a shared/kiosk device, or browser extension can read all customer PII; it also survives logout (no clear on <code>doLogout()</code>).</dd>
+        <dt>Root cause</dt><dd>Client-only persistence model.</dd>
+        <dt>Fix</dt><dd>Clear sensitive stores on logout; for production, keep PII server-side and store only a session token.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">S-04</span>
+        <span class="loc">app-shell.merged.js · sign-up vs update-password policy</span>
+        <h4>Inconsistent password policy across flows</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Change-password (<code>updatePwBtn</code>) enforces ≥8 chars + letters&amp;numbers + mismatch/identity checks, while sign-up (<code>suPw</code>) and login accept any ≥4-char string. The strength meter also implies a standard the other flows don't enforce.</dd>
+        <dt>Impact</dt><dd>Users can register weak 4-char passwords that the in-app change screen would reject — confusing and weaker than advertised.</dd>
+        <dt>Root cause</dt><dd>Validation rules authored independently per screen.</dd>
+        <dt>Fix</dt><dd>Extract one <code>validatePassword()</code> and apply it to sign-up, reset, and change consistently.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 7. CODE QUALITY ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">07</span><h2>Code Quality</h2></div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">C-01</span>
+        <span class="loc">Project root + uploads/</span>
+        <h4>~18 near-duplicate snapshots + a full second app copy in <code>uploads/</code></h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The project ships many parallel HTML snapshots (<code>… (backup)</code>, <code>Revert Point</code>, two <code>Safe Point</code>s, several audits, <code>(offline)</code>/<code>(standalone)</code>) plus <code>uploads/LMS (2)/</code> and <code>uploads/LMS (Copy)/</code> containing complete duplicate module trees (e.g. <code>profile-105f873f.js</code>, <code>chat-73445073.css</code>).</dd>
+        <dt>Impact</dt><dd>Confusion over the source of truth; grep/maintenance noise; risk of editing a stale copy; larger exports.</dd>
+        <dt>Root cause</dt><dd>Snapshot-by-copy versioning instead of VCS branches/tags.</dd>
+        <dt>Fix</dt><dd>Move snapshots to an <code>archive/</code> folder (or real version control) and delete the <code>uploads/</code> duplicates that aren't referenced by the live shell.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">C-02</span>
+        <span class="loc">AskEva App (Offline).html / AskEva App (offline).html</span>
+        <h4>Two files differ only by letter case — collide on case-insensitive filesystems</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>AskEva App (Offline).html</code> and <code>AskEva App (offline).html</code> coexist; on macOS/Windows default filesystems these are the same path and one will silently overwrite the other on checkout/zip.</dd>
+        <dt>Impact</dt><dd>Data loss / wrong-file-served when the project is exported or cloned to a case-insensitive disk.</dd>
+        <dt>Root cause</dt><dd>Accidental case-variant duplicate.</dd>
+        <dt>Fix</dt><dd>Delete one; never rely on case to distinguish filenames.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">C-03</span>
+        <span class="loc">leads-module.js:88 &amp; :515</span>
+        <h4>Duplicate <code>function esc</code> declaration in one scope</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>esc()</code> is declared twice inside the same IIFE (lines 88 and 515). The second hoists over the first; harmless today but a clear merge artifact.</dd>
+        <dt>Impact</dt><dd>Confusing; if the two ever diverge, behavior depends on declaration order.</dd>
+        <dt>Root cause</dt><dd>Two code regions merged without dedup.</dd>
+        <dt>Fix</dt><dd>Keep one definition near the top of the module.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">C-04</span>
+        <span class="loc">chat.js (2672 ln), leads-module.js (2400 ln), ticketing-tickets.js (1345 ln)</span>
+        <h4>Monolithic modules exceed maintainable size</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Several modules are 1.3k–2.7k lines mixing data, rendering, and event wiring in one IIFE.</dd>
+        <dt>Impact</dt><dd>Hard to navigate, test, or edit safely; high merge-conflict risk (visible in the duplicate-esc artifact above).</dd>
+        <dt>Root cause</dt><dd>Feature growth without splitting.</dd>
+        <dt>Fix</dt><dd>Split each into data/store, view/render, and controller files (the project guidance itself recommends &lt;1000-line files).</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-cosmetic">
+      <div class="find-top"><span class="sev">Cosmetic</span><span class="fid">C-05</span>
+        <span class="loc">sync-layer.js · showReturnPill()</span>
+        <h4>Dead code: <code>showReturnPill()</code> only calls <code>hideReturnPill()</code></h4></div>
+      <dl>
+        <dt>Issue</dt><dd>In <code>app-shell.merged.js</code>, <code>showReturnPill()</code> is now a no-op wrapper (the floating pill was removed) — it just calls <code>hideReturnPill()</code>, and the inject-CSS IIFE for the pill still runs and appends an unused <code>&lt;style&gt;</code>.</dd>
+        <dt>Impact</dt><dd>Dead style injection and misleading function name.</dd>
+        <dt>Root cause</dt><dd>Feature removed but scaffolding left behind.</dd>
+        <dt>Fix</dt><dd>Remove the pill CSS injection and the no-op function, or restore the feature.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 8. USER FLOWS ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">08</span><h2>User Flows &amp; States</h2></div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">W-01</span>
+        <span class="loc">app-shell.merged.js · doLogout()</span>
+        <h4>Logout doesn't clear session/data — next visitor sees prior user's CRM</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>doLogout()</code> routes to home + shows the login form but leaves all <code>localStorage</code> (leads, customers, prefs, "pwUpdatedAt") intact, and any "logged in" gate is purely visual.</dd>
+        <dt>Impact</dt><dd>On a shared device, the next person re-"logs in" (any creds, per S-01) and sees the previous user's full data. Logout feels real but isn't.</dd>
+        <dt>Root cause</dt><dd>No session concept; logout is a view change.</dd>
+        <dt>Fix</dt><dd>On logout, clear sensitive stores (or namespace them per session) and require real re-auth.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">W-02</span>
+        <span class="loc">leads-module.js · reseedDeletedOnce()</span>
+        <h4>One-time reseed can resurrect intentionally-deleted seed leads</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>reseedDeletedOnce()</code> re-inserts any seed lead the user deleted, once, guarded by <code>askeva.leads.reseed.v1</code>. A user who deliberately deleted demo leads before this flag existed gets them back on next load.</dd>
+        <dt>Impact</dt><dd>"Deleted" records reappear unexpectedly — looks like a sync bug to the user.</dd>
+        <dt>Root cause</dt><dd>Recovery migration can't distinguish "lost to a bug" from "deliberately deleted".</dd>
+        <dt>Fix</dt><dd>Track explicit per-id tombstones so deletes always win over reseed.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">W-03</span>
+        <span class="loc">leads-module.js · loadLeads()</span>
+        <h4>No schema migration for persisted leads across releases</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>loadLeads()</code> replaces the seed array wholesale with saved data. If a new release adds fields to the lead shape, previously-saved leads lack them and downstream code may read <code>undefined</code>.</dd>
+        <dt>Impact</dt><dd>Returning users (who have v1 data) can hit missing-field rendering or errors after an update.</dd>
+        <dt>Root cause</dt><dd>Version key (<code>v1</code>) exists but no upgrade step merges new defaults.</dd>
+        <dt>Fix</dt><dd>On load, deep-merge saved records over the seed defaults so new fields get sane values.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">W-04</span>
+        <span class="loc">sync-layer.js · onReconnect / forced offline</span>
+        <h4>Forced-offline demo state can desync from the real banner</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The "fail" demo action sets <code>S.forcedOffline = false</code> mid-flow; combined with real <code>online</code>/<code>offline</code> events guarded by <code>!S.forcedOffline</code>, rapid toggling between the demo control and real connectivity changes can leave the banner and chip showing inconsistent states.</dd>
+        <dt>Impact</dt><dd>Edge-case visual inconsistency between banner ("offline") and chip ("synced") during rapid demo toggling.</dd>
+        <dt>Root cause</dt><dd>Two sources of truth for offline (forced flag vs <code>navigator.onLine</code>).</dd>
+        <dt>Fix</dt><dd>Derive all UI from a single <code>isOffline()</code> and re-render both banner and chip together after any state mutation.</dd>
+        <dt>Confidence</dt><dd><span class="conf low">Low</span> — needs runtime repro.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 9. EDGE CASES ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">09</span><h2>Edge Cases</h2></div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">E-01</span>
+        <span class="loc">List rows: .lp-name, .d2-pname, ticket subjects</span>
+        <h4>Long / no-space strings &amp; emoji can overflow or mis-truncate cards</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>Names rely on <code>white-space:nowrap; text-overflow:ellipsis</code> in fixed-width rows. A pasted long unbroken string (URL, 100-char "name") truncates, but multi-line fields (descriptions, notes) without <code>overflow-wrap:anywhere</code> can push card width. Emoji in initials avatars (<code>L.name[0]</code>) render a partial surrogate.</dd>
+        <dt>Impact</dt><dd>Layout overflow on pathological input; broken avatar glyph for emoji-first names.</dd>
+        <dt>Root cause</dt><dd>Ellipsis covers single-line only; initial-letter logic assumes ASCII.</dd>
+        <dt>Fix</dt><dd>Add <code>overflow-wrap:anywhere</code> to free-text blocks; compute initials with <code>Array.from(str)[0]</code> to respect surrogate pairs.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-medium">
+      <div class="find-top"><span class="sev">Medium</span><span class="fid">E-02</span>
+        <span class="loc">sync-layer.js · flush() / retryItem()</span>
+        <h4>Rapid demo clicks can interleave concurrent flush passes</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>flush()</code> is a self-stepping timeout chain over a captured <code>items</code> snapshot. Triggering "Queue a change" / "Make sync fail" repeatedly (or PTR mid-flush) starts overlapping chains that both mutate <code>S.queue</code> and <code>S.syncing</code>.</dd>
+        <dt>Impact</dt><dd>Double-counted progress, a row stuck "Syncing", or the chip settling to the wrong state under fast repeated clicks.</dd>
+        <dt>Root cause</dt><dd>No re-entrancy guard / in-flight flag on <code>flush()</code>.</dd>
+        <dt>Fix</dt><dd>Guard with a <code>flushing</code> flag (return early if already running) or coalesce into a single queue processor.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">E-03</span>
+        <span class="loc">app-shell.merged.js · OTP paste handler</span>
+        <h4>Pasting fewer than 6 digits leaves focus mid-row; non-numeric paste silently dropped</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The paste handler strips non-digits and slices to 6; a 3-digit paste fills 3 boxes and focuses box 3, but a paste of letters yields an empty result with no feedback.</dd>
+        <dt>Impact</dt><dd>Minor confusion on malformed paste (e.g. "Code: 482913" pastes fine, but "four eight…" does nothing).</dd>
+        <dt>Root cause</dt><dd>Silent sanitize with no user messaging.</dd>
+        <dt>Fix</dt><dd>If sanitized paste is empty, show a brief hint; otherwise behavior is acceptable.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">E-04</span>
+        <span class="loc">AskEva App - Merged.html · IST clock math</span>
+        <h4>Clock derives IST from local offset — correct, but stale up to 15s</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>tickClock</code> recomputes only every 15s, so the minute can display up to ~15s late and won't flip exactly on the minute boundary. (The timezone math itself — <code>getTimezoneOffset()+330</code> — is correct for any host TZ.)</dd>
+        <dt>Impact</dt><dd>Cosmetic: the fake status-bar minute lags slightly.</dd>
+        <dt>Root cause</dt><dd>Coarse 15s polling interval.</dd>
+        <dt>Fix</dt><dd>Schedule the next tick at the start of the next minute (or poll every 1s — it's cheap).</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ 10. VISUAL POLISH ============ -->
+  <section class="cat">
+    <div class="cat-head"><span class="num">10</span><h2>Visual Polish</h2></div>
+
+    <div class="find sev-cosmetic">
+      <div class="find-top"><span class="sev">Cosmetic</span><span class="fid">V-01</span>
+        <span class="loc">Status: .d2-donut conic-gradient definitions</span>
+        <h4>Donut chart percentages are hardcoded and defined twice</h4></div>
+      <dl>
+        <dt>Issue</dt><dd><code>.d2-donut.status</code> is declared with one <code>conic-gradient</code> in the dash2 block and then <em>redefined</em> later in the same stylesheet with different colors/stops; the second wins. The slice percentages (57.143%, 71.429%…) are static and won't match live data.</dd>
+        <dt>Impact</dt><dd>The visualized distribution can contradict the numbers next to it; confusing during data changes.</dd>
+        <dt>Root cause</dt><dd>Decorative chart drawn in CSS, duplicated across edits.</dd>
+        <dt>Fix</dt><dd>Generate the conic stops from the real counts in JS and remove the duplicate rule.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-cosmetic">
+      <div class="find-top"><span class="sev">Cosmetic</span><span class="fid">V-02</span>
+        <span class="loc">.d2-bot / .d2-hero mascot</span>
+        <h4>Mascot uses negative margins/absolute offsets that can clip on scale</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The hero mascot is positioned with <code>margin-bottom:-18px</code> and absolute <code>right:-4px; bottom:-6px</code> variants. Under aggressive <code>fitStage()</code> down-scaling or the rounded device clip, the image can be partially cut.</dd>
+        <dt>Impact</dt><dd>Mascot edge clipping at small scales / on the sheet's rounded corner.</dd>
+        <dt>Root cause</dt><dd>Hand-tuned offsets relative to one viewport size.</dd>
+        <dt>Fix</dt><dd>Contain the mascot within padding rather than negative offsets, or test across the scale range.</dd>
+        <dt>Confidence</dt><dd><span class="conf low">Low</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-low">
+      <div class="find-top"><span class="sev">Low</span><span class="fid">V-03</span>
+        <span class="loc">#toast (inline-styled) vs sy-toast vs module toasts</span>
+        <h4>Multiple overlapping toast systems can stack/clash</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>There's the shared inline-styled <code>#toast</code>, the sync layer's own <code>.sy-toast</code>, and per-module toasts. <code>sync-layer.js</code> even <em>watches</em> <code>#toast</code> mutations to mirror edits — two toasts can appear for one action.</dd>
+        <dt>Impact</dt><dd>Occasional double or overlapping toasts; inconsistent placement (the sync toast vs the bottom <code>#toast</code>).</dd>
+        <dt>Root cause</dt><dd>Toast responsibility split across layers during the merge.</dd>
+        <dt>Fix</dt><dd>Consolidate on one toast service that all modules call.</dd>
+        <dt>Confidence</dt><dd><span class="conf med">Medium</span></dd>
+      </dl>
+    </div>
+
+    <div class="find sev-cosmetic">
+      <div class="find-top"><span class="sev">Cosmetic</span><span class="fid">V-04</span>
+        <span class="loc">.waba-card · grid borders</span>
+        <h4>2×2 grid border rules assume exactly 4 children</h4></div>
+      <dl>
+        <dt>Issue</dt><dd>The WABA status card draws cell separators via <code>:nth-child(odd)</code> right-borders and <code>:nth-child(1)/(2)</code> bottom-borders — correct only for exactly four items. Adding a fifth breaks the grid lines.</dd>
+        <dt>Impact</dt><dd>Future content edits produce mismatched/missing internal borders.</dd>
+        <dt>Root cause</dt><dd>Positional border rules instead of <code>gap</code>+background technique.</dd>
+        <dt>Fix</dt><dd>Use a gap-with-background-line approach so borders adapt to item count.</dd>
+        <dt>Confidence</dt><dd><span class="conf high">High</span></dd>
+      </dl>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Methodology recap.</strong> Findings above were derived by reading the integration shell, sync core, and persistence layer in full, plus repository-wide pattern scans. Items marked Medium/Low confidence (notably the XSS surface S-02 and contrast A-03) warrant a focused follow-up pass — say the word and I'll do a path-by-path escaping audit of every <code>innerHTML</code> sink, or a runtime contrast/keyboard-nav sweep.</p>
+    <p>AskEva CRM · Exhaustive Audit · generated 19 Jun 2026 · 43 findings.</p>
+  </footer>
+
+</div>
+</body>
+</html>

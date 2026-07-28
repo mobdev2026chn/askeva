@@ -1,0 +1,143 @@
+﻿Analyzing lead...                                               
+
+   info - The file name 'dashboard_overview copy.dart' isn't a lower_case_with_underscores identifier - lib\modules\dashboard\dashboard_overview copy.dart:1:1 - file_names
+  error - The method 'getLeadsSummary' isn't defined for the type 'LeadsService' - lib\modules\dashboard\dashboard_overview.dart:54:42 - undefined_method
+  error - The method 'getAgentStats' isn't defined for the type 'LeadsService' - lib\modules\dashboard\dashboard_overview.dart:55:40 - undefined_method
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\dashboard\dashboard_overview.dart:625:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\dashboard\dashboard_overview.dart:667:56 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\modules\dashboard\dashboard_page.dart:93:9 - use_build_context_synchronously
+  error - The method 'getCompanyCustomers' isn't defined for the type 'LeadsService' - lib\modules\leads\company_customers_page.dart:29:30 - undefined_method
+  error - The method 'getCustomerExportUrl' isn't defined for the type 'LeadsService' - lib\modules\leads\company_customers_page.dart:65:30 - undefined_method
+  error - The method 'getCompanies' isn't defined for the type 'LeadsService' - lib\modules\leads\company_list_page.dart:107:43 - undefined_method
+  error - The method 'getCustomer' isn't defined for the type 'LeadsService' - lib\modules\leads\customer_details_page.dart:19:28 - undefined_method
+  error - The method 'getCustomerTickets' isn't defined for the type 'LeadsService' - lib\modules\leads\customer_details_page.dart:122:28 - undefined_method
+  error - The method 'getCustomerAppointments' isn't defined for the type 'LeadsService' - lib\modules\leads\customer_details_page.dart:162:28 - undefined_method
+  error - The method 'getLead' isn't defined for the type 'LeadsService' - lib\modules\leads\lead_details_page.dart:19:28 - undefined_method
+  error - The method 'getLeadActivity' isn't defined for the type 'LeadsService' - lib\modules\leads\lead_details_page.dart:123:28 - undefined_method
+  error - The method 'getLeadCalls' isn't defined for the type 'LeadsService' - lib\modules\leads\lead_details_page.dart:155:28 - undefined_method
+  error - The method 'getLeadNotes' isn't defined for the type 'LeadsService' - lib\modules\leads\lead_details_page.dart:187:28 - undefined_method
+  error - The method 'getExportUrl' isn't defined for the type 'LeadsService' - lib\modules\leads\leads_page.dart:77:32 - undefined_method
+  error - The method 'deleteLeads' isn't defined for the type 'LeadsService' - lib\modules\leads\leads_page.dart:133:28 - undefined_method
+   info - Don't use 'BuildContext's across async gaps - lib\modules\leads\leads_page.dart:134:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\modules\leads\leads_page.dart:141:11 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:205:19 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:207:19 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:377:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:379:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:837:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:839:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:841:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:843:7 - curly_braces_in_flow_control_structures
+  error - The method 'deleteLead' isn't defined for the type 'LeadsService' - lib\modules\leads\leads_page.dart:928:28 - undefined_method
+  error - The method 'sendTemplate' isn't defined for the type 'LeadsService' - lib\modules\leads\leads_page.dart:999:28 - undefined_method
+  error - The method 'getStatuses' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\add_lead_modal.dart:132:43 - undefined_method
+  error - The method 'getSources' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\add_lead_modal.dart:133:42 - undefined_method
+  error - The method 'getAgents' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\add_lead_modal.dart:134:41 - undefined_method
+  error - The method 'getCompanies' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\add_lead_modal.dart:135:44 - undefined_method
+  error - The method 'createAgent' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\add_lead_modal.dart:219:45 - undefined_method
+  error - The method 'createCompany' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\add_lead_modal.dart:244:47 - undefined_method
+  error - The method 'updateLead' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\add_lead_modal.dart:290:28 - undefined_method
+  error - The method 'createLead' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\add_lead_modal.dart:300:28 - undefined_method
+   info - Don't use 'BuildContext's across async gaps - lib\modules\leads\widgets\import_leads_modal.dart:45:9 - use_build_context_synchronously
+  error - The method 'importLeads' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\import_leads_modal.dart:58:38 - undefined_method
+  error - The method 'getStatuses' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\lead_filter_modal.dart:60:22 - undefined_method
+  error - The method 'getSources' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\lead_filter_modal.dart:61:22 - undefined_method
+  error - The method 'getCompanies' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\lead_filter_modal.dart:62:22 - undefined_method
+  error - The method 'getAgents' isn't defined for the type 'LeadsService' - lib\modules\leads\widgets\lead_filter_modal.dart:63:22 - undefined_method
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:24:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:26:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:47:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:72:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:91:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:100:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:108:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:125:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:127:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:130:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:148:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:150:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:164:7 - avoid_print
+warning - The declaration '<unnamed>' isn't referenced - lib\services\leads_service.dart:6:7 - unused_element
+  error - The body might complete normally, causing 'null' to be returned, but the return type, 'FutureOr<Map<String, dynamic>>', is a potentially non-nullable type - lib\services\leads_service.dart:9:39 - body_might_complete_normally
+  error - A function body must be provided - lib\services\leads_service.dart:20:5 - missing_function_body
+  error - Undefined name 'page' - lib\services\leads_service.dart:21:17 - undefined_identifier
+  error - Undefined name 'limit' - lib\services\leads_service.dart:22:18 - undefined_identifier
+  error - Undefined name 'q' - lib\services\leads_service.dart:23:11 - undefined_identifier
+  error - Undefined name 'q' - lib\services\leads_service.dart:23:24 - undefined_identifier
+  error - Undefined name 'q' - lib\services\leads_service.dart:23:43 - undefined_identifier
+  error - Undefined name 'status' - lib\services\leads_service.dart:24:11 - undefined_identifier
+  error - Undefined name 'status' - lib\services\leads_service.dart:24:29 - undefined_identifier
+  error - Undefined name 'status' - lib\services\leads_service.dart:24:58 - undefined_identifier
+  error - Undefined name 'source' - lib\services\leads_service.dart:25:11 - undefined_identifier
+  error - Undefined name 'source' - lib\services\leads_service.dart:25:29 - undefined_identifier
+  error - Undefined name 'source' - lib\services\leads_service.dart:25:58 - undefined_identifier
+  error - Undefined name 'company' - lib\services\leads_service.dart:26:11 - undefined_identifier
+  error - Undefined name 'company' - lib\services\leads_service.dart:26:30 - undefined_identifier
+  error - Undefined name 'company' - lib\services\leads_service.dart:26:61 - undefined_identifier
+  error - Undefined name 'assignedTo' - lib\services\leads_service.dart:27:11 - undefined_identifier
+  error - Undefined name 'assignedTo' - lib\services\leads_service.dart:27:33 - undefined_identifier
+  error - Undefined name 'assignedTo' - lib\services\leads_service.dart:27:70 - undefined_identifier
+  error - Undefined name 'startDate' - lib\services\leads_service.dart:28:11 - undefined_identifier
+  error - Undefined name 'startDate' - lib\services\leads_service.dart:28:43 - undefined_identifier
+  error - Undefined name 'endDate' - lib\services\leads_service.dart:29:11 - undefined_identifier
+  error - Undefined name 'endDate' - lib\services\leads_service.dart:29:39 - undefined_identifier
+  error - The instance member 'queryParams' can't be accessed in an initializer - lib\services\leads_service.dart:33:32 - implicit_this_reference_in_initializer
+  error - The await expression can only be used in an async function - lib\services\leads_service.dart:34:19 - await_in_wrong_context
+  error - The await expression can only be used in an async function - lib\services\leads_service.dart:35:18 - await_in_wrong_context
+  error - The instance member 'uri' can't be accessed in an initializer - lib\services\leads_service.dart:36:7 - implicit_this_reference_in_initializer
+  error - The instance member 'token' can't be accessed in an initializer - lib\services\leads_service.dart:37:21 - implicit_this_reference_in_initializer
+  error - The instance member 'token' can't be accessed in an initializer - lib\services\leads_service.dart:37:62 - implicit_this_reference_in_initializer
+  error - Expected a class member - lib\services\leads_service.dart:39:5 - expected_class_member
+  error - Expected an identifier - lib\services\leads_service.dart:39:8 - missing_identifier
+  error - The prefix 'resp' can't be used here because it's shadowed by a local declaration - lib\services\leads_service.dart:39:9 - prefix_shadowed_by_local_declaration
+  error - Expected an identifier - lib\services\leads_service.dart:39:25 - missing_identifier
+  error - Expected to find ')' - lib\services\leads_service.dart:39:28 - expected_token
+  error - Expected a class member - lib\services\leads_service.dart:50:5 - expected_class_member
+   info - The variable name 'Exception' isn't a lowerCamelCase identifier - lib\services\leads_service.dart:50:11 - non_constant_identifier_names
+  error - 'Exception' must have a method body because 'LeadsService' isn't abstract - lib\services\leads_service.dart:50:11 - concrete_class_with_abstract_member
+  error - Expected an identifier - lib\services\leads_service.dart:50:21 - missing_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:54:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:94:9 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:104:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:118:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:128:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:138:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:148:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:158:9 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:169:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:187:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:209:29 - undefined_identifier
+   info - Don't invoke 'print' in production code - lib\services\leads_service.dart:212:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\leads_service.dart:213:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\leads_service.dart:224:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\leads_service.dart:225:5 - avoid_print
+  error - The function 'getLeads' isn't defined - lib\services\leads_service.dart:236:28 - undefined_function
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:248:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:260:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:290:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:315:20 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:323:20 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:331:29 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:348:9 - undefined_identifier
+  error - Undefined name 'baseUrl' - lib\services\leads_service.dart:362:29 - undefined_identifier
+  error - Expected a method, getter, setter or operator declaration - lib\services\leads_service.dart:373:1 - expected_executable
+   info - Statements in an if should be enclosed in a block - lib\services\ml_kit_ocr_service.dart:59:11 - curly_braces_in_flow_control_structures
+   info - Don't invoke 'print' in production code - lib\services\ml_kit_ocr_service.dart:78:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\stat_card.dart:25:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\stat_card.dart:36:30 - deprecated_member_use
+
+flutter : 125 issues found. 
+(ran in 6.9s)
+At line:1 char:1
++ flutter analyze > 
+analysis_utf8.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (125 i  
+  ssues found. (ran in 6.   
+ 9s):String) [], RemoteE    
+xception
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 

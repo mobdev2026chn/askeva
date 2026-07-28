@@ -1,0 +1,84 @@
+/* =========================================================
+   AskEva — Leads tools
+   Filter dropdown, search, sort, and the Company page.
+   Builds on the existing lp-*, cp-*, pop-*, sheet-* and
+   lpf-* component styles. Loaded after lead-profile.css.
+   ========================================================= */
+
+/* search box now holds a live input */
+.lp-search{ cursor:text; }
+.lp-search input{
+  flex:1; border:none; outline:none; background:transparent; width:100%;
+  font-family:var(--font-body); font-size:14.5px; font-weight:600; color:var(--ink); padding:0;
+}
+.lp-search input::placeholder{ color:var(--ink-4); font-weight:600; }
+
+/* filter pill active state */
+.lp-pill.filtered{ background:#fff; color:var(--accent-deep); }
+
+/* empty-state when filter/search returns nothing */
+.lp-empty{ text-align:center; padding:34px 20px; color:var(--ink-4); }
+.lp-empty svg{ width:40px; height:40px; color:var(--ink-4); opacity:.6; }
+.lp-empty .t{ font-size:14.5px; font-weight:700; color:var(--ink-2); margin-top:12px; }
+.lp-empty .s{ font-size:12.5px; font-weight:500; margin-top:4px; }
+
+/* ============================================================
+   COMPANY PAGE (drill-in overlay inside the Leads pane)
+   reuses .set-sub positioning + .cp-* header/cards
+   ============================================================ */
+.cmp-sub{ z-index:42 !important; padding:0; }
+.cmp-sub .cp-head{ flex:0 0 auto; }
+.cmp-sub .cp-sheet{ flex:1; min-height:0; }
+.cmp-topbar{ height:46px; display:flex; align-items:center; justify-content:space-between; position:relative; z-index:3; }
+
+.cmp-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+.cmp-stats.two{ grid-template-columns:1fr 1fr; }
+.cmp-stat{ background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow-xs); padding:13px 8px; text-align:center; }
+.cmp-stat .n{ font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-.02em; }
+.cmp-stat .n.green{ color:var(--accent-deep); }
+.cmp-stat .l{ font-size:10px; font-weight:800; color:var(--ink-4); margin-top:5px; text-transform:uppercase; letter-spacing:.04em; }
+
+/* ---- Pipeline Value card (tap to expand) ---- */
+.cmp-pipe{ background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow-xs); padding:6px 16px 4px; margin-bottom:14px; }
+.cmp-pipe .pp-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; border:none; background:transparent; cursor:pointer; font-family:var(--font-body); padding:12px 0 11px; text-align:left; }
+.cmp-pipe .pp-l{ font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-4); }
+.cmp-pipe .pp-v{ font-size:25px; font-weight:800; letter-spacing:-.02em; color:var(--accent-deep); margin-top:6px; }
+.cmp-pipe .pp-v .pp-n{ font-size:14px; font-weight:700; color:var(--ink-4); letter-spacing:0; }
+.cmp-pipe .pp-chev{ color:var(--ink-4); flex:0 0 auto; display:flex; transition:transform .22s ease; }
+.cmp-pipe .pp-chev svg{ width:22px; height:22px; transform:rotate(90deg); }
+.cmp-pipe.open .pp-chev{ transform:rotate(180deg); }
+.cmp-pipe.open .pp-chev svg{ transform:none; }
+.cmp-pipe .pp-weighted{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--ink-2); padding:10px 0; border-top:1px solid var(--line); }
+.cmp-pipe .pp-weighted .pp-wd{ width:9px; height:9px; border-radius:50%; flex:0 0 9px; background:linear-gradient(135deg,var(--accent),var(--brand-300,#85D653)); box-shadow:0 0 0 3px var(--accent-soft); }
+.cmp-pipe .pp-weighted .pp-wl{ color:var(--ink-4); font-weight:600; }
+.cmp-pipe .pp-warn{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:#9A6B05; background:#FBF1D8; border:1px solid #F1DCA6; border-radius:11px; padding:9px 12px; margin:2px 0 12px; }
+.cmp-pipe .pp-warn .wic{ width:15px; height:15px; flex:0 0 15px; }
+.cmp-pipe .pp-break{ display:none; border-top:1px solid var(--line); padding:4px 0 8px; }
+.cmp-pipe.open .pp-break{ display:block; }
+.cmp-pipe .pp-bhead{ font-size:10.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-4); padding:11px 0 4px; }
+.cmp-pipe .pp-row{ display:flex; align-items:center; gap:11px; width:100%; border:none; background:transparent; cursor:pointer; font-family:var(--font-body); padding:10px 0; text-align:left; }
+.cmp-pipe .pp-row + .pp-row{ border-top:1px solid var(--surface-3); }
+.cmp-pipe .pp-rav{ width:34px; height:34px; border-radius:10px; flex:0 0 34px; display:grid; place-items:center; color:#fff; font-size:12.5px; font-weight:800; }
+.cmp-pipe .pp-rb{ flex:1; min-width:0; }
+.cmp-pipe .pp-rn{ display:block; font-size:14px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cmp-pipe .pp-rs{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-4); margin-top:2px; }
+.cmp-pipe .pp-rd{ flex:0 0 auto; font-size:15px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+.cmp-pipe .pp-rd.none{ font-size:12px; font-weight:700; color:var(--ink-4); }
+.cmp-pipe .pp-rd.none .missing{ color:#9A6B05; }
+
+.cmp-secrow{ display:flex; align-items:center; justify-content:space-between; margin:20px 4px 11px; }
+.cmp-secrow h3{ font-size:11px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-4); }
+.cmp-secrow span{ font-size:12.5px; font-weight:700; color:var(--accent-deep); cursor:pointer; }
+
+.cmp-people{ background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow-xs); overflow:hidden; }
+.cmp-person{ display:flex; align-items:center; gap:12px; width:100%; text-align:left; border:none; background:#fff; cursor:pointer; font-family:var(--font-body); padding:13px 15px; }
+.cmp-person + .cmp-person{ border-top:1px solid var(--line); }
+.cmp-person:active{ background:var(--accent-soft); }
+.cmp-person .av{ width:42px; height:42px; border-radius:13px; flex:0 0 42px; display:grid; place-items:center; color:#fff; font-size:15px; font-weight:800; }
+.cmp-person .pb{ flex:1; min-width:0; }
+.cmp-person .pn{ font-size:15px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+.cmp-person .pr{ font-size:12px; font-weight:600; color:var(--ink-4); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cmp-person .chev{ color:var(--ink-4); display:flex; flex:0 0 auto; }
+.cmp-person .chev svg{ width:18px; height:18px; }
+
+/* company timeline reuses .lpf-tl / .lpf-ti */

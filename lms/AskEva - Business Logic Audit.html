@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AskEva · Business Logic Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand-300:#85D653; --brand-400:#5BCC4A; --brand-500:#3CC23F; --brand-600:#2BA84A; --brand-700:#177A36;
+    --tint-50:#EAF9E6; --tint-100:#DCF3D6; --tint-border:#CDEAC4;
+    --canvas:#F6F8F5; --surface:#fff; --line:#EEF1EC;
+    --ink:#15231A; --ink-2:#4D5D52; --ink-3:#8A978D;
+    --info:#3B82F6; --hot:#F2542D; --warm:#F5B829; --cold:#5AB6E8; --grey:#9AA39C; --coral:#EF5350;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; background:var(--canvas); color:var(--ink); font-family:var(--sans);
+    font-size:15px; line-height:1.55; letter-spacing:-.005em;
+  }
+  .wrap{ max-width:960px; margin:0 auto; padding:40px 26px 90px; }
+
+  /* ---- header ---- */
+  .masthead{
+    background:linear-gradient(135deg,#15231A 0%,#177A36 52%,#2BA84A 100%);
+    border-radius:26px; padding:36px 36px 30px; color:#fff; position:relative; overflow:hidden;
+    box-shadow:0 24px 50px -26px rgba(23,122,54,.7);
+  }
+  .masthead::after{
+    content:""; position:absolute; inset:0; opacity:.16; pointer-events:none;
+    background-image:repeating-linear-gradient(125deg,#fff 0 1px,transparent 1px 26px),repeating-linear-gradient(55deg,#fff 0 1px,transparent 1px 26px);
+    mask-image:radial-gradient(120% 120% at 85% 10%,#000,transparent 70%);
+  }
+  .mh-eyebrow{ font-size:12px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; opacity:.92; position:relative; z-index:1; }
+  .mh-title{ font-size:36px; font-weight:800; letter-spacing:-.028em; margin:9px 0 8px; line-height:1.05; position:relative; z-index:1; }
+  .mh-sub{ font-size:15px; font-weight:600; opacity:.95; max-width:66ch; position:relative; z-index:1; }
+  .mh-meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; position:relative; z-index:1; }
+  .mh-chip{
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.26); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:700;
+  }
+
+  /* ---- scope banner ---- */
+  .reality{
+    margin-top:16px; border:1.5px solid var(--tint-border); background:linear-gradient(180deg,#FBFEF9,#F3FBEF);
+    border-radius:20px; padding:22px 24px;
+  }
+  .reality h2{ margin:0 0 6px; font-size:17px; font-weight:800; color:var(--brand-700); display:flex; align-items:center; gap:9px; }
+  .reality h2 .dot{ width:9px;height:9px;border-radius:50%;background:var(--brand-500);box-shadow:0 0 0 4px var(--tint-100); }
+  .reality p{ margin:7px 0; color:#33503C; font-size:14px; font-weight:500; }
+  .reality p strong{ color:var(--brand-700); }
+  .reality .scope-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 24px; margin-top:12px; }
+  .reality .scope-grid div{ font-size:13px; color:#33503C; font-weight:600; }
+  .reality .scope-grid b{ display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); margin-bottom:3px; }
+
+  /* ---- section ---- */
+  section{ margin-top:42px; }
+  .sec-h{ display:flex; align-items:baseline; gap:12px; margin:0 4px 14px; }
+  .sec-n{ font-family:var(--mono); font-size:13px; font-weight:600; color:var(--brand-600); }
+  .sec-h h2{ font-size:22px; font-weight:800; letter-spacing:-.022em; margin:0; }
+  .lead-p{ margin:0 4px 16px; color:var(--ink-2); font-size:15px; font-weight:500; max-width:82ch; }
+  .lead-p strong{ color:var(--ink); font-weight:700; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:22px 24px;
+    box-shadow:0 1px 2px rgba(21,35,26,.04),0 12px 28px -22px rgba(21,35,26,.4);
+  }
+  .card + .card{ margin-top:14px; }
+
+  /* ---- score ---- */
+  .scorewrap{ display:grid; grid-template-columns:230px 1fr; gap:20px; align-items:stretch; }
+  .scorebig{
+    background:linear-gradient(160deg,#15231A,#22372A); color:#fff; border-radius:22px; padding:24px;
+    display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;
+  }
+  .scorebig .num{ font-size:66px; font-weight:800; letter-spacing:-.04em; line-height:1; }
+  .scorebig .num span{ font-size:26px; color:var(--brand-300); }
+  .scorebig .verdict{ margin-top:8px; font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#F5B829; }
+  .scorebig .gloss{ margin-top:8px; font-size:12.5px; color:rgba(255,255,255,.72); font-weight:500; max-width:24ch; }
+  .scorebars{ display:flex; flex-direction:column; gap:11px; justify-content:center; }
+  .sbar .lab{ display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; color:var(--ink-2); margin-bottom:5px; }
+  .sbar .lab b{ color:var(--ink); font-weight:800; }
+  .sbar .track{ height:9px; border-radius:999px; background:var(--line); overflow:hidden; }
+  .sbar .fill{ height:100%; border-radius:999px; background:linear-gradient(90deg,var(--brand-600),var(--brand-400)); }
+  .sbar .fill.low{ background:linear-gradient(90deg,#E0584F,#F2854D); }
+  .sbar .fill.mid{ background:linear-gradient(90deg,#E59A0E,#F5C44A); }
+
+  /* ---- stat strip ---- */
+  .stats{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+  .stat{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 16px 14px; }
+  .stat b{ display:block; font-size:26px; font-weight:800; letter-spacing:-.03em; color:var(--brand-700); }
+  .stat.bad b{ color:#C1352F; } .stat.warn b{ color:#9A6B00; }
+  .stat span{ font-size:11.5px; font-weight:700; color:var(--ink-3); letter-spacing:.01em; }
+
+  /* ---- tables ---- */
+  .tbl-card{ overflow:hidden; padding:18px 12px 8px; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{ text-align:left; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); padding:0 12px 9px; border-bottom:1px solid var(--line); }
+  td{ padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); font-weight:500; }
+  tr:last-child td{ border-bottom:none; }
+  td b, td .nm{ color:var(--ink); font-weight:700; }
+  code{ font-family:var(--mono); font-size:12px; background:var(--tint-50); color:var(--brand-700); padding:2px 6px; border-radius:6px; font-weight:600; }
+
+  /* ---- pills ---- */
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; letter-spacing:.02em; white-space:nowrap; }
+  .pill.ok{ background:var(--tint-50); color:var(--brand-700); border:1px solid var(--tint-border); }
+  .pill.no{ background:#FDECEC; color:#C1352F; border:1px solid #F6D4D2; }
+  .pill.part{ background:#FFF4DC; color:#9A6B00; border:1px solid #F6E2AE; }
+  .sev{ display:inline-block; font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:6px; letter-spacing:.04em; text-transform:uppercase; }
+  .sev.crit{ background:#4A1411; color:#fff; }
+  .sev.high{ background:#FDECEC; color:#C1352F; }
+  .sev.med{ background:#FFF4DC; color:#9A6B00; }
+  .sev.low{ background:var(--tint-50); color:var(--brand-700); }
+  .sev.info{ background:#EAF1FB; color:#2B6CB0; }
+
+  /* ---- finding ---- */
+  .finding{ border:1px solid var(--line); border-radius:18px; padding:18px 20px; background:var(--surface); }
+  .finding + .finding{ margin-top:12px; }
+  .finding.crit{ border-color:#F2C6C2; background:linear-gradient(180deg,#FFF8F7,#fff); }
+  .finding.good{ border-color:var(--tint-border); background:linear-gradient(180deg,#FBFEF9,#fff); }
+  .f-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .f-top h3{ font-size:15.5px; font-weight:800; margin:0; letter-spacing:-.01em; }
+  .f-id{ font-family:var(--mono); font-size:11.5px; color:var(--ink-3); font-weight:600; margin-left:auto; }
+  .finding p{ margin:6px 0; color:var(--ink-2); font-size:13.8px; }
+  .finding .why{ color:var(--ink-3); font-size:12.5px; }
+  .finding .ev{ font-family:var(--mono); font-size:11.5px; color:var(--ink-3); background:var(--canvas); border:1px solid var(--line); border-radius:8px; padding:7px 10px; margin:8px 0 2px; }
+  .finding .fix{ color:var(--ink); font-weight:600; font-size:13.5px; }
+  .finding .fix::before{ content:"→ "; color:var(--brand-600); font-weight:800; }
+
+  ul.clean{ margin:8px 0 0; padding-left:20px; }
+  ul.clean li{ margin:5px 0; color:var(--ink-2); font-size:13.8px; }
+  ul.clean li b{ color:var(--ink); }
+  ul.clean li.add::marker{ color:var(--brand-500); }
+
+  .note{ font-size:12.5px; color:var(--ink-3); margin-top:10px; font-style:italic; }
+
+  /* ---- map-flow lines ---- */
+  .map-flow{ font-family:var(--mono); font-size:12.5px; color:var(--brand-700); background:var(--tint-50); border:1px solid var(--tint-border); border-radius:10px; padding:10px 13px; margin:7px 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .map-flow .verdict{ margin-left:auto; }
+  .map-flow.gap{ color:#9A6B00; background:#FFF7E6; border-color:#F6E2AE; }
+  .map-flow.broken{ color:#C1352F; background:#FDECEC; border-color:#F6D4D2; }
+
+  /* ---- two-col nav boxes ---- */
+  .navcol{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .navbox{ border:1px solid var(--line); border-radius:16px; padding:16px 18px; background:var(--surface); }
+  .navbox.bad{ border-color:#F2C6C2; background:#FFF8F7; }
+  .navbox.good{ border-color:var(--tint-border); background:linear-gradient(180deg,#FBFEF9,#fff); }
+  .navbox h4{ margin:0 0 10px; font-size:13px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+  .navbox.bad h4{ color:#C1352F; } .navbox.good h4{ color:var(--brand-700); }
+  .navbox ul{ margin:0; padding-left:18px; }
+  .navbox li{ font-size:13px; color:var(--ink-2); margin:5px 0; font-weight:600; }
+  .navbox li small{ color:var(--ink-3); font-weight:500; }
+
+  /* ---- lifecycle diagram ---- */
+  .life{ background:linear-gradient(180deg,#0F1A13,#1A2A20); border-radius:22px; padding:26px 24px 30px; color:#fff; overflow-x:auto; }
+  .life-rail{ display:flex; align-items:stretch; gap:0; min-width:760px; }
+  .life-stage{ flex:1; min-width:120px; position:relative; padding:0 6px; }
+  .life-stage .ls-node{ background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:14px; padding:14px 12px; height:100%; }
+  .life-stage .ls-k{ font-family:var(--mono); font-size:10.5px; color:var(--brand-300); letter-spacing:.06em; font-weight:600; }
+  .life-stage .ls-t{ font-size:14px; font-weight:800; margin:5px 0 6px; letter-spacing:-.01em; }
+  .life-stage .ls-d{ font-size:11.5px; color:rgba(255,255,255,.62); font-weight:500; line-height:1.45; }
+  .life-stage .ls-entity{ display:inline-block; margin-top:9px; font-family:var(--mono); font-size:10px; background:rgba(60,194,63,.16); color:var(--brand-300); border:1px solid rgba(60,194,63,.3); border-radius:6px; padding:2px 7px; font-weight:600; }
+  .life-arrow{ align-self:center; color:rgba(255,255,255,.4); font-size:20px; padding:0 2px; flex:0 0 auto; }
+  .life-gaps{ margin-top:18px; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .life-gap{ background:rgba(245,184,41,.1); border:1px solid rgba(245,184,41,.34); border-radius:12px; padding:11px 13px; }
+  .life-gap b{ display:block; font-size:11px; color:#F5C44A; font-weight:800; letter-spacing:.03em; text-transform:uppercase; margin-bottom:3px; }
+  .life-gap span{ font-size:11.5px; color:rgba(255,255,255,.66); font-weight:500; line-height:1.45; }
+  .life-loop{ margin-top:16px; font-family:var(--mono); font-size:12px; color:#F2A0A0; background:rgba(239,83,80,.12); border:1px solid rgba(239,83,80,.3); border-radius:12px; padding:12px 14px; }
+  .life-loop b{ color:#FFC9C7; }
+
+  /* ---- scorecard table ---- */
+  .scorecard td.n{ font-family:var(--mono); font-weight:700; color:var(--ink); text-align:right; white-space:nowrap; }
+  .scorecard tr.total td{ border-top:2px solid var(--ink); font-weight:800; color:var(--ink); padding-top:13px; }
+  .scorecard tr.total td.n{ color:var(--brand-700); font-size:15px; }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:14px; margin:2px 4px 16px; }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; color:var(--ink-2); }
+  .legend i{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+
+  .foot{ margin-top:50px; text-align:center; color:var(--ink-3); font-size:12px; }
+  .foot b{ color:var(--brand-700); }
+
+  @media (max-width:680px){
+    .scorewrap{ grid-template-columns:1fr; }
+    .stats{ grid-template-columns:repeat(2,1fr); }
+    .navcol{ grid-template-columns:1fr; }
+    .life-gaps{ grid-template-columns:1fr; }
+    .reality .scope-grid{ grid-template-columns:1fr; }
+    .mh-title{ font-size:28px; }
+    .tbl-card{ overflow-x:auto; } table{ min-width:560px; }
+  }
+  @media print{
+    body{ background:#fff; } .wrap{ padding:0; max-width:none; }
+    .card,.finding,.navbox,.stat{ box-shadow:none; }
+    section{ break-inside:avoid; } .finding{ break-inside:avoid; }
+    .masthead,.scorebig,.life{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===================== MASTHEAD ===================== -->
+  <header class="masthead">
+    <div class="mh-eyebrow">AskEva · Pre-Development Validation</div>
+    <h1 class="mh-title">Business Logic Audit</h1>
+    <p class="mh-sub">A workflow-and-data-flow validation of the AskEva CRM across all 18 intended modules — does the logic hold up against real-world CRM and WhatsApp Business operations <em>before</em> a line of production code is written?</p>
+    <div class="mh-meta">
+      <span class="mh-chip">Scope · Business logic only</span>
+      <span class="mh-chip">18 modules reviewed</span>
+      <span class="mh-chip">8 core data flows traced</span>
+      <span class="mh-chip">v1 · Pre-build</span>
+    </div>
+  </header>
+
+  <!-- ===================== SCOPE ===================== -->
+  <div class="reality">
+    <h2><span class="dot"></span>What this audit is — and is not</h2>
+    <p>This is a <strong>logic-layer review</strong>. Every finding is about whether a workflow makes sense, whether a user can get stuck, whether entities relate correctly, and whether data flows the way a real CRM team would expect. Nothing here is about look, feel, or implementation.</p>
+    <div class="scope-grid">
+      <div><b>Ignored on purpose</b>UI, colours, animation, responsiveness, APIs, databases, auth, infrastructure.</div>
+      <div><b>Under the lens</b>Entities, state machines, ownership, triage rules, automations, and cross-module data integrity.</div>
+      <div><b>Grounded in</b>The current AskEva prototype (Leads, Chat, Appointments, Ticketing, Dashboard, Settings) + the 18-module target architecture.</div>
+      <div><b>Reviewer lens</b>Senior Product Architect · CRM Consultant · WhatsApp Business · QA Lead · SaaS PM.</div>
+    </div>
+  </div>
+
+  <!-- ===================== SCORE ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">00</span><h2>Logic Readiness Score</h2></div>
+    <p class="lead-p">The core funnel (Lead → Chat → Appointment → Ticket) is coherent and already wired through a shared activity log. But the <strong>spine of any CRM — a real Customer entity — is missing</strong>, capture is manual, and half the target modules have no defined logic yet. <strong>Not ready to build as-is; ready after the blockers below are resolved.</strong></p>
+    <div class="scorewrap">
+      <div class="scorebig">
+        <div class="num">58<span>/100</span></div>
+        <div class="verdict">Conditional</div>
+        <div class="gloss">Resolve the 5 critical logic errors before development starts.</div>
+      </div>
+      <div class="card scorebars">
+        <div class="sbar"><div class="lab"><span>Workflow coherence (do flows make sense?)</span><b>72</b></div><div class="track"><div class="fill" style="width:72%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>Entity &amp; data relationships</span><b>44</b></div><div class="track"><div class="fill low" style="width:44%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>Automation coverage</span><b>40</b></div><div class="track"><div class="fill low" style="width:40%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>No dead-ends / no-stuck-states</span><b>55</b></div><div class="track"><div class="fill mid" style="width:55%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>Real-world CRM fidelity</span><b>66</b></div><div class="track"><div class="fill mid" style="width:66%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>AI Agent &amp; triage logic</span><b>30</b></div><div class="track"><div class="fill low" style="width:30%"></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STAT STRIP ===================== -->
+  <section>
+    <div class="stats">
+      <div class="stat bad"><b>5</b><span>Critical logic errors</span></div>
+      <div class="stat warn"><b>11</b><span>Missing business rules</span></div>
+      <div class="stat warn"><b>9</b><span>Missing automations</span></div>
+      <div class="stat bad"><b>7</b><span>Missing data relationships</span></div>
+      <div class="stat"><b>1</b><span>Circular dependency</span></div>
+    </div>
+  </section>
+
+  <!-- ===================== MODULE VERDICT ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">01</span><h2>Module-by-module logic verdict</h2></div>
+    <p class="lead-p">Each module rated on three logic questions: does the <strong>workflow make sense</strong>, can a user <strong>get stuck</strong>, and does <strong>data flow correctly</strong> in and out. "Spec-only" = listed in the target architecture but no defined logic yet.</p>
+    <div class="legend">
+      <span><i style="background:var(--brand-500)"></i>Sound</span>
+      <span><i style="background:#F5B829"></i>Has gaps</span>
+      <span><i style="background:#C1352F"></i>Broken / undefined</span>
+    </div>
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Module</th><th>Workflow sense</th><th>Can user get stuck?</th><th>Data flow in/out</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td><b>Dashboard</b></td><td>Read-only rollup, coherent</td><td>No</td><td>Reads from all — fine</td><td><span class="pill ok">Sound</span></td></tr>
+          <tr><td><b>Chat</b></td><td>Strong; 24h window modelled</td><td><b>Yes</b> — unknown inbound has no record</td><td>In ✓ · out to Lead is manual</td><td><span class="pill part">Gaps</span></td></tr>
+          <tr><td><b>Compose / Broadcast</b></td><td>Send is clear; replies aren't routed</td><td>Yes — replies land nowhere</td><td>Out ✓ · reply-in undefined</td><td><span class="pill part">Gaps</span></td></tr>
+          <tr><td><b>Leads</b></td><td>Funnel + activity log are solid</td><td>No</td><td>Good — central activity hub</td><td><span class="pill ok">Sound</span></td></tr>
+          <tr><td><b>Customers</b></td><td><b>No distinct entity exists</b></td><td>Yes — returning customer = new lead</td><td>Conflated with Lead row</td><td><span class="pill no">Broken</span></td></tr>
+          <tr><td><b>Appointments</b></td><td>Book / cancel / reschedule clear</td><td>Partly — no-show has no path</td><td>Not FK-linked to a customer</td><td><span class="pill part">Gaps</span></td></tr>
+          <tr><td><b>Ticketing</b></td><td>Status + priority sound</td><td>No</td><td>Linked by fuzzy contact-match</td><td><span class="pill part">Gaps</span></td></tr>
+          <tr><td><b>Templates</b></td><td>Library concept fine</td><td>No</td><td>Consumed by Chat/Compose ✓</td><td><span class="pill ok">Sound</span></td></tr>
+          <tr><td><b>Reports</b></td><td>Spec-only</td><td>—</td><td>Depends on entities not yet defined</td><td><span class="pill part">Spec-only</span></td></tr>
+          <tr><td><b>Flow Builder</b></td><td>Spec-only — triggers undefined</td><td>—</td><td>No event model to bind to</td><td><span class="pill no">Undefined</span></td></tr>
+          <tr><td><b>Chatbot Builder</b></td><td>Spec-only</td><td>—</td><td>Hand-off rules undefined</td><td><span class="pill no">Undefined</span></td></tr>
+          <tr><td><b>AI Agent</b></td><td>Spec-only — no reply/handoff rules</td><td>Yes — silent failure risk</td><td>Should write Lead/Ticket/Appt</td><td><span class="pill no">Undefined</span></td></tr>
+          <tr><td><b>WhatsApp Flows</b></td><td>Spec-only</td><td>—</td><td>Form output has no destination</td><td><span class="pill part">Spec-only</span></td></tr>
+          <tr><td><b>Catalog</b></td><td>Spec-only</td><td>—</td><td>Not tied to Payments/Orders</td><td><span class="pill part">Spec-only</span></td></tr>
+          <tr><td><b>Payments</b></td><td>Spec-only — no order/invoice model</td><td>Yes</td><td>No link to Customer or Catalog</td><td><span class="pill no">Undefined</span></td></tr>
+          <tr><td><b>Integrations</b></td><td>Spec-only</td><td>—</td><td>Sync direction undefined</td><td><span class="pill part">Spec-only</span></td></tr>
+          <tr><td><b>Billing</b></td><td>Wallet/subscription exists</td><td>No</td><td>Internal — isolated, fine</td><td><span class="pill ok">Sound</span></td></tr>
+          <tr><td><b>Settings</b></td><td>Roles/agents/attrs coherent</td><td>No</td><td>Config consumed app-wide ✓</td><td><span class="pill ok">Sound</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== 1. CRITICAL LOGIC ERRORS ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">02</span><h2>1 · Critical logic errors</h2></div>
+    <p class="lead-p">These are <strong>build-blockers</strong>. Each one breaks a core CRM guarantee — a stable customer record, no lost demand, an unambiguous owner. Fix the data model for these before anything is implemented.</p>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Critical</span><h3>There is no Customer entity — "Convert" only relabels the Lead</h3><span class="f-id">C-01</span></div>
+      <p>Converting a lead simply flips its status to <code>converted</code> and re-titles the badge "Customer." The same row keeps lead-only fields (source, lead score, funnel stage) and there is no separate Customer object with its own lifecycle.</p>
+      <div class="ev">convertLead(L) → L.status = "converted"   // no Customer record is created</div>
+      <p class="why">Consequence: a paying customer who comes back with a new enquiry has nowhere clean to live; the historical lead source permanently mislabels them; and "Customers" as a module can only ever be a filtered view of Leads, not a first-class record with its own tickets, appointments, and payments.</p>
+      <p class="fix">Split <code>Contact</code> (person/number) from <code>Lead</code> (an opportunity) and <code>Customer</code> (a converted relationship). One Contact can carry many Leads over time and one Customer record. Convert should <em>create</em> a Customer, not mutate the Lead.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Critical</span><h3>Unknown inbound messages create no record — demand can be silently dropped</h3><span class="f-id">C-02</span></div>
+      <p>When an unknown number messages, the conversation appears in Chat but no Lead, owner, or SLA clock is created. New contacts only become Leads when a human remembers to run <b>Leads → Sync</b>.</p>
+      <div class="ev">"New contacts can be pulled into Leads from the Leads page using Sync." — New-chat modal</div>
+      <p class="why">A first-touch enquiry can sit unowned and uncounted indefinitely. There is no rule that guarantees every inbound conversation results in a tracked Lead.</p>
+      <p class="fix">Auto-create a Lead (status <code>new</code>, source <code>chat</code>) on first inbound from an unknown number, and assign immediately. Sync becomes a reconciliation backstop, not the primary capture path.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Critical</span><h3>Capture has no ownership rule — items can exist "Unassigned" with no SLA</h3><span class="f-id">C-03</span></div>
+      <p>Leads can be created with <code>assigned: "Unassigned"</code>, and there is no auto-assignment (round-robin, by-source, or by-availability) at the moment of capture. Chats route to no one automatically.</p>
+      <p class="why">An unowned record has no accountable agent and no first-response clock — the single most common way real CRM teams leak revenue.</p>
+      <p class="fix">Make ownership mandatory at capture. Define an assignment policy (round-robin within team, or rule-based by source/keyword) and a fallback queue with an SLA timer that escalates if untouched.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Critical</span><h3>Cross-module links rely on fuzzy contact-matching, not foreign keys</h3><span class="f-id">C-04</span></div>
+      <p>Appointments, Tickets, and Chat write into a shared activity log by <em>matching on contact</em> (name/number), not by a stable record ID.</p>
+      <div class="ev">AskEvaActivity.log(match, ev) → findLeadByContact(match)   // matches by phone/name</div>
+      <p class="why">If a number is edited, a name differs slightly, or a contact has two leads, the timeline orphans or attaches to the wrong record. Merges and number-changes silently break history — a data-integrity time bomb.</p>
+      <p class="fix">Give every entity a stable ID and link by <code>contactId</code> / <code>customerId</code>. Resolve phone→ID once on ingest; never re-match downstream.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Critical</span><h3>"Converted" is a terminal dead-end — no churn, re-open, or win-back state</h3><span class="f-id">C-05</span></div>
+      <p>The status funnel runs <code>new → hot → warm → cold → converted</code> with <code>invalid</code> on the side. After <code>converted</code> there is no defined transition for a customer who churns, lapses, or returns with a new opportunity.</p>
+      <div class="ev">STATUS_ORDER = ["new","hot","warm","cold","converted"]   // nothing after converted</div>
+      <p class="why">Real relationships are cyclical. With no "lost," "churned," or "re-engaged" states, a returning customer re-enters as a brand-new Lead — directly causing the duplication loop in §07.</p>
+      <p class="fix">Separate <em>opportunity</em> states (open/won/lost) from <em>customer</em> states (active/at-risk/churned/reactivated). A won opportunity creates/links a Customer; a new opportunity can open against an existing Customer.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 2. MISSING BUSINESS RULES ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">03</span><h2>2 · Missing business rules</h2></div>
+    <p class="lead-p">Rules a CRM must assert to stay consistent. Today these are implicit or absent, which means two agents — or the AI — can take contradictory actions on the same record.</p>
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Rule</th><th>Why it's needed</th><th>Severity</th></tr></thead>
+        <tbody>
+          <tr><td><b>Chat triage rule</b><div class="why">When does a chat become a Lead vs a Ticket vs an Appointment?</div></td><td>Without it, the same conversation is classified differently by every agent and by the AI.</td><td><span class="sev high">High</span></td></tr>
+          <tr><td><b>Duplicate prevention</b><div class="why">Sync + manual add + returning customer all create rows.</div></td><td>No unique key on phone → multiple records for one person. Dedupe/merge must be defined.</td><td><span class="sev high">High</span></td></tr>
+          <tr><td><b>WhatsApp 24-hour window policy</b></td><td>Outside 24h only templates may send. Rule must gate free-text and force template selection.</td><td><span class="sev high">High</span></td></tr>
+          <tr><td><b>Opt-in / consent state</b></td><td>WhatsApp requires opt-in before messaging. Consent must be a tracked field that blocks sends.</td><td><span class="sev high">High</span></td></tr>
+          <tr><td><b>First-response &amp; resolution SLA</b></td><td>No timers on Leads/Chats/Tickets → no escalation, no accountability.</td><td><span class="sev high">High</span></td></tr>
+          <tr><td><b>Lead qualification criteria</b></td><td>What objectively makes a lead Hot vs Warm? Today it's a manual guess.</td><td><span class="sev med">Med</span></td></tr>
+          <tr><td><b>Assignment / re-assignment rule</b></td><td>Who owns on capture, on hand-off, on agent-offline?</td><td><span class="sev high">High</span></td></tr>
+          <tr><td><b>Appointment no-show rule</b></td><td>What happens to a customer + slot when no one attends?</td><td><span class="sev med">Med</span></td></tr>
+          <tr><td><b>Ticket → follow-up rule</b></td><td>Should a resolved ticket be able to spawn a task/appointment? Undefined.</td><td><span class="sev med">Med</span></td></tr>
+          <tr><td><b>AI authority boundaries</b></td><td>What may the AI do autonomously vs. propose-for-approval (create lead? book? refund?).</td><td><span class="sev high">High</span></td></tr>
+          <tr><td><b>Payment → order state machine</b></td><td>No order/invoice/paid/refunded model behind Payments.</td><td><span class="sev med">Med</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== 3. MISSING AUTOMATIONS ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">04</span><h2>3 · Missing automations</h2></div>
+    <p class="lead-p">The shared activity log proves the plumbing for automation exists — but the automations themselves are mostly manual today. These are the highest-leverage adds.</p>
+    <div class="navcol">
+      <div class="navbox bad">
+        <h4>Capture &amp; routing</h4>
+        <ul>
+          <li>Auto-create Lead on first unknown inbound <small>— today: manual Sync</small></li>
+          <li>Auto-assign on capture (round-robin / rule) <small>— today: none</small></li>
+          <li>Broadcast reply → route to Lead/Ticket <small>— today: replies unrouted</small></li>
+          <li>Duplicate detect &amp; merge prompt <small>— today: none</small></li>
+        </ul>
+      </div>
+      <div class="navbox bad">
+        <h4>Lifecycle &amp; reminders</h4>
+        <ul>
+          <li>Auto reminder on appointment booking <small>— today: reminders are manual</small></li>
+          <li>No-show / cancel → follow-up task <small>— today: dead-ends</small></li>
+          <li>Post-conversion welcome &amp; onboarding <small>— today: none</small></li>
+          <li>24h-window expiry → prompt template <small>— today: window tracked, no action</small></li>
+        </ul>
+      </div>
+    </div>
+    <div class="navbox bad" style="margin-top:14px">
+      <h4>AI-driven</h4>
+      <ul>
+        <li><b>AI Agent → Lead/Ticket/Appointment creation</b> with confidence + human-approval gate <small>— today: undefined</small></li>
+      </ul>
+    </div>
+    <p class="note">Each automation above must emit a typed event (e.g. <code>lead.created</code>, <code>appointment.booked</code>) so Flow Builder, Reports, and the AI Agent can subscribe — rather than re-deriving state by scanning chats.</p>
+  </section>
+
+  <!-- ===================== 4. MISSING DATA RELATIONSHIPS ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">05</span><h2>4 · Missing data relationships</h2></div>
+    <p class="lead-p">The entity graph a CRM needs vs. what exists. Most failures trace back to a single missing relationship: a stable <strong>Customer</strong> that everything else hangs off.</p>
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Relationship</th><th>Cardinality</th><th>Today</th><th>Needed</th></tr></thead>
+        <tbody>
+          <tr><td><b>Contact ⟷ Lead</b></td><td>1 : many</td><td>Conflated into one row</td><td><span class="pill no">Missing</span></td></tr>
+          <tr><td><b>Lead ⟶ Customer</b></td><td>1 : 1 (on win)</td><td>Status flip only</td><td><span class="pill no">Missing</span></td></tr>
+          <tr><td><b>Customer ⟷ Appointments</b></td><td>1 : many</td><td>Contact-match, no FK</td><td><span class="pill part">Weak</span></td></tr>
+          <tr><td><b>Customer ⟷ Tickets</b></td><td>1 : many</td><td>Contact-match, no FK</td><td><span class="pill part">Weak</span></td></tr>
+          <tr><td><b>Customer ⟷ Payments</b></td><td>1 : many</td><td>Not modelled</td><td><span class="pill no">Missing</span></td></tr>
+          <tr><td><b>Company ⟷ Contacts</b></td><td>1 : many (B2B)</td><td>Company is a text field</td><td><span class="pill no">Missing</span></td></tr>
+          <tr><td><b>Ticket ⟷ Appointment</b></td><td>many : many</td><td>No link</td><td><span class="pill no">Missing</span></td></tr>
+          <tr><td><b>Agent ⟶ {Lead, Chat, Ticket, Appt}</b></td><td>1 : many (owner)</td><td>Optional / "Unassigned"</td><td><span class="pill part">Weak</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== 6/AUTOMATION FLOW VALIDATION ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">06</span><h2>Data-flow validation — the 8 core flows</h2></div>
+    <p class="lead-p">Tracing each required flow end-to-end and classifying it: <strong>sound</strong>, <strong>incomplete</strong> (works but leaks), <strong>broken</strong>, or <strong>dead-end</strong>.</p>
+
+    <div class="map-flow">Chat → Lead<span class="verdict"><span class="pill part">Incomplete · manual Sync only (C-02)</span></span></div>
+    <div class="map-flow gap">Lead → Customer<span class="verdict"><span class="pill part">Incomplete · status flip, no entity (C-01)</span></span></div>
+    <div class="map-flow broken">Customer → Appointment<span class="verdict"><span class="pill no">Broken · no customer FK (C-04)</span></span></div>
+    <div class="map-flow gap">Customer → Ticket<span class="verdict"><span class="pill part">Weak · contact-match only</span></span></div>
+    <div class="map-flow broken">Customer → Payment<span class="verdict"><span class="pill no">Missing · not modelled</span></span></div>
+    <div class="map-flow broken">AI Agent → Lead<span class="verdict"><span class="pill no">Missing · undefined</span></span></div>
+    <div class="map-flow broken">AI Agent → Ticket<span class="verdict"><span class="pill no">Missing · undefined</span></span></div>
+    <div class="map-flow broken">AI Agent → Appointment<span class="verdict"><span class="pill no">Missing · undefined</span></span></div>
+
+    <div class="finding crit" style="margin-top:16px">
+      <div class="f-top"><span class="sev crit">Circular</span><h3>The duplication loop: Customer → new Chat → Sync → new Lead → … forever</h3><span class="f-id">F-LOOP</span></div>
+      <p>Because converted customers are just leads and returning contacts re-enter through Chat → Sync, an existing customer who messages again spawns a <em>second</em> Lead for the same person — which can itself be "converted" again. Without a unique contact key, the graph loops and fragments one human across many rows.</p>
+      <p class="fix">Break the loop with C-01 + C-04: resolve every inbound to an existing <code>contactId</code> first; open a <em>new opportunity</em> against the existing Customer instead of a new Lead.</p>
+    </div>
+  </section>
+
+  <!-- ===================== LOGIC INTERROGATION (the explicit questions) ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">07</span><h2>Logic interrogation — your explicit questions</h2></div>
+    <p class="lead-p">Direct answers to each validation question, with the current behaviour and the rule that <em>should</em> govern it.</p>
+
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th style="width:34%">Chat logic</th><th>Today</th><th>Should be</th></tr></thead>
+        <tbody>
+          <tr><td>Unknown number messages?</td><td><span class="pill no">No record</span></td><td>Auto-create Lead + assign</td></tr>
+          <tr><td>Becomes a Lead automatically?</td><td><span class="pill no">No — manual Sync</span></td><td>Yes, on first inbound</td></tr>
+          <tr><td>Can become a Customer directly?</td><td><span class="pill no">No path</span></td><td>Only via won opportunity</td></tr>
+          <tr><td>When is a Ticket created?</td><td><span class="pill part">Manual, any time</span></td><td>On a support-intent message / SLA breach</td></tr>
+          <tr><td>When is an Appointment created?</td><td><span class="pill part">Manual</span></td><td>On a booking-intent / confirmed slot</td></tr>
+          <tr><td>Auto-assignment?</td><td><span class="pill no">None</span></td><td>Round-robin / rule on capture</td></tr>
+          <tr><td>After 24 hours?</td><td><span class="pill part">Window tracked, no action</span></td><td>Force template; log re-engagement</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th style="width:34%">Lead → Customer logic</th><th>Today</th><th>Should be</th></tr></thead>
+        <tbody>
+          <tr><td>How is a Lead created?</td><td>Sync, manual add, import</td><td>+ auto from chat &amp; forms</td></tr>
+          <tr><td>How is a Lead converted?</td><td>Button → status = converted</td><td>Win opportunity → create Customer</td></tr>
+          <tr><td>What happens after conversion?</td><td><span class="pill no">Nothing automatic</span></td><td>Welcome + onboarding + owner</td></tr>
+          <tr><td>Customer record auto-created?</td><td><span class="pill no">No — same row</span></td><td>Yes, distinct entity</td></tr>
+          <tr><td>Chat history transfers?</td><td><span class="pill part">Implicit (same row)</span></td><td>Explicit link via contactId</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="navcol">
+      <div class="card tbl-card" style="padding:18px 12px 8px">
+        <table>
+          <thead><tr><th>Customer logic</th><th>Today</th></tr></thead>
+          <tbody>
+            <tr><td>Create Tickets?</td><td><span class="pill part">Via match</span></td></tr>
+            <tr><td>Book Appointments?</td><td><span class="pill part">Via match</span></td></tr>
+            <tr><td>Make Payments?</td><td><span class="pill no">Not modelled</span></td></tr>
+            <tr><td>Complete timeline?</td><td><span class="pill part">Partial (lead log)</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card tbl-card" style="padding:18px 12px 8px">
+        <table>
+          <thead><tr><th>Appointment logic</th><th>Today</th></tr></thead>
+          <tbody>
+            <tr><td>After booking?</td><td><span class="pill part">Logged, no auto-reminder</span></td></tr>
+            <tr><td>After cancellation?</td><td><span class="pill no">No follow-up</span></td></tr>
+            <tr><td>After reschedule?</td><td><span class="pill ok">Handled</span></td></tr>
+            <tr><td>Reminders generated?</td><td><span class="pill no">Manual only</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="navcol" style="margin-top:14px">
+      <div class="card tbl-card" style="padding:18px 12px 8px">
+        <table>
+          <thead><tr><th>Ticket logic</th><th>Today</th></tr></thead>
+          <tbody>
+            <tr><td>Who can create?</td><td>Agents (manual)</td></tr>
+            <tr><td>From chats?</td><td><span class="pill part">Possible, no rule</span></td></tr>
+            <tr><td>Linked to customer?</td><td><span class="pill part">By match, no FK</span></td></tr>
+            <tr><td>Spawn follow-up tasks?</td><td><span class="pill no">No</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card tbl-card" style="padding:18px 12px 8px">
+        <table>
+          <thead><tr><th>AI Agent logic</th><th>Today</th></tr></thead>
+          <tbody>
+            <tr><td>When to reply?</td><td><span class="pill no">Undefined</span></td></tr>
+            <tr><td>When to hand off?</td><td><span class="pill no">Undefined</span></td></tr>
+            <tr><td>Create Lead / Ticket?</td><td><span class="pill no">Undefined</span></td></tr>
+            <tr><td>Book Appointment?</td><td><span class="pill no">Undefined</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 5. RECOMMENDED IMPROVEMENTS ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">08</span><h2>5 · Recommended workflow improvements</h2></div>
+    <p class="lead-p">Sequenced so each step unblocks the next. Treat the first three as <strong>pre-development gates</strong>.</p>
+    <div class="card">
+      <ul class="clean">
+        <li class="add"><b>1 · Model three entities, not one.</b> <code>Contact</code> (the person) ⟶ many <code>Lead/Opportunity</code> records ⟶ one <code>Customer</code> on first win. Everything links by <code>contactId</code>. <span class="why">Resolves C-01, C-04, C-05 and the duplication loop.</span></li>
+        <li class="add"><b>2 · Make capture automatic and owned.</b> First inbound from an unknown number creates an assigned Lead with an SLA clock. <span class="why">Resolves C-02, C-03.</span></li>
+        <li class="add"><b>3 · Define one event model.</b> Typed events (<code>lead.created</code>, <code>appointment.booked</code>, <code>ticket.resolved</code>, <code>payment.captured</code>) that Flow Builder, AI Agent, Reports, and Dashboard subscribe to — no re-deriving state from chat text.</li>
+        <li class="add"><b>4 · Write the triage rulebook.</b> Decision table: message intent → Lead / Ticket / Appointment, with the AI's autonomy boundary marked per action.</li>
+        <li class="add"><b>5 · Close the dead-ends.</b> No-show → follow-up task; cancellation → re-book prompt; resolved ticket → optional follow-up; converted → onboarding sequence.</li>
+        <li class="add"><b>6 · Add lifecycle states for the post-sale world.</b> Customer: active / at-risk / churned / reactivated — so returning customers re-engage instead of duplicating.</li>
+        <li class="add"><b>7 · Enforce one identity per human.</b> Unique key on normalized phone; dedupe-on-ingest with a merge prompt.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================== 6. LIFECYCLE DIAGRAM ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">09</span><h2>6 · Complete customer lifecycle — the target</h2></div>
+    <p class="lead-p">The end-to-end model AskEva should implement. Green nodes are the entities that must exist; amber callouts mark where today's logic falls short of this rail.</p>
+    <div class="life">
+      <div class="life-rail">
+        <div class="life-stage"><div class="ls-node">
+          <div class="ls-k">01 · INBOUND</div><div class="ls-t">First touch</div>
+          <div class="ls-d">WhatsApp, form, broadcast reply, or referral arrives.</div>
+          <span class="ls-entity">Contact</span>
+        </div></div>
+        <div class="life-arrow">→</div>
+        <div class="life-stage"><div class="ls-node">
+          <div class="ls-k">02 · CAPTURE</div><div class="ls-t">Lead opened</div>
+          <div class="ls-d">Auto-created, auto-assigned, SLA clock starts.</div>
+          <span class="ls-entity">Lead</span>
+        </div></div>
+        <div class="life-arrow">→</div>
+        <div class="life-stage"><div class="ls-node">
+          <div class="ls-k">03 · QUALIFY</div><div class="ls-t">Nurture</div>
+          <div class="ls-d">Hot/Warm/Cold by rule; chats, templates, reminders.</div>
+          <span class="ls-entity">Opportunity</span>
+        </div></div>
+        <div class="life-arrow">→</div>
+        <div class="life-stage"><div class="ls-node">
+          <div class="ls-k">04 · WIN</div><div class="ls-t">Customer created</div>
+          <div class="ls-d">Opportunity won → Customer record + onboarding.</div>
+          <span class="ls-entity">Customer</span>
+        </div></div>
+        <div class="life-arrow">→</div>
+        <div class="life-stage"><div class="ls-node">
+          <div class="ls-k">05 · SERVE</div><div class="ls-t">Ongoing relationship</div>
+          <div class="ls-d">Appointments · Tickets · Payments — all FK-linked.</div>
+          <span class="ls-entity">Appt · Ticket · Payment</span>
+        </div></div>
+        <div class="life-arrow">→</div>
+        <div class="life-stage"><div class="ls-node">
+          <div class="ls-k">06 · RETAIN</div><div class="ls-t">Lifecycle</div>
+          <div class="ls-d">Active → at-risk → churned → reactivated. New opportunities open here.</div>
+          <span class="ls-entity">Customer state</span>
+        </div></div>
+      </div>
+
+      <div class="life-gaps">
+        <div class="life-gap"><b>Gap · stage 01→02</b><span>Today no record is created until a manual Sync. Demand leaks here.</span></div>
+        <div class="life-gap"><b>Gap · stage 03→04</b><span>"Convert" relabels the Lead instead of creating a Customer — no real handoff.</span></div>
+        <div class="life-gap"><b>Gap · stage 05</b><span>Appointments/Tickets/Payments attach by name-match, not customer ID.</span></div>
+      </div>
+      <div class="life-loop"><b>Loop today:</b> stage 06 has no path back to 03 — a returning customer falls off the rail and re-enters at 01 as a <b>duplicate Lead</b>. The reactivation arrow (06 → 03) is the single most important missing edge.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 7. SCORECARD ===================== -->
+  <section>
+    <div class="sec-h"><span class="sec-n">10</span><h2>7 · Logic readiness scorecard</h2></div>
+    <p class="lead-p">How the 58/100 is composed. Weighted by how much each dimension blocks a safe build.</p>
+    <div class="card tbl-card">
+      <table class="scorecard">
+        <thead><tr><th>Dimension</th><th>What's working</th><th class="n">Score</th></tr></thead>
+        <tbody>
+          <tr><td><b>Workflow coherence</b></td><td>Lead funnel, chat, appointments &amp; tickets each make sense in isolation</td><td class="n">18 / 25</td></tr>
+          <tr><td><b>Entity &amp; relationships</b></td><td>Shared activity log exists, but no Customer entity &amp; no foreign keys</td><td class="n">9 / 20</td></tr>
+          <tr><td><b>Automation coverage</b></td><td>Plumbing present; most flows still manual</td><td class="n">6 / 15</td></tr>
+          <tr><td><b>No dead-ends</b></td><td>Convert, no-show, cancel &amp; post-24h all terminate without a next step</td><td class="n">8 / 15</td></tr>
+          <tr><td><b>Real-world CRM fidelity</b></td><td>Funnel &amp; 24h window are authentic; lifecycle &amp; B2B accounts missing</td><td class="n">10 / 15</td></tr>
+          <tr><td><b>AI &amp; triage logic</b></td><td>Modules listed but rules entirely undefined</td><td class="n">3 / 10</td></tr>
+          <tr class="total"><td>Total</td><td>Conditional — resolve C-01…C-05 to clear for build</td><td class="n">58 / 100</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Resolving the five critical errors (the entity model + automatic owned capture) is estimated to lift this to <b>~82/100</b> — comfortably build-ready — before any module-specific work begins.</p>
+  </section>
+
+  <div class="foot">
+    <b>AskEva</b> · Business Logic Audit · Pre-development validation · Logic layer only — UI, infrastructure &amp; tech stack out of scope.
+  </div>
+
+</div>
+</body>
+</html>

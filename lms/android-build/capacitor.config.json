@@ -1,0 +1,24 @@
+{
+  "appId": "com.tunepath.askeva",
+  "appName": "AskEva",
+  "webDir": "www",
+  "backgroundColor": "#F6F8F5",
+  "android": {
+    "backgroundColor": "#F6F8F5",
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false,
+      "style": "LIGHT",
+      "backgroundColor": "#2BA84A"
+    },
+    "SplashScreen": {
+      "launchShowDuration": 700,
+      "launchAutoHide": true,
+      "backgroundColor": "#2BA84A",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    }
+  }
+}

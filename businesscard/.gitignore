@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+server/
+.env
+# Testing
+coverage/
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Native
+*.o
+*.os
+*.a
+*.lo
+*.la
+*.lai
+*.so
+*.dynlib
+*.dll
+*.dylib
+*.lib
+*.a
+*.la
+*.lai
+*.so
+*.dylib
+
+# Misc
+.DS_Store
+*.pem
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.sln
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+build/
+dist/
+out/
+
+# OS
+Thumbs.db
+.DS_Store

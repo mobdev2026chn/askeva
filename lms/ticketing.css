@@ -1,0 +1,134 @@
+/* =========================================================
+   AskEva — Ticketing (working module)
+   Owns #app-ticketing: data-driven ticket list, ticket thread
+   (detail + conversation + reply), status / priority / assignee
+   changes, resolve / reopen, create, delete + localStorage.
+   Reuses the shared ax- overlay / sheet / form primitives from
+   appointments.css; adds ticketing-specific styles below.
+   ========================================================= */
+
+/* ---------- filter chips (own classes, no app-shell clash) ---------- */
+.tx-chips{ display:flex; gap:8px; overflow-x:auto; padding:2px 0 4px; margin-bottom:8px; }
+.tx-chips::-webkit-scrollbar{ display:none; }
+.tx-chip{
+  flex:0 0 auto; border:1px solid var(--line); background:#fff; border-radius:999px;
+  padding:8px 15px; font-size:13px; font-weight:700; color:var(--ink-3); cursor:pointer;
+  font-family:var(--font-body); display:inline-flex; align-items:center; gap:7px; transition:all .14s ease;
+}
+.tx-chip .n{
+  font-size:11px; font-weight:800; min-width:18px; height:18px; padding:0 5px; border-radius:999px;
+  background:var(--surface-3); color:var(--ink-4); display:inline-flex; align-items:center; justify-content:center;
+}
+.tx-chip.on{ background:var(--accent-soft); border-color:var(--accent-soft-2); color:var(--accent-deep); }
+.tx-chip.on .n{ background:var(--accent); color:#fff; }
+
+/* ---------- list card extras (built on .tk-card from app-shell.css) ---------- */
+.tk-card.tx-card{ cursor:pointer; transition:transform .08s ease, box-shadow .15s ease; }
+.tk-card.tx-card:hover{ box-shadow:var(--shadow-sm); }
+.tk-card.tx-card:active{ transform:scale(.992); }
+.tk-top .tk-left{ display:flex; align-items:center; gap:9px; min-width:0; }
+.tk-cat{ font-size:10.5px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-4);
+  background:var(--surface-2); border:1px solid var(--line); padding:3px 9px; border-radius:999px; white-space:nowrap; }
+.tk-meta{ display:flex; align-items:center; gap:7px; }
+.tk-age{ font-size:11.5px; font-weight:700; color:var(--ink-4); }
+.tk-unread{ width:8px; height:8px; border-radius:50%; background:var(--accent); flex:0 0 8px; }
+.tk-subj-row{ display:flex; align-items:flex-start; gap:9px; }
+.tk-subj-row .chev{ color:var(--ink-4); flex:0 0 auto; display:flex; margin-top:1px; }
+.tk-subj-row .chev svg{ width:18px; height:18px; }
+.tk-card .tk-snip{ font-size:12.5px; font-weight:500; color:var(--ink-4); margin-top:5px; line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* SLA / age accents */
+.tk-age.warn{ color:#9A6B05; }
+.tk-age.late{ color:#C23A18; }
+
+/* ---------- detail: badges row ---------- */
+.tx-badges{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 2px 16px; }
+.tx-prio{ font-size:11.5px; font-weight:800; padding:5px 12px; border-radius:999px; letter-spacing:.02em;
+  display:inline-flex; align-items:center; gap:7px; }
+.tx-prio::before{ content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+.tx-prio.high{ color:#C23A18; background:#FDEAE3; }
+.tx-prio.med{ color:#9A6B05; background:#FBF1D8; }
+.tx-prio.low{ color:#1E7FB0; background:#E3F2FB; }
+
+/* subject heading in detail */
+.tx-subjbig{ font-size:21px; font-weight:800; color:var(--ink); letter-spacing:-.01em; line-height:1.25; margin:2px 2px 6px; }
+.tx-idline{ font-size:12.5px; font-weight:700; color:var(--ink-4); margin:0 2px 16px; display:flex; align-items:center; gap:8px; }
+.tx-idline .dot{ width:4px; height:4px; border-radius:50%; background:var(--ink-4); }
+
+/* ---------- conversation thread ---------- */
+.tx-threadlbl{ font-size:11.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-4); margin:6px 4px 12px; }
+.tx-thread{ display:flex; flex-direction:column; gap:14px; padding-bottom:6px; }
+.tx-msg{ display:flex; gap:10px; max-width:90%; }
+.tx-msg .av{ width:32px; height:32px; border-radius:10px; flex:0 0 32px; display:grid; place-items:center;
+  font-size:12px; font-weight:800; color:#fff; }
+.tx-msg .bub{ background:#fff; border:1px solid var(--line); border-radius:4px 16px 16px 16px; padding:11px 13px;
+  box-shadow:var(--shadow-xs); }
+.tx-msg .who{ font-size:11.5px; font-weight:800; color:var(--ink-2); margin-bottom:4px; display:flex; align-items:center; gap:7px; }
+.tx-msg .who .tag{ font-size:9.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--accent-deep);
+  background:var(--accent-soft); padding:1px 7px; border-radius:999px; }
+.tx-msg .tx-txt{ font-size:14px; font-weight:500; color:var(--ink-2); line-height:1.55; white-space:pre-wrap; }
+.tx-msg .tm{ font-size:10.5px; font-weight:600; color:var(--ink-4); margin-top:6px; }
+.tx-msg.out{ flex-direction:row-reverse; margin-left:auto; }
+.tx-msg.out .bub{ background:var(--accent-soft); border-color:var(--accent-soft-2); border-radius:16px 4px 16px 16px; }
+.tx-msg.out .who{ justify-content:flex-end; color:var(--accent-deep); }
+.tx-msg.out .tm{ text-align:right; }
+.tx-msg.note .bub{ background:#FBF6E5; border-color:#F0E4BE; border-radius:14px; }
+.tx-msg.note .who .tag{ color:#9A6B05; background:#F4EAC6; }
+.tx-sysline{ text-align:center; font-size:11.5px; font-weight:700; color:var(--ink-4); margin:2px 0; }
+.tx-sysline span{ background:var(--surface-3); padding:5px 12px; border-radius:999px; }
+
+/* ---------- composer (pinned bottom of ticket overlay) ---------- */
+.tx-composer{ flex:0 0 auto; background:var(--surface); border-top:1px solid var(--line);
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom)); }
+.tx-comprow{ display:flex; align-items:flex-end; gap:9px; }
+.tx-compbox{ flex:1; display:flex; align-items:center; gap:9px; background:var(--surface-2); border:1.5px solid var(--line);
+  border-radius:16px; padding:10px 14px; transition:border-color .15s; }
+.tx-compbox:focus-within{ border-color:var(--accent); }
+.tx-compbox textarea{ border:none; outline:none; background:transparent; font-family:var(--font-body); font-size:14.5px;
+  font-weight:500; color:var(--ink); width:100%; resize:none; max-height:96px; line-height:1.4; }
+.tx-compbox textarea::placeholder{ color:var(--ink-4); }
+.tx-send{ width:46px; height:46px; flex:0 0 46px; border-radius:15px; border:none; cursor:pointer;
+  background:#3DC838; color:#fff; box-shadow:var(--shadow-eva); display:grid; place-items:center; }
+.tx-send svg{ width:21px; height:21px; }
+.tx-send:disabled{ opacity:.45; box-shadow:none; cursor:default; }
+.tx-comptools{ display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+.tx-tool{ border:1px solid var(--line); background:#fff; border-radius:999px; padding:6px 12px; cursor:pointer;
+  font-family:var(--font-body); font-size:12px; font-weight:700; color:var(--ink-3); display:inline-flex; align-items:center; gap:6px; }
+.tx-tool svg{ width:14px; height:14px; }
+.tx-tool.on{ background:#FBF6E5; border-color:#F0E4BE; color:#9A6B05; }
+.tx-tool.resolve{ margin-left:auto; background:var(--accent-soft); border-color:var(--accent-soft-2); color:var(--accent-deep); }
+
+/* ---------- detail action chips under badges ---------- */
+.tx-quickbar{ display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:10px; margin-bottom:16px; }
+.tx-qbtn{ border:1px solid var(--line); background:#fff; border-radius:14px; padding:11px 6px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:6px; font-family:var(--font-body);
+  box-shadow:var(--shadow-xs); transition:transform .08s ease; }
+.tx-qbtn:active{ transform:scale(.96); }
+.tx-qbtn .ic{ width:34px; height:34px; border-radius:11px; display:grid; place-items:center;
+  background:var(--accent-soft); color:var(--accent-deep); }
+.tx-qbtn .ic svg{ width:18px; height:18px; }
+.tx-qbtn .l{ font-size:11px; font-weight:800; color:var(--ink-2); letter-spacing:-.01em; }
+
+/* floating add (own class so app-shell's .fab-add toast doesn't fire) */
+.tk-fab{
+  position:absolute; right:18px; bottom:18px; z-index:8;
+  width:56px; height:56px; border-radius:18px; border:none; cursor:pointer;
+  background:#3DC838; color:#fff; box-shadow:var(--shadow-eva); display:grid; place-items:center;
+}
+.tk-fab svg{ width:26px; height:26px; }
+.tk-fab:active{ transform:translateY(1px); }
+
+/* empty state (reuses ax-empty look) */
+.tx-empty{ text-align:center; padding:54px 24px; color:var(--ink-4); }
+.tx-empty .ic{ width:64px; height:64px; border-radius:20px; margin:0 auto 16px; display:grid; place-items:center;
+  background:var(--accent-soft); color:var(--accent-deep); }
+.tx-empty .ic svg{ width:30px; height:30px; }
+.tx-empty .t{ font-size:16px; font-weight:800; color:var(--ink-2); }
+.tx-empty .s{ font-size:13px; font-weight:600; margin-top:5px; }
+
+/* priority option dot in sheets */
+.ax-reason .pdot{ width:11px; height:11px; border-radius:50%; flex:0 0 11px; }
+.ax-reason .pdot.high{ background:#C23A18; } .ax-reason .pdot.med{ background:#9A6B05; } .ax-reason .pdot.low{ background:#1E7FB0; }
+.ax-reason .sdot{ width:11px; height:11px; border-radius:50%; flex:0 0 11px; }
+.ax-reason .sdot.open{ background:var(--accent); } .ax-reason .sdot.pending{ background:#9A6B05; } .ax-reason .sdot.resolved{ background:var(--ink-4); }

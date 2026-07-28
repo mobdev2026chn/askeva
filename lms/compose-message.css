@@ -1,0 +1,115 @@
+/* =========================================================
+   AskEva — Compose Message module styles
+   ========================================================= */
+.route-compose .status-bar,
+.route-compose .status-bar .battery{ background:transparent; color:#fff; }
+.route-compose #app-compose{ display:flex; }
+#app-compose{ background:var(--surface-2); }
+
+#cmView{ display:flex; flex-direction:column; gap:14px; }
+
+.cm-card{ background:var(--surface); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow-xs); padding:18px 16px; }
+
+.cm-field{ margin-bottom:16px; min-width:0; }
+.cm-field:last-child{ margin-bottom:0; }
+.cm-label{ display:block; font-size:13px; font-weight:700; color:var(--ink-2); margin:0 2px 8px; }
+.cm-label.big{ font-size:15px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+
+.cm-two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:380px){ .cm-two{ grid-template-columns:1fr; } }
+
+.cm-input,
+.cm-nativesel,
+.cm-select{ width:100%; font-family:var(--font-body); font-size:14px; font-weight:600; color:var(--ink);
+  background:#fff; border:1.5px solid var(--line); border-radius:12px; padding:13px 14px; transition:border-color .15s, box-shadow .15s; }
+.cm-input::placeholder{ color:var(--ink-4); font-weight:500; }
+.cm-input:focus,
+.cm-nativesel:focus,
+.cm-select:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(61,200,56,.16); }
+
+.cm-select{ display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; text-align:left; }
+.cm-select span{ flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cm-select.ph span{ color:var(--ink-4); font-weight:500; }
+.cm-select svg{ width:16px; height:16px; color:var(--ink-4); flex:0 0 auto; }
+
+/* native select with custom caret */
+.cm-selectwrap{ position:relative; }
+.cm-selectwrap svg{ position:absolute; right:13px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--ink-4); pointer-events:none; }
+.cm-nativesel{ -webkit-appearance:none; appearance:none; padding-right:38px; cursor:pointer; }
+.cm-nativesel:disabled{ opacity:.55; background:var(--surface-2); cursor:not-allowed; }
+
+/* message content box */
+.cm-content.empty{ width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  min-height:170px; background:var(--surface-2); border:1.5px dashed var(--line); border-radius:14px; cursor:pointer; padding:24px;
+  font-family:var(--font-body); transition:border-color .15s, background .15s; }
+.cm-content.empty:hover{ border-color:var(--accent); background:var(--accent-soft); }
+.cm-content.empty .ic{ display:grid; place-items:center; color:var(--accent-deep); }
+.cm-content.empty .ic svg{ width:30px; height:30px; }
+.cm-content.empty .t{ font-size:14.5px; font-weight:600; color:var(--ink-3); }
+
+.cm-content.filled{ position:relative; background:#fff; border:1.5px solid var(--line); border-radius:14px; overflow:hidden; }
+.cm-contentta{ width:100%; border:none; outline:none; resize:none; min-height:150px; font-family:var(--font-body);
+  font-size:14px; font-weight:600; line-height:1.55; color:var(--ink); background:transparent; padding:14px 14px 50px; }
+.cm-tplchip{ position:absolute; left:12px; bottom:10px; display:inline-flex; align-items:center; gap:6px; border:1px solid var(--accent-soft-2);
+  background:var(--accent-soft); color:var(--accent-deep); border-radius:999px; padding:6px 12px; cursor:pointer;
+  font-family:var(--font-body); font-size:12px; font-weight:800; }
+.cm-tplchip svg{ width:13px; height:13px; }
+.cm-tplremove{ position:absolute; right:12px; bottom:10px; display:inline-flex; align-items:center; gap:5px; border:1px solid #f3c9c2;
+  background:#fdecea; color:#C23A18; border-radius:999px; padding:6px 12px; cursor:pointer;
+  font-family:var(--font-body); font-size:12px; font-weight:800; }
+.cm-tplremove svg{ width:12px; height:12px; }
+.cm-tplremove:active{ transform:translateY(1px); }
+
+.cm-hint{ font-size:11.5px; font-weight:600; color:var(--ink-4); margin-top:7px; }
+.cm-hint.ok{ color:var(--accent-deep); }
+
+/* footer buttons */
+.cm-foot{ display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:18px; }
+.cm-btn{ border:none; cursor:pointer; font-family:var(--font-body); font-size:14px; font-weight:800; border-radius:12px; padding:12px 22px;
+  display:inline-flex; align-items:center; gap:8px; }
+.cm-btn svg{ width:16px; height:16px; }
+.cm-btn.clear{ background:#EF5350; color:#fff; box-shadow:var(--shadow-xs); }
+.cm-btn.send{ background:#3DC838; color:#fff; border-radius:12px 0 0 12px; box-shadow:var(--shadow-xs); }
+.cm-btn:active{ transform:translateY(1px); }
+
+.cm-split{ position:relative; display:inline-flex; }
+.cm-btn.caret{ background:#3DC838; color:#fff; padding:12px 12px; border-radius:0 12px 12px 0; border-left:1px solid rgba(255,255,255,.25); box-shadow:var(--shadow-xs); }
+.cm-menu{ position:absolute; right:0; bottom:calc(100% + 8px); min-width:190px; background:#fff; border:1px solid var(--line);
+  border-radius:12px; box-shadow:0 14px 34px -10px rgba(0,0,0,.3); padding:6px; z-index:30; }
+.cm-menu button{ width:100%; display:flex; align-items:center; gap:9px; border:none; background:transparent; cursor:pointer;
+  font-family:var(--font-body); font-size:13.5px; font-weight:700; color:var(--ink); border-radius:9px; padding:11px 12px; text-align:left; }
+.cm-menu button:hover{ background:var(--accent-soft); color:var(--accent-deep); }
+.cm-menu button svg{ width:15px; height:15px; color:var(--accent-deep); }
+
+/* CSV two-column layout */
+.cm-csvwrap{ display:flex; flex-direction:column; gap:14px; }
+.cm-uploadcard{ display:flex; flex-direction:column; }
+.cm-uploadnote{ align-self:center; font-size:12px; font-weight:800; color:var(--accent-deep); background:var(--accent-soft);
+  border:1px solid var(--accent-soft-2); border-radius:999px; padding:6px 14px; margin-bottom:16px; }
+.cm-upload{ width:100%; display:flex; align-items:center; justify-content:center; gap:9px; border:1.5px solid var(--line);
+  background:#fff; border-radius:12px; padding:13px 14px; cursor:pointer; font-family:var(--font-body); font-size:13.5px; font-weight:800; color:var(--ink-2); }
+.cm-upload svg{ width:16px; height:16px; }
+.cm-upload.has{ border-color:var(--accent); color:var(--accent-deep); background:var(--accent-soft); }
+
+/* local bottom sheet (country picker) */
+.cm-scrim{ position:absolute; inset:0; background:rgba(15,26,14,.4); opacity:0; transition:opacity .22s ease; z-index:120; }
+.cm-scrim.show{ opacity:1; }
+.cm-sheet{ position:absolute; left:0; right:0; bottom:0; z-index:121; background:var(--surface); border-radius:20px 20px 0 0;
+  padding:10px 12px calc(16px + env(safe-area-inset-bottom)); box-shadow:0 -12px 40px -8px rgba(0,0,0,.3);
+  transform:translateY(100%); transition:transform .26s cubic-bezier(.2,.8,.2,1); max-height:70%; overflow-y:auto; }
+.cm-sheet.show{ transform:none; }
+.cm-sheethd{ font-size:14px; font-weight:800; color:var(--ink); text-align:center; padding:10px 0 12px; }
+.cm-ccsrch{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:12px; padding:0 12px; margin:0 2px 8px;
+  position:sticky; top:0; background:var(--surface); z-index:1; }
+.cm-ccsrch svg{ flex:0 0 16px; width:16px; height:16px; color:var(--ink-3); }
+.cm-ccsrch input{ flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:var(--font-body); font-size:14px; font-weight:600; color:var(--ink); padding:11px 0; }
+.cm-cclist{ display:flex; flex-direction:column; }
+.cm-ccnone{ text-align:center; font-size:13px; font-weight:600; color:var(--ink-4); padding:18px 0; }
+.cm-sheetopt{ width:100%; border:none; background:transparent; cursor:pointer; font-family:var(--font-body); font-size:14.5px;
+  font-weight:700; color:var(--ink); border-radius:11px; padding:14px 14px; text-align:left; }
+.cm-sheetopt:hover{ background:var(--accent-soft); color:var(--accent-deep); }
+
+/* wider screens: CSV side-by-side like the web */
+@media (min-width:560px){
+  .cm-csvwrap{ flex-direction:column; }
+}

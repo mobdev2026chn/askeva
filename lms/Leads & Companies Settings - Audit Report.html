@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AskEva · Leads &amp; Companies Settings Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --eva-green:#3DC838; --eva-green-dark:#2EA62B; --eva-green-deep:#1F7A1B; --eva-lime:#8FD63B;
+    --eva-green-50:#ECFAEC; --eva-green-100:#D6F4D5;
+    --ink:#0F1A0E; --ink-2:#2B3329; --ink-3:#5C6358; --ink-4:#8C9388;
+    --line:#E4E8E1; --surface:#FFFFFF; --surface-2:#F7F9F5; --surface-3:#ECF0E8;
+    --grad:linear-gradient(135deg,#2BA84A 0%,#3DC838 45%,#8FD63B 100%);
+    --high:#E5484D; --high-bg:#FDECEC; --med:#F2961C; --med-bg:#FDF1E2; --low:#3B82F6; --low-bg:#E9F1FE;
+    --font-display:"Anton","Impact",sans-serif; --font-body:"Archivo","Inter",system-ui,sans-serif;
+    --font-mono:"JetBrains Mono","Menlo",monospace;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:var(--font-body); color:var(--ink); background:var(--surface-3);
+    -webkit-font-smoothing:antialiased; line-height:1.55; }
+  .page{ max-width:860px; margin:28px auto; background:var(--surface); border-radius:18px; overflow:hidden;
+    box-shadow:0 18px 50px rgba(15,26,14,.12); }
+
+  /* ---- header ---- */
+  .masthead{ background:var(--grad); color:#fff; padding:40px 48px 34px; position:relative; overflow:hidden; }
+  .masthead::after{ content:""; position:absolute; right:-60px; top:-60px; width:280px; height:280px; border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.28), rgba(255,255,255,0) 62%); }
+  .brandrow{ display:flex; align-items:center; gap:11px; position:relative; z-index:1; }
+  .brandmark{ font-family:var(--font-display); font-size:22px; letter-spacing:.04em; background:#fff; color:var(--eva-green-deep);
+    padding:5px 12px 3px; border-radius:9px; line-height:1; white-space:nowrap; }
+  .brandkick{ font-size:12px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; opacity:.92; }
+  .masthead h1{ font-family:var(--font-display); font-size:46px; line-height:1.02; letter-spacing:.01em; text-transform:uppercase;
+    margin:20px 0 0; position:relative; z-index:1; max-width:600px; }
+  .metabar{ display:flex; flex-wrap:wrap; gap:26px; margin-top:22px; position:relative; z-index:1; }
+  .metabar .m .k{ font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; opacity:.82; }
+  .metabar .m .v{ font-size:14.5px; font-weight:800; margin-top:3px; }
+
+  .body{ padding:40px 48px 50px; }
+  .overline{ font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--eva-green-deep); margin:0 0 12px; }
+  h2{ font-family:var(--font-body); font-size:22px; font-weight:800; letter-spacing:-.01em; margin:0 0 14px; }
+  h2.sec{ margin-top:46px; padding-top:26px; border-top:2px solid var(--surface-3); }
+  p{ font-size:14.5px; color:var(--ink-2); margin:0 0 14px; }
+  p.lead{ font-size:16px; color:var(--ink); }
+  strong{ font-weight:800; color:var(--ink); }
+
+  /* ---- scorecard ---- */
+  .score{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:24px 0 8px; }
+  .scard{ border:1px solid var(--line); border-radius:14px; padding:16px 18px; background:var(--surface-2); }
+  .scard .n{ font-family:var(--font-display); font-size:40px; line-height:1; color:var(--ink); }
+  .scard .l{ font-size:11.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); margin-top:8px; }
+  .scard.high .n{ color:var(--high); } .scard.med .n{ color:var(--med); } .scard.low .n{ color:var(--low); }
+
+  /* ---- finding cards ---- */
+  .finding{ border:1px solid var(--line); border-radius:16px; padding:20px 22px; margin-bottom:16px; background:var(--surface); }
+  .finding .top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .sev{ font-size:10.5px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; padding:4px 10px; border-radius:7px; }
+  .sev.high{ background:var(--high-bg); color:var(--high); }
+  .sev.med{ background:var(--med-bg); color:var(--med); }
+  .sev.low{ background:var(--low-bg); color:var(--low); }
+  .area{ font-size:11.5px; font-weight:800; color:var(--ink-4); letter-spacing:.02em; }
+  .fid{ margin-left:auto; font-family:var(--font-mono); font-size:11.5px; font-weight:700; color:var(--ink-4); }
+  .finding h3{ font-size:16.5px; font-weight:800; letter-spacing:-.01em; margin:0 0 10px; }
+  .finding .row{ display:flex; gap:12px; margin-top:9px; font-size:13.5px; }
+  .finding .row .tag{ flex:0 0 92px; font-size:10.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--ink-4); padding-top:2px; }
+  .finding .row .txt{ color:var(--ink-2); }
+  .finding .row .txt code{ font-family:var(--font-mono); font-size:12px; background:var(--surface-3); padding:1px 6px; border-radius:5px; color:var(--ink); }
+  .finding .row.fix .txt{ color:var(--ink); }
+  .finding .row.fix .tag{ color:var(--eva-green-deep); }
+
+  /* ---- inventory table ---- */
+  table{ width:100%; border-collapse:collapse; margin-top:8px; font-size:13.5px; }
+  th{ text-align:left; font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-4);
+    padding:0 12px 10px; border-bottom:2px solid var(--surface-3); }
+  td{ padding:12px 12px; border-bottom:1px solid var(--line); color:var(--ink-2); vertical-align:top; }
+  td:first-child{ font-weight:800; color:var(--ink); white-space:nowrap; }
+  .pill{ display:inline-block; font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:999px; }
+  .pill.ok{ background:var(--eva-green-50); color:var(--eva-green-deep); }
+  .pill.gap{ background:var(--med-bg); color:var(--med); }
+  .pill.bug{ background:var(--high-bg); color:var(--high); }
+
+  /* ---- callout ---- */
+  .callout{ background:var(--eva-green-50); border:1px solid var(--eva-green-100); border-radius:14px; padding:18px 20px; margin:22px 0; }
+  .callout .h{ font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--eva-green-deep); margin-bottom:7px; }
+  .callout p{ margin:0; font-size:14px; color:var(--ink-2); }
+
+  ul.reco{ margin:0; padding:0; list-style:none; }
+  ul.reco li{ position:relative; padding:11px 0 11px 30px; border-bottom:1px solid var(--line); font-size:14.5px; color:var(--ink-2); }
+  ul.reco li:last-child{ border-bottom:none; }
+  ul.reco li::before{ content:""; position:absolute; left:2px; top:17px; width:9px; height:9px; border-radius:3px; background:var(--eva-green); }
+  ul.reco li b{ color:var(--ink); }
+  .num{ font-family:var(--font-mono); font-size:12px; color:var(--ink-4); font-weight:700; margin-right:6px; }
+
+  .foot{ margin-top:44px; padding-top:20px; border-top:2px solid var(--surface-3); font-size:12px; color:var(--ink-4); }
+
+  @media print{
+    body{ background:#fff; }
+    .page{ margin:0; border-radius:0; box-shadow:none; max-width:none; }
+    h2.sec{ break-before:auto; }
+    .finding{ break-inside:avoid; }
+  }
+  @media (max-width:680px){
+    .masthead,.body{ padding-left:24px; padding-right:24px; }
+    .masthead h1{ font-size:34px; }
+    .score{ grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div class="brandrow">
+      <span class="brandmark">ASK EVA</span>
+      <span class="brandkick">Product Audit</span>
+    </div>
+    <h1>Leads &amp; Companies — Settings Audit</h1>
+    <div class="metabar">
+      <div class="m"><div class="k">Module</div><div class="v">Lead Configuration · Companies</div></div>
+      <div class="m"><div class="k">Date</div><div class="v">June 9, 2026</div></div>
+      <div class="m"><div class="k">Build</div><div class="v">AskEva CRM (merged)</div></div>
+      <div class="m"><div class="k">Status</div><div class="v">Final</div></div>
+    </div>
+  </header>
+
+  <div class="body">
+
+    <p class="overline">Executive summary</p>
+    <p class="lead">The Lead Configuration surface is broad and well-built visually — Reminders, Field &amp; Dropdown configuration, Webhook, and Quick Reply are all present and interactive. The audit surfaced <strong>8 issues</strong>, the most material being a <strong>taxonomy mismatch</strong>: the settings screens describe a lead pipeline and source vocabulary that no longer match what the live app actually uses. There is also <strong>no settings surface for Companies</strong> — they are silently derived from a free-text field. None of the findings are blockers, but the two high-severity items undermine trust in the configuration screens and should be fixed before any customer-facing rollout.</p>
+
+    <div class="score">
+      <div class="scard high"><div class="n">2</div><div class="l">High</div></div>
+      <div class="scard med"><div class="n">3</div><div class="l">Medium</div></div>
+      <div class="scard low"><div class="n">3</div><div class="l">Low</div></div>
+      <div class="scard"><div class="n">5</div><div class="l">Areas reviewed</div></div>
+    </div>
+
+    <h2 class="sec">Scope &amp; method</h2>
+    <p>Reviewed every screen reachable from <strong>Lead Configuration</strong> (Reminders, Configuration → Lead Fields + Dropdown Fields, Webhook, Quick Reply), the <strong>Leads list filters</strong>, and the <strong>Companies</strong> tab. Each was checked for (a) functional correctness, (b) consistency with the live leads dataset and pipeline, and (c) UX/data-model gaps. Findings are rated <strong>High</strong> (breaks a user's mental model or produces wrong data), <strong>Medium</strong> (notable gap or friction), or <strong>Low</strong> (polish / nice-to-have).</p>
+
+    <h2 class="sec">Findings</h2>
+
+    <div class="finding">
+      <div class="top"><span class="sev high">High</span><span class="area">Configuration · Dropdown Fields</span><span class="fid">AE-01</span></div>
+      <h3>Status taxonomy doesn't match the live pipeline</h3>
+      <div class="row"><span class="tag">Observed</span><span class="txt">The Status dropdown editor offers <code>New · Hot · Warm · Cold · Converted · Invalid</code>.</span></div>
+      <div class="row"><span class="tag">Reality</span><span class="txt">The leads list, dashboard, and detail pages run a 9-stage pipeline: <code>New · Contacted · Qualified · Meeting Scheduled · Proposal Sent · Negotiation · Won · Lost · Follow-up Required</code>.</span></div>
+      <div class="row"><span class="tag">Impact</span><span class="txt">Editing "Status" in settings has no effect on the real pipeline, and the labels shown are stale. Admins will believe they are configuring stages they cannot actually change.</span></div>
+      <div class="row fix"><span class="tag">Recommend</span><span class="txt">Drive the Status dropdown from the single source of truth used by the leads module, and make it the real pipeline editor (rename/reorder/colour). Retire the legacy Hot/Warm/Cold labels.</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="top"><span class="sev high">High</span><span class="area">Configuration · Dropdown Fields</span><span class="fid">AE-02</span></div>
+      <h3>Source vocabulary has drifted from the data</h3>
+      <div class="row"><span class="tag">Observed</span><span class="txt">The Source editor lists <code>User Initiated - Whatsapp</code>.</span></div>
+      <div class="row"><span class="tag">Reality</span><span class="txt">The app rebrands WhatsApp to "Chat" at runtime, so live records carry sources like <code>Chat-Initiated</code> and <code>Chat-Sync</code>. The settings list and the data no longer agree.</span></div>
+      <div class="row"><span class="tag">Impact</span><span class="txt">Source-based filtering and reporting can silently miss records whose stored value never appears in the configured list.</span></div>
+      <div class="row fix"><span class="tag">Recommend</span><span class="txt">Normalise source labels in one place and seed the dropdown from observed values. Add a one-time migration note for older "Whatsapp" rows.</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="top"><span class="sev med">Medium</span><span class="area">Companies</span><span class="fid">AE-03</span></div>
+      <h3>No settings surface for Companies</h3>
+      <div class="row"><span class="tag">Observed</span><span class="txt">Companies are auto-grouped from the free-text <code>Company</code> field on each lead. There is no place to set an industry, owner, or to merge/rename/dedupe companies.</span></div>
+      <div class="row"><span class="tag">Impact</span><span class="txt">Typos fork a company into duplicates; there is no firmographic data to segment on; the Companies tab is read-only.</span></div>
+      <div class="row fix"><span class="tag">Recommend</span><span class="txt">Add a lightweight Company record (name, industry, owner, merge). <strong>Partially addressed in this cycle:</strong> the new <strong>Industry</strong> and <strong>Company</strong> filters introduce an industry taxonomy and a company picker — the natural next step is to make those editable rather than derived.</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="top"><span class="sev med">Medium</span><span class="area">Configuration · Lead Fields</span><span class="fid">AE-04</span></div>
+      <h3>Field-model rough edges</h3>
+      <div class="row"><span class="tag">Observed</span><span class="txt"><code>Tags</code> is typed as a single-line <em>Input</em> rather than a multi-value/tag control; <code>Country Code</code> and <code>Mobile</code> are split into two fields; the <code>Product</code> dropdown ships with zero options.</span></div>
+      <div class="row"><span class="tag">Impact</span><span class="txt">Tags entered as free text won't chip cleanly; phone capture is more error-prone; an empty Product dropdown looks unfinished.</span></div>
+      <div class="row fix"><span class="tag">Recommend</span><span class="txt">Introduce a "Tags / Multi-select" field type, consider a combined phone+country control, and either seed Product options or hide the field until configured.</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="top"><span class="sev med">Medium</span><span class="area">Webhook</span><span class="fid">AE-05</span></div>
+      <h3>Webhook lacks validation &amp; an accurate sample</h3>
+      <div class="row"><span class="tag">Observed</span><span class="txt">The URL field accepts any string; "Test Webhook" always reports success via a toast; the sample payload hard-codes a timestamp and uses <code>"status": "New Lead"</code>, which isn't a real pipeline value.</span></div>
+      <div class="row"><span class="tag">Impact</span><span class="txt">Users can save an invalid endpoint and believe it was verified; the sample misrepresents the actual payload shape.</span></div>
+      <div class="row fix"><span class="tag">Recommend</span><span class="txt">Validate the URL, surface a real test result (status code / latency), and generate the sample from a live record so status values stay truthful.</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="top"><span class="sev low">Low</span><span class="area">Quick Reply</span><span class="fid">AE-06</span></div>
+      <h3>Quick Replies have no categories or variables</h3>
+      <div class="row"><span class="tag">Observed</span><span class="txt">Quick Replies are a flat list. The Chat module's templates, by contrast, support categories. There is no support for merge variables (e.g. lead name).</span></div>
+      <div class="row fix"><span class="tag">Recommend</span><span class="txt">Reuse the Chat template pattern: add categories and <code>{{name}}</code>-style variables for parity and faster reuse.</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="top"><span class="sev low">Low</span><span class="area">Reminders</span><span class="fid">AE-07</span></div>
+      <h3>Reminder labels &amp; copy are ambiguous</h3>
+      <div class="row"><span class="tag">Observed</span><span class="txt">"Business Alert" is described with copy about tracking new leads in real time, which reads like the New-Lead alert beside it. The two toggles aren't clearly differentiated.</span></div>
+      <div class="row fix"><span class="tag">Recommend</span><span class="txt">Tighten each toggle's title + one-line description so the trigger (business hours vs. new-lead creation) is unambiguous.</span></div>
+    </div>
+
+    <div class="finding">
+      <div class="top"><span class="sev low">Low</span><span class="area">All settings</span><span class="fid">AE-08</span></div>
+      <h3>Changes are session-only</h3>
+      <div class="row"><span class="tag">Observed</span><span class="txt">Edits to fields, dropdowns, reminders, webhook and quick replies are held in memory and reset on reload.</span></div>
+      <div class="row"><span class="tag">Impact</span><span class="txt">Expected for the current prototype; flagged so it isn't mistaken for persisted behaviour during demos.</span></div>
+      <div class="row fix"><span class="tag">Recommend</span><span class="txt">Persist to storage (or the API) when these screens graduate from prototype.</span></div>
+    </div>
+
+    <div class="callout">
+      <div class="h">Addressed in this cycle</div>
+      <p>Alongside the audit, the Leads area gained a data-driven <strong>30-Day Trend</strong> bar chart on the dashboard and a redesigned <strong>filter panel</strong> with <strong>Industry</strong> and <strong>Company</strong> filters, <strong>saved views</strong>, and polished active-filter chips. The Industry/Company work directly begins to close finding <strong>AE-03</strong>.</p>
+    </div>
+
+    <h2 class="sec">Prioritised recommendations</h2>
+    <ul class="reco">
+      <li><span class="num">P0</span><b>Unify the Status pipeline</b> across settings and the live module; make the Status dropdown the real editor. <em>(AE-01)</em></li>
+      <li><span class="num">P0</span><b>Reconcile Source labels</b> with stored values and add a migration for legacy "Whatsapp" rows. <em>(AE-02)</em></li>
+      <li><span class="num">P1</span><b>Promote Company to a real record</b> with editable industry/owner and merge — building on the new Industry &amp; Company filters. <em>(AE-03)</em></li>
+      <li><span class="num">P1</span><b>Add a Tags/Multi-select field type</b> and tidy the phone-number capture. <em>(AE-04)</em></li>
+      <li><span class="num">P1</span><b>Make webhook testing real</b> (validation + live test result + generated sample). <em>(AE-05)</em></li>
+      <li><span class="num">P2</span><b>Bring Quick Replies to parity</b> with Chat templates (categories + variables). <em>(AE-06)</em></li>
+      <li><span class="num">P2</span><b>Clarify reminder copy</b> and persist settings once out of prototype. <em>(AE-07, AE-08)</em></li>
+    </ul>
+
+    <h2 class="sec">Appendix — settings inventory</h2>
+    <table>
+      <thead><tr><th>Area</th><th>What it does</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Reminders</td><td>Two toggles: Business Alert, New Lead Creation Alert</td><td><span class="pill gap">Copy gap</span></td></tr>
+        <tr><td>Lead Fields</td><td>Display/Required toggles, add custom field, core fields locked</td><td><span class="pill gap">Minor gaps</span></td></tr>
+        <tr><td>Dropdown Fields</td><td>Status, Source, Assigned, Product option lists</td><td><span class="pill bug">Out of sync</span></td></tr>
+        <tr><td>Webhook</td><td>URL, events, headers, sample payload, edit/test/reset</td><td><span class="pill gap">No validation</span></td></tr>
+        <tr><td>Quick Reply</td><td>List + add / edit / delete canned replies</td><td><span class="pill ok">Works</span></td></tr>
+        <tr><td>Leads filters</td><td>Status, Source, Agent, Industry, Company, date — saved views</td><td><span class="pill ok">Redesigned</span></td></tr>
+        <tr><td>Companies</td><td>Auto-grouped from lead Company field; read-only</td><td><span class="pill gap">No settings</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="foot">
+      AskEva CRM · Leads &amp; Companies Settings Audit · 8 findings (2 High / 3 Medium / 3 Low) · Prepared June 9, 2026.
+      Severity reflects impact on data correctness and admin trust, not engineering effort.
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

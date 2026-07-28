@@ -1,0 +1,33 @@
+> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle:compileKotlin UP-TO-DATE
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy NO-SOURCE
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
+> Task :gradle:classes UP-TO-DATE
+> Task :gradle:jar UP-TO-DATE
+
+> Configure project :app
+e: file:///C:/Users/sugan/StudioProjects/LM/lead/android/app/build.gradle.kts:41:13: Unresolved reference: minifyEnabled
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file 'C:\Users\sugan\StudioProjects\LM\lead\android\app\build.gradle.kts' line: 41
+
+* What went wrong:
+Script compilation error:
+
+  Line 41:             minifyEnabled = true
+                       ^ Unresolved reference: minifyEnabled
+
+1 error
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s
+4 actionable tasks: 4 up-to-date

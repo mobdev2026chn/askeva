@@ -1,0 +1,86 @@
+Analyzing lead...                                               
+
+   info - The file name 'dashboard_overview copy.dart' isn't a lower_case_with_underscores identifier - lib\modules\dashboard\dashboard_overview copy.dart:1:1 - file_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\dashboard\dashboard_overview.dart:274:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\dashboard\dashboard_overview.dart:701:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\dashboard\dashboard_overview.dart:743:56 - deprecated_member_use
+   info - Use interpolation to compose strings and values - lib\modules\dashboard\dashboard_overview.dart:854:13 - prefer_interpolation_to_compose_strings
+   info - Don't use 'BuildContext's across async gaps - lib\modules\dashboard\dashboard_page.dart:93:9 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\modules\lead_settings\lead_configuration_page.dart:89:29 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\modules\lead_settings\lead_configuration_page.dart:91:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\modules\lead_settings\lead_configuration_page.dart:104:17 - use_build_context_synchronously
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\modules\lead_settings\lead_configuration_page.dart:315:17 - deprecated_member_use
+   info - 'MaterialStateProperty' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\modules\lead_settings\profile_page.dart:336:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\lead_settings\profile_page.dart:372:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\lead_settings\profile_page.dart:630:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\lead_settings\widgets\facebook_connect_card.dart:26:36 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\modules\lead_settings\widgets\quick_reply_modal.dart:78:21 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\lead_settings\widgets\quick_reply_modal.dart:96:21 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\lead_settings\widgets\setting_toggle_card.dart:34:39 - deprecated_member_use
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\modules\lead_settings\widgets\setting_toggle_card.dart:64:15 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\company_customers_page.dart:46:11 - curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\modules\leads\lead_details_page.dart:216:44 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\lead_details_page.dart:427:11 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\lead_details_page.dart:433:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\lead_details_page.dart:448:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\lead_details_page.dart:463:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\lead_details_page.dart:529:11 - curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps - lib\modules\leads\lead_details_page.dart:576:9 - use_build_context_synchronously
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\modules\leads\lead_details_page.dart:723:17 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\modules\leads\lead_details_page.dart:724:17 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\modules\leads\lead_details_page.dart:736:17 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\modules\leads\lead_details_page.dart:737:17 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\modules\leads\leads_page.dart:134:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\modules\leads\leads_page.dart:141:11 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:205:19 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:207:19 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:377:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:379:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:853:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:855:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:857:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\leads\leads_page.dart:859:7 - curly_braces_in_flow_control_structures
+warning - The value of the local variable 'query' isn't used - lib\modules\leads\widgets\add_lead_modal.dart:621:19 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\modules\leads\widgets\import_leads_modal.dart:45:9 - use_build_context_synchronously
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\modules\settings\agents\tabs\agents_list_tab.dart:253:33 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\modules\settings\agents\tabs\agents_list_tab.dart:265:35 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\settings\agents\tabs\agents_list_tab.dart:267:35 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\settings\agents\tabs\agents_list_tab.dart:339:7 - curly_braces_in_flow_control_structures
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\modules\settings\agents\tabs\roles_list_tab.dart:247:33 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\modules\settings\agents\tabs\roles_list_tab.dart:256:58 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\settings\agents\widgets\change_password_modal.dart:218:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\settings\agents\widgets\change_password_modal.dart:306:33 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\modules\settings\agents\widgets\create_agent_modal.dart:272:37 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\settings\agents\widgets\create_agent_modal.dart:295:67 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\modules\settings\agents\widgets\create_agent_modal.dart:301:37 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\settings\agents\widgets\create_agent_modal.dart:303:37 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\settings\agents\widgets\create_agent_modal.dart:308:37 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\settings\agents\widgets\create_agent_modal.dart:310:37 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\modules\settings\agents\widgets\create_agent_modal.dart:312:37 - curly_braces_in_flow_control_structures
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\modules\settings\agents\widgets\create_agent_modal.dart:433:31 - deprecated_member_use
+   info - The private field _selectedPermissions could be 'final' - lib\modules\settings\agents\widgets\create_role_modal.dart:55:34 - prefer_final_fields
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\modules\settings\agents\widgets\create_role_modal.dart:257:53 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\modules\settings\agents\widgets\create_role_modal.dart:331:26 - unnecessary_to_list_in_spreads
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:24:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:26:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:47:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:72:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:91:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:100:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:108:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:125:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:127:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:130:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:148:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:150:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\fcm_service.dart:164:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\leads_service.dart:264:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\leads_service.dart:265:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\leads_service.dart:276:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\leads_service.dart:277:5 - avoid_print
+   info - Statements in an if should be enclosed in a block - lib\services\ml_kit_ocr_service.dart:59:11 - curly_braces_in_flow_control_structures
+   info - Don't invoke 'print' in production code - lib\services\ml_kit_ocr_service.dart:78:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\stat_card.dart:25:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\stat_card.dart:36:30 - deprecated_member_use
+
+82 issues found. (ran in 11.6s)

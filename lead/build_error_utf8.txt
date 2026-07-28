@@ -1,0 +1,85 @@
+﻿Upgrading build.gradle.kts
+Running Gradle task 'assembleDebug'...                          
+Warning: The plugin file_picker requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin flutter_plugin_android_lifecycle requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin google_mlkit_commons requires Android SDK version 35 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin google_mlkit_text_recognition requires Android SDK version 35 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin image_picker_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin path_provider_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin permission_handler_android requires Android SDK version 35 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin phone_state requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin shared_preferences_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+Warning: The plugin url_launcher_android requires Android SDK version 36 or higher.
+For more information about build configuration, see https://flutter.dev/to/review-gradle-config.
+flutter : Your project is 
+configured to compile 
+against Android SDK 34, but 
+the following plugin(s) 
+require to be compiled 
+against a higher Android 
+SDK version:
+At line:1 char:1
++ flutter build apk --debug 
+> build_error.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (Your   
+  project is...id SDK ver   
+ sion::String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+- file_picker compiles 
+against Android SDK 36
+- flutter_plugin_android_lif
+ecycle compiles against 
+Android SDK 36
+- google_mlkit_commons 
+compiles against Android 
+SDK 35
+- google_mlkit_text_recognit
+ion compiles against 
+Android SDK 35
+- image_picker_android 
+compiles against Android 
+SDK 36
+- path_provider_android 
+compiles against Android 
+SDK 36
+- 
+permission_handler_android 
+compiles against Android 
+SDK 35
+- phone_state compiles 
+against Android SDK 36
+- 
+shared_preferences_android 
+compiles against Android 
+SDK 36
+- url_launcher_android 
+compiles against Android 
+SDK 36
+Fix this issue by compiling 
+against the highest Android 
+SDK version (they are 
+backward compatible).
+Add the following to C:\User
+s\sugan\StudioProjects\LM\le
+ad\android\app\build.gradle.
+kts:
+
+    android {
+        compileSdk = 36
+        ...
+    }

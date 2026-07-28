@@ -1,0 +1,232 @@
+/* =========================================================================
+   AskEva · Sync & Real-Time UX layer
+   Self-contained. Adds: global sync status chip, offline banner, sync queue
+   sheet + retry, pull-to-refresh, background-sync animation, message
+   Sending/Failed states, conflict + collision cues, and a demo driver.
+   Palette pinned to the AskEva brand greens.
+   ========================================================================= */
+:root{
+  --sy-green:#3CC23F; --sy-green-deep:#177A36; --sy-green-mid:#2BA84A;
+  --sy-amber:#F5B829; --sy-amber-deep:#9A6B00;
+  --sy-red:#EF5350; --sy-red-deep:#C1352F;
+  --sy-ink:#15231A; --sy-ink-2:#4D5D52; --sy-ink-3:#8A978D;
+  --sy-line:#EEF1EC; --sy-tint:#EAF9E6; --sy-tint-bd:#CDEAC4;
+}
+
+/* hide ALL sync chrome on the login / splash screens */
+.device-screen.logged-out .sy-chip,
+.device-screen.logged-out .sy-banner,
+.device-screen.logged-out .sy-demo-fab,
+.device-screen.booting .sy-chip,
+.device-screen.booting .sy-banner,
+.device-screen.booting .sy-demo-fab{ display:none !important; }
+
+/* ---------------- global status chip (lives in the status bar) ----------- */
+.status-bar{ position:relative; }
+.sy-chip{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+  height:22px; padding:0 11px 0 9px; border-radius:999px;
+  background:#fff; border:1px solid rgba(21,35,26,.08);
+  box-shadow:0 2px 7px -1px rgba(21,35,26,.22);
+  font:800 11px/1 var(--font-body,'Plus Jakarta Sans',system-ui,sans-serif);
+  letter-spacing:.005em; color:var(--sy-ink-2); white-space:nowrap;
+  -webkit-tap-highlight-color:transparent; user-select:none;
+  transition:background .2s, color .2s, box-shadow .2s;
+}
+.sy-chip:active{ transform:translate(-50%,-50%) scale(.95); }
+.sy-chip .sy-dot{ width:7px; height:7px; border-radius:50%; flex:0 0 7px; background:var(--sy-green); box-shadow:0 0 0 3px rgba(60,194,63,.18); }
+.sy-chip .sy-ring{ width:13px; height:13px; flex:0 0 13px; display:none; }
+.sy-chip .sy-ring svg{ width:13px; height:13px; display:block; }
+.sy-chip .sy-txt{ display:inline-block; }
+
+.sy-chip.is-synced{ color:var(--sy-green-deep); }
+.sy-chip.is-syncing{ color:var(--sy-amber-deep); }
+.sy-chip.is-syncing .sy-dot{ display:none; }
+.sy-chip.is-syncing .sy-ring{ display:inline-block; }
+.sy-chip.is-offline{ color:#5A6B61; }
+.sy-chip.is-offline .sy-dot{ background:#9AA39C; box-shadow:0 0 0 3px rgba(154,163,156,.2); }
+.sy-chip.is-failed{ color:var(--sy-red-deep); background:#FFF3F2; border-color:#F6D4D2; }
+.sy-chip.is-failed .sy-dot{ background:var(--sy-red); box-shadow:0 0 0 3px rgba(239,83,80,.2); }
+.sy-chip .sy-count{ display:none; margin-left:1px; min-width:15px; height:15px; padding:0 4px; border-radius:999px;
+  background:var(--sy-amber); color:#3a2a00; font-size:9.5px; font-weight:800; align-items:center; justify-content:center; }
+.sy-chip.has-queue .sy-count{ display:inline-flex; }
+.sy-chip.is-failed .sy-count{ background:var(--sy-red); color:#fff; }
+
+/* the chip is hidden while idle/synced — revealed only on pull-to-refresh or
+   when sync needs attention, then auto-hidden (see renderChip) */
+.sy-chip{ opacity:0; pointer-events:none; transition:opacity .3s ease, transform .2s, background .2s, color .2s, box-shadow .2s; }
+.sy-chip.sy-chip-show{ opacity:1; pointer-events:auto; }
+
+.sy-spin{ animation:sy-spin .85s linear infinite; transform-origin:center; }
+@keyframes sy-spin{ to{ transform:rotate(360deg); } }
+.sy-chip.is-syncing .sy-dot,
+.sy-chip.is-offline .sy-dot{ }
+@media (prefers-reduced-motion:reduce){ .sy-spin{ animation:none; } }
+
+/* ---------------- offline / reconnect banner --------------------------- */
+.sy-banner{
+  position:absolute; left:10px; right:10px; top:34px; z-index:75;
+  display:flex; align-items:center; gap:11px;
+  padding:9px 13px; border-radius:13px; color:#fff;
+  background:linear-gradient(180deg,#39474F,#2C383F);
+  box-shadow:0 14px 30px -12px rgba(0,0,0,.55);
+  font:600 12.5px/1.25 var(--font-body,'Plus Jakarta Sans',system-ui,sans-serif);
+  transform:translateY(-130%); opacity:0; pointer-events:none;
+  transition:transform .32s cubic-bezier(.2,.9,.3,1), opacity .25s;
+}
+.sy-banner.show{ transform:translateY(0); opacity:1; pointer-events:auto; }
+.sy-banner.online{ background:linear-gradient(180deg,#1F8F45,#16722F); }
+.sy-banner .sy-bic{ width:20px; height:20px; flex:0 0 20px; display:grid; place-items:center; color:var(--sy-amber); }
+.sy-banner.online .sy-bic{ color:#C8FF8F; }
+.sy-banner .sy-bic svg{ width:20px; height:20px; }
+.sy-banner .sy-btext{ flex:1; min-width:0; }
+.sy-banner .sy-btext b{ font-weight:800; display:block; }
+.sy-banner .sy-btext small{ font-weight:500; opacity:.78; font-size:11px; }
+.sy-banner .sy-bbtn{ flex:0 0 auto; border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.12);
+  color:#fff; font:800 11px var(--font-body,system-ui); padding:6px 11px; border-radius:999px; cursor:pointer; }
+.sy-banner .sy-bbtn:active{ background:rgba(255,255,255,.22); }
+
+/* push the active pane below the offline banner so headers never sit under it */
+.app-pane, .screens{ transition:top .32s cubic-bezier(.2,.9,.3,1); }
+.device-screen.sy-banner-on .app-pane,
+.device-screen.sy-banner-on .screens{ top:54px !important; }
+
+/* ---------------- pull-to-refresh indicator ---------------------------- */
+.sy-ptr{
+  position:absolute; left:50%; top:0; z-index:60; transform:translate(-50%,0);
+  width:38px; height:38px; border-radius:50%; background:#fff;
+  box-shadow:0 6px 16px -4px rgba(21,35,26,.3); display:grid; place-items:center;
+  opacity:0; pointer-events:none;
+}
+.sy-ptr svg{ width:21px; height:21px; color:var(--sy-green); }
+.sy-ptr .sy-ptr-ring{ transition:transform .05s linear; }
+.sy-ptr.run svg{ animation:sy-spin .8s linear infinite; }
+
+/* ---------------- bottom sheet (sync status + queue) -------------------- */
+.sy-scrim{ position:absolute; inset:0; z-index:90; background:rgba(15,26,14,.42);
+  opacity:0; pointer-events:none; transition:opacity .25s; }
+.sy-scrim.show{ opacity:1; pointer-events:auto; }
+.sy-sheet{
+  position:absolute; left:0; right:0; bottom:0; z-index:91;
+  background:#fff; border-radius:22px 22px 0 0; padding:8px 18px calc(18px + env(safe-area-inset-bottom));
+  box-shadow:0 -16px 40px -12px rgba(21,35,26,.4); max-height:84%; overflow-y:auto;
+  transform:translateY(102%); transition:transform .34s cubic-bezier(.2,.9,.3,1);
+  font-family:var(--font-body,'Plus Jakarta Sans',system-ui,sans-serif);
+}
+.sy-sheet.show{ transform:translateY(0); }
+.sy-sheet::-webkit-scrollbar{ width:0; }
+.sy-grab{ width:38px; height:4px; border-radius:2px; background:#DDE4DC; margin:6px auto 14px; }
+
+.sy-shero{ display:flex; align-items:center; gap:13px; padding:2px 2px 16px; border-bottom:1px solid var(--sy-line); }
+.sy-shero .sy-ic{ width:46px; height:46px; flex:0 0 46px; border-radius:14px; display:grid; place-items:center; }
+.sy-shero .sy-ic svg{ width:24px; height:24px; }
+.sy-shero.is-synced .sy-ic{ background:var(--sy-tint); color:var(--sy-green-deep); }
+.sy-shero.is-syncing .sy-ic{ background:#FFF7E6; color:var(--sy-amber-deep); }
+.sy-shero.is-offline .sy-ic{ background:#EEF1ED; color:#5A6B61; }
+.sy-shero.is-failed .sy-ic{ background:#FDECEC; color:var(--sy-red-deep); }
+.sy-shero .sy-htx{ flex:1; min-width:0; }
+.sy-shero .sy-htx b{ font-size:17px; font-weight:800; color:var(--sy-ink); letter-spacing:-.01em; display:block; }
+.sy-shero .sy-htx span{ font-size:12.5px; font-weight:600; color:var(--sy-ink-3); }
+.sy-shero .sy-x{ flex:0 0 auto; width:34px; height:34px; border:none; background:#F2F5F1; border-radius:10px; color:var(--sy-ink-2); cursor:pointer; display:grid; place-items:center; align-self:flex-start; }
+.sy-shero .sy-x svg{ width:18px; height:18px; }
+
+.sy-qsec{ padding:15px 0 4px; }
+.sy-qhd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
+.sy-qhd .sy-qt{ font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--sy-ink-3); }
+.sy-qhd .sy-retryall{ border:1px solid var(--sy-tint-bd); background:var(--sy-tint); color:var(--sy-green-deep);
+  font:800 11px var(--font-body,system-ui); padding:5px 11px; border-radius:999px; cursor:pointer; display:none; }
+.sy-qhd .sy-retryall.show{ display:inline-block; }
+
+.sy-qlist{ display:flex; flex-direction:column; gap:8px; }
+.sy-qrow{ display:flex; align-items:center; gap:11px; background:#fff; border:1px solid var(--sy-line); border-radius:12px; padding:11px 13px;
+  animation:sy-rowin .25s ease; }
+@keyframes sy-rowin{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:none; } }
+.sy-qrow .sy-qic{ width:30px; height:30px; flex:0 0 30px; border-radius:9px; display:grid; place-items:center; background:#F4F7F2; color:var(--sy-ink-2); }
+.sy-qrow .sy-qic svg{ width:16px; height:16px; }
+.sy-qrow .sy-qtx{ flex:1; min-width:0; }
+.sy-qrow .sy-qtx b{ font-size:13.5px; font-weight:700; color:var(--sy-ink); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sy-qrow .sy-qtx small{ font-size:11.5px; font-weight:600; color:var(--sy-ink-3); }
+.sy-qstate{ flex:0 0 auto; display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; letter-spacing:.02em; padding:4px 9px; border-radius:999px; }
+.sy-qstate .d{ width:7px; height:7px; border-radius:50%; }
+.sy-qstate.queued{ background:#FFF7E6; color:var(--sy-amber-deep); } .sy-qstate.queued .d{ background:var(--sy-amber); }
+.sy-qstate.syncing{ background:#FFF7E6; color:var(--sy-amber-deep); }
+.sy-qstate.syncing svg{ width:13px; height:13px; }
+.sy-qstate.done{ background:var(--sy-tint); color:var(--sy-green-deep); } .sy-qstate.done .d{ background:var(--sy-green); }
+.sy-qstate.failed{ background:#FDECEC; color:var(--sy-red-deep); } .sy-qstate.failed .d{ background:var(--sy-red); }
+.sy-qrow .sy-qretry{ flex:0 0 auto; border:1px solid var(--sy-tint-bd); background:var(--sy-tint); color:var(--sy-green-deep);
+  font:800 10.5px var(--font-body,system-ui); padding:5px 10px; border-radius:8px; cursor:pointer; display:none; }
+.sy-qrow.is-failed .sy-qretry{ display:inline-block; } .sy-qrow.is-failed .sy-qstate{ display:none; }
+
+.sy-qempty{ text-align:center; padding:26px 10px 18px; color:var(--sy-ink-3); }
+.sy-qempty .sy-eic{ width:48px; height:48px; margin:0 auto 11px; border-radius:50%; background:var(--sy-tint); color:var(--sy-green-deep); display:grid; place-items:center; }
+.sy-qempty .sy-eic svg{ width:26px; height:26px; }
+.sy-qempty b{ display:block; font-size:14.5px; font-weight:800; color:var(--sy-ink); margin-bottom:3px; }
+.sy-qempty span{ font-size:12.5px; font-weight:600; }
+
+/* demo controls */
+.sy-demo{ margin-top:16px; border-top:1px dashed var(--sy-line); padding-top:13px; }
+.sy-dtoggle{ display:flex; align-items:center; gap:8px; width:100%; border:none; background:none; cursor:pointer;
+  padding:4px 2px; font:800 10.5px var(--font-body,'Plus Jakarta Sans',system-ui,sans-serif); letter-spacing:.07em; text-transform:uppercase; color:var(--sy-ink-3); }
+.sy-dtoggle svg{ width:14px; height:14px; }
+.sy-dtoggle > span{ }
+.sy-dtoggle .sy-dcaret{ margin-left:auto; display:inline-flex; transition:transform .2s; }
+.sy-dtoggle[aria-expanded="true"] .sy-dcaret{ transform:rotate(180deg); }
+.sy-dwrap{ margin-top:12px; }
+.sy-dgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.sy-dbtn{ display:flex; align-items:center; gap:9px; text-align:left; border:1px solid var(--sy-line); background:#fff; border-radius:11px; padding:10px 11px; cursor:pointer; font-family:inherit; }
+.sy-dbtn:active{ background:#F6F8F5; }
+.sy-dbtn .di{ width:28px; height:28px; flex:0 0 28px; border-radius:8px; display:grid; place-items:center; background:#F4F7F2; color:var(--sy-ink-2); }
+.sy-dbtn .di svg{ width:15px; height:15px; }
+.sy-dbtn b{ font-size:12.5px; font-weight:700; color:var(--sy-ink); }
+.sy-dbtn.on .di{ background:#39474F; color:#fff; }
+
+/* demo launcher FAB (removed for clean build) */
+.sy-demo-fab{ display:none !important; }
+
+/* ---------------- message Sending / Failed states ---------------------- */
+.bubble.msg-pending{ opacity:.62; }
+.bubble .tick.sending{ color:rgba(255,255,255,.72); }
+.bubble.in .tick.sending{ color:var(--sy-ink-3); }
+.bubble.msg-failed{ box-shadow:inset 0 0 0 1.5px rgba(239,83,80,.5); }
+.bubble .tick.failed{ color:#FFD7D4; }
+.bubble.in .tick.failed{ color:var(--sy-red); }
+.bubble .sy-failnote{ display:flex; align-items:center; gap:5px; margin-top:4px; font-size:10.5px; font-weight:800; color:#FFE2E0; cursor:pointer; letter-spacing:.01em; }
+.bubble.in .sy-failnote{ color:var(--sy-red-deep); }
+.bubble .sy-failnote svg{ width:12px; height:12px; }
+
+/* ---------------- collision banner (inside conversation) --------------- */
+.sy-collide{
+  position:absolute; left:10px; right:10px; top:62px; z-index:55;
+  display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:12px;
+  background:#FFF7E6; border:1px solid #F6E2AE; color:var(--sy-amber-deep);
+  font:700 12px var(--font-body,system-ui);
+  box-shadow:0 10px 24px -12px rgba(154,107,0,.4);
+  transform:translateY(-12px); opacity:0; transition:transform .25s, opacity .25s; pointer-events:none;
+}
+.sy-collide.show{ transform:translateY(0); opacity:1; }
+.sy-collide .ca{ width:24px; height:24px; flex:0 0 24px; border-radius:50%; background:#F5B829; color:#3a2a00; display:grid; place-items:center; font-size:11px; font-weight:800; }
+.sy-collide .cx{ margin-left:auto; cursor:pointer; opacity:.6; width:18px; height:18px; display:grid; place-items:center; }
+.sy-collide .cx svg{ width:14px; height:14px; }
+
+/* ---------------- conflict resolution sheet ---------------------------- */
+.sy-conflict .sy-cfields{ display:flex; flex-direction:column; gap:10px; margin:6px 0 4px; }
+.sy-cfield{ border:1px solid var(--sy-line); border-radius:13px; overflow:hidden; }
+.sy-cfield .sy-cf-k{ font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--sy-ink-3); padding:9px 13px 0; }
+.sy-cf-opts{ display:grid; grid-template-columns:1fr 1fr; gap:0; padding:8px 10px 10px; }
+.sy-cf-opt{ border:1.5px solid var(--sy-line); border-radius:10px; padding:9px 11px; cursor:pointer; margin:0 3px; transition:border-color .15s, background .15s; }
+.sy-cf-opt small{ font-size:10px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--sy-ink-3); display:block; margin-bottom:3px; }
+.sy-cf-opt b{ font-size:14px; font-weight:700; color:var(--sy-ink); }
+.sy-cf-opt.sel{ border-color:var(--sy-green); background:var(--sy-tint); }
+.sy-cf-opt.sel small{ color:var(--sy-green-deep); }
+.sy-conflict .sy-cf-actions{ display:flex; gap:9px; margin-top:14px; }
+.sy-cf-actions button{ flex:1; border-radius:12px; padding:13px; font:800 13.5px var(--font-body,system-ui); cursor:pointer; border:1px solid var(--sy-line); background:#fff; color:var(--sy-ink-2); }
+.sy-cf-actions .sy-cf-go{ border:none; background:linear-gradient(135deg,var(--sy-green),var(--sy-green-mid)); color:#fff; box-shadow:0 8px 18px -8px rgba(43,168,74,.7); }
+
+/* ---------------- toast ------------------------------------------------ */
+.sy-toast{ position:absolute; left:50%; bottom:74px; z-index:95; transform:translate(-50%,16px);
+  background:#15231A; color:#fff; font:700 12.5px var(--font-body,system-ui); padding:10px 16px; border-radius:999px;
+  display:inline-flex; align-items:center; gap:8px; box-shadow:0 14px 30px -10px rgba(0,0,0,.5);
+  opacity:0; pointer-events:none; transition:transform .28s cubic-bezier(.2,.9,.3,1), opacity .22s; white-space:nowrap; }
+.sy-toast svg{ width:15px; height:15px; color:#85D653; }
+.sy-toast.show{ opacity:1; transform:translate(-50%,0); }

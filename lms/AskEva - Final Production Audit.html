@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AskEva · Final Production Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand-300:#85D653; --brand-400:#5BCC4A; --brand-500:#3CC23F; --brand-600:#2BA84A; --brand-700:#177A36;
+    --tint-50:#EAF9E6; --tint-100:#DCF3D6; --tint-border:#CDEAC4;
+    --canvas:#F6F8F5; --surface:#fff; --line:#EEF1EC;
+    --ink:#15231A; --ink-2:#4D5D52; --ink-3:#8A978D;
+    --info:#3B82F6; --hot:#F2542D; --warm:#F5B829; --cold:#5AB6E8; --grey:#9AA39C; --coral:#EF5350;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; background:var(--canvas); color:var(--ink); font-family:var(--sans);
+    font-size:15px; line-height:1.55; letter-spacing:-.005em;
+  }
+  .wrap{ max-width:960px; margin:0 auto; padding:40px 26px 90px; }
+
+  /* ---- header ---- */
+  .masthead{
+    background:linear-gradient(135deg,#177A36 0%,#2BA84A 46%,#5BCC4A 100%);
+    border-radius:26px; padding:36px 36px 30px; color:#fff; position:relative; overflow:hidden;
+    box-shadow:0 24px 50px -26px rgba(23,122,54,.7);
+  }
+  .masthead::after{
+    content:""; position:absolute; inset:0; opacity:.16; pointer-events:none;
+    background-image:repeating-linear-gradient(125deg,#fff 0 1px,transparent 1px 26px),repeating-linear-gradient(55deg,#fff 0 1px,transparent 1px 26px);
+    mask-image:radial-gradient(120% 120% at 85% 10%,#000,transparent 70%);
+  }
+  .mh-eyebrow{ font-size:12px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; opacity:.92; }
+  .mh-title{ font-size:37px; font-weight:800; letter-spacing:-.028em; margin:9px 0 8px; line-height:1.04; position:relative; z-index:1; }
+  .mh-sub{ font-size:15px; font-weight:600; opacity:.95; max-width:62ch; position:relative; z-index:1; }
+  .mh-meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; position:relative; z-index:1; }
+  .mh-chip{
+    background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:700;
+  }
+
+  /* ---- reality banner ---- */
+  .reality{
+    margin-top:16px; border:1.5px solid #F6D98A; background:linear-gradient(180deg,#FFFCF4,#FFF7E6);
+    border-radius:20px; padding:22px 24px;
+  }
+  .reality h2{ margin:0 0 6px; font-size:17px; font-weight:800; color:#7A5A00; display:flex; align-items:center; gap:9px; }
+  .reality h2 .dot{ width:9px;height:9px;border-radius:50%;background:#F5B829;box-shadow:0 0 0 4px #F8E6B5; }
+  .reality p{ margin:7px 0; color:#6A5520; font-size:14px; font-weight:500; }
+  .reality p strong{ color:#4A3A10; }
+
+  /* ---- section ---- */
+  section{ margin-top:42px; }
+  .sec-h{ display:flex; align-items:baseline; gap:12px; margin:0 4px 14px; }
+  .sec-n{ font-family:var(--mono); font-size:13px; font-weight:600; color:var(--brand-600); }
+  .sec-h h2{ font-size:22px; font-weight:800; letter-spacing:-.022em; margin:0; }
+  .lead-p{ margin:0 4px 16px; color:var(--ink-2); font-size:15px; font-weight:500; max-width:80ch; }
+  .lead-p strong{ color:var(--ink); font-weight:700; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:22px 24px;
+    box-shadow:0 1px 2px rgba(21,35,26,.04),0 12px 28px -22px rgba(21,35,26,.4);
+  }
+  .card + .card{ margin-top:14px; }
+
+  /* ---- score ---- */
+  .scorewrap{ display:grid; grid-template-columns:230px 1fr; gap:20px; align-items:stretch; }
+  .scorebig{
+    background:linear-gradient(160deg,#15231A,#22372A); color:#fff; border-radius:22px; padding:24px;
+    display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;
+  }
+  .scorebig .num{ font-size:66px; font-weight:800; letter-spacing:-.04em; line-height:1; }
+  .scorebig .num span{ font-size:26px; color:var(--brand-300); }
+  .scorebig .verdict{ margin-top:8px; font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#F5B829; }
+  .scorebig .gloss{ margin-top:8px; font-size:12.5px; color:rgba(255,255,255,.72); font-weight:500; max-width:24ch; }
+  .scorebars{ display:flex; flex-direction:column; gap:11px; }
+  .sbar{ }
+  .sbar .lab{ display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; color:var(--ink-2); margin-bottom:5px; }
+  .sbar .lab b{ color:var(--ink); font-weight:800; }
+  .sbar .track{ height:9px; border-radius:999px; background:var(--line); overflow:hidden; }
+  .sbar .fill{ height:100%; border-radius:999px; background:linear-gradient(90deg,var(--brand-600),var(--brand-400)); }
+  .sbar .fill.low{ background:linear-gradient(90deg,#E0584F,#F2854D); }
+  .sbar .fill.mid{ background:linear-gradient(90deg,#E59A0E,#F5C44A); }
+
+  /* ---- stat strip ---- */
+  .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .stat{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 16px 14px; }
+  .stat b{ display:block; font-size:26px; font-weight:800; letter-spacing:-.03em; color:var(--brand-700); }
+  .stat.bad b{ color:#C1352F; } .stat.warn b{ color:#9A6B00; }
+  .stat span{ font-size:12px; font-weight:700; color:var(--ink-3); letter-spacing:.01em; }
+
+  /* ---- tables ---- */
+  .tbl-card{ overflow:hidden; padding:18px 12px 8px; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{ text-align:left; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); padding:0 12px 9px; border-bottom:1px solid var(--line); }
+  td{ padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); font-weight:500; }
+  tr:last-child td{ border-bottom:none; }
+  td b, td .nm{ color:var(--ink); font-weight:700; }
+  code{ font-family:var(--mono); font-size:12px; background:var(--tint-50); color:var(--brand-700); padding:2px 6px; border-radius:6px; font-weight:600; }
+
+  /* ---- pills ---- */
+  .pill{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; letter-spacing:.02em; white-space:nowrap; }
+  .pill.ok{ background:var(--tint-50); color:var(--brand-700); border:1px solid var(--tint-border); }
+  .pill.no{ background:#FDECEC; color:#C1352F; border:1px solid #F6D4D2; }
+  .pill.part{ background:#FFF4DC; color:#9A6B00; border:1px solid #F6E2AE; }
+  .sev{ display:inline-block; font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:6px; letter-spacing:.04em; text-transform:uppercase; }
+  .sev.crit{ background:#4A1411; color:#fff; }
+  .sev.high{ background:#FDECEC; color:#C1352F; }
+  .sev.med{ background:#FFF4DC; color:#9A6B00; }
+  .sev.low{ background:var(--tint-50); color:var(--brand-700); }
+  .sev.info{ background:#EAF1FB; color:#2B6CB0; }
+
+  /* ---- finding ---- */
+  .finding{ border:1px solid var(--line); border-radius:18px; padding:18px 20px; background:var(--surface); }
+  .finding + .finding{ margin-top:12px; }
+  .finding.crit{ border-color:#F2C6C2; background:linear-gradient(180deg,#FFF8F7,#fff); }
+  .f-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .f-top h3{ font-size:15.5px; font-weight:800; margin:0; letter-spacing:-.01em; }
+  .f-id{ font-family:var(--mono); font-size:11.5px; color:var(--ink-3); font-weight:600; }
+  .finding p{ margin:6px 0; color:var(--ink-2); font-size:13.8px; }
+  .finding .why{ color:var(--ink-3); font-size:12.5px; }
+  .finding .fix{ color:var(--ink); font-weight:600; font-size:13.5px; }
+  .finding .fix::before{ content:"→ "; color:var(--brand-600); font-weight:800; }
+
+  ul.clean{ margin:8px 0 0; padding-left:20px; }
+  ul.clean li{ margin:5px 0; color:var(--ink-2); font-size:13.8px; }
+  ul.clean li b{ color:var(--ink); }
+  ul.clean li.add::marker{ color:var(--brand-500); }
+
+  .note{ font-size:12.5px; color:var(--ink-3); margin-top:10px; font-style:italic; }
+  .map-flow{ font-family:var(--mono); font-size:12.5px; color:var(--brand-700); background:var(--tint-50); border:1px solid var(--tint-border); border-radius:10px; padding:10px 13px; margin:7px 0; }
+  .map-flow.gap{ color:#9A6B00; background:#FFF7E6; border-color:#F6E2AE; }
+
+  .navcol{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .navbox{ border:1px solid var(--line); border-radius:16px; padding:16px 18px; background:var(--surface); }
+  .navbox.bad{ border-color:#F2C6C2; background:#FFF8F7; }
+  .navbox.good{ border-color:var(--tint-border); background:linear-gradient(180deg,#FBFEF9,#fff); }
+  .navbox h4{ margin:0 0 10px; font-size:13px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+  .navbox.bad h4{ color:#C1352F; } .navbox.good h4{ color:var(--brand-700); }
+  .navbox ol,.navbox ul{ margin:0; padding-left:18px; }
+  .navbox li{ font-size:13px; color:var(--ink-2); margin:4px 0; font-weight:600; }
+  .navbox li small{ color:var(--ink-3); font-weight:500; }
+  .grp{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--brand-600); margin:12px 0 3px; list-style:none; margin-left:-18px; }
+
+  .foot{ margin-top:50px; text-align:center; color:var(--ink-3); font-size:12px; }
+  .foot b{ color:var(--brand-700); }
+
+  .toc{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px 18px; margin-top:14px; }
+  .toc a{ font-size:13px; font-weight:600; color:var(--ink-2); text-decoration:none; padding:5px 0; border-bottom:1px solid var(--line); display:flex; gap:8px; }
+  .toc a:hover{ color:var(--brand-700); }
+  .toc a b{ font-family:var(--mono); font-size:11px; color:var(--brand-600); font-weight:600; }
+
+  @media (max-width:680px){
+    .stats{ grid-template-columns:repeat(2,1fr); }
+    .scorewrap{ grid-template-columns:1fr; }
+    .navcol{ grid-template-columns:1fr; }
+    .toc{ grid-template-columns:1fr 1fr; }
+    .mh-title{ font-size:28px; }
+    .tbl-card{ overflow-x:auto; } table{ min-width:560px; }
+  }
+  @media print{
+    body{ background:#fff; } .wrap{ padding:0; max-width:none; }
+    .card,.finding,.navbox,.stat,.reality{ box-shadow:none; }
+    section{ break-inside:avoid; } .finding{ break-inside:avoid; }
+    .masthead{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ MASTHEAD ============ -->
+  <header class="masthead">
+    <div class="mh-eyebrow">Final Production Audit · Confidential</div>
+    <h1 class="mh-title">AskEva is not production-ready.<br>Here is exactly why, and what it's worth fixing.</h1>
+    <p class="mh-sub">An investor-grade teardown of the AskEva WhatsApp CRM across every module — scored against the real build, not the roadmap. No praise. Gaps, risks, and the shortest path to a fundable product.</p>
+    <div class="mh-meta">
+      <span class="mh-chip">Scope · 18 modules reviewed</span>
+      <span class="mh-chip">Lens · PM · UX · Architecture · QA · Growth</span>
+      <span class="mh-chip">Benchmark · Wati · Interakt · AiSensy · Freshdesk · Zendesk · HubSpot</span>
+      <span class="mh-chip">Date · 12 Jun 2026</span>
+    </div>
+  </header>
+
+  <!-- ============ REALITY CHECK ============ -->
+  <div class="reality">
+    <h2><span class="dot"></span>Read this before the score: what AskEva actually is today</h2>
+    <p>The artifact under review is a <strong>high-fidelity front-end prototype</strong> — a single-device mobile shell running on mock data and <code style="background:#fff;border:1px solid #F0DFA8">localStorage</code>. There is <strong>no backend, no real authentication, no live WhatsApp Cloud API connection, and no database</strong>. Every "save", "send", "assign" and "payment" is simulated in the browser.</p>
+    <p>That matters because the audit brief lists <strong>~25 navigation modules</strong>, but the real app drawer ships <strong>7</strong>: Dashboard, Compose, Chats, Leads, Appointments, Ticketing, Settings (plus Profile/Billing tabs). <strong>Contacts, Manage Template, Reports, Flow Builder, Chatbot Builder, AI Agent, WhatsApp Flows, Catalog, standalone Payments &amp; Integrations do not exist as modules</strong> — they are roadmap, not product. Scoring "SLA escalation" or "RAG memory" as broken would be dishonest; they were never built. This report separates <em>built-but-flawed</em> from <em>promised-but-absent</em>, because an investor needs to know which is which.</p>
+  </div>
+
+  <!-- ============ TOC ============ -->
+  <section id="toc">
+    <div class="sec-h"><span class="sec-n">00</span><h2>Contents</h2></div>
+    <div class="card">
+      <div class="toc">
+        <a href="#score"><b>01</b> Production Readiness Score</a>
+        <a href="#critical"><b>02</b> Critical — Must Fix</a>
+        <a href="#high"><b>03</b> High Priority</a>
+        <a href="#medium"><b>04</b> Medium Priority</a>
+        <a href="#low"><b>05</b> Low Priority</a>
+        <a href="#chat"><b>06</b> Chat (Live + History)</a>
+        <a href="#modules"><b>07</b> Module-by-Module</a>
+        <a href="#competitors"><b>08</b> Competitor Gap Matrix</a>
+        <a href="#nav"><b>09</b> Recommended Navigation</a>
+        <a href="#security"><b>10</b> Security &amp; Performance</a>
+        <a href="#revenue"><b>11</b> Revenue Opportunities</a>
+        <a href="#usp"><b>12</b> USP Opportunities</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCORE ============ -->
+  <section id="score">
+    <div class="sec-h"><span class="sec-n">01</span><h2>Production Readiness Score</h2></div>
+    <p class="lead-p">Scored as a <strong>product an investor could ship to 100,000 paying users</strong>. As a design prototype it is strong; as a production SaaS it is early. The two must not be confused.</p>
+    <div class="scorewrap">
+      <div class="scorebig">
+        <div class="num">31<span>/100</span></div>
+        <div class="verdict">Not Release-Ready</div>
+        <div class="gloss">Demo-grade front end. Zero production backend, auth, or platform integration.</div>
+      </div>
+      <div class="card scorebars">
+        <div class="sbar"><div class="lab"><span>UX &amp; visual design</span><b>78</b></div><div class="track"><div class="fill" style="width:78%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>Feature completeness (vs. promised nav)</span><b>34</b></div><div class="track"><div class="fill low" style="width:34%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>Backend, data &amp; API architecture</span><b>5</b></div><div class="track"><div class="fill low" style="width:8%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>Security, auth &amp; RBAC</span><b>8</b></div><div class="track"><div class="fill low" style="width:10%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>WhatsApp / Meta platform compliance</span><b>10</b></div><div class="track"><div class="fill low" style="width:12%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>Scalability &amp; performance for 100k users</span><b>12</b></div><div class="track"><div class="fill low" style="width:14%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>Reporting &amp; analytics depth</span><b>22</b></div><div class="track"><div class="fill mid" style="width:22%"></div></div></div>
+        <div class="sbar"><div class="lab"><span>Billing &amp; monetization plumbing</span><b>30</b></div><div class="track"><div class="fill mid" style="width:30%"></div></div></div>
+      </div>
+    </div>
+    <div class="stats" style="margin-top:14px">
+      <div class="stat warn"><b>7 / ~25</b><span>Nav modules actually built</span></div>
+      <div class="stat bad"><b>0</b><span>Production backend services</span></div>
+      <div class="stat bad"><b>0</b><span>Real WhatsApp API calls</span></div>
+      <div class="stat warn"><b>localStorage</b><span>Entire data layer</span></div>
+    </div>
+    <p class="note">Methodology: design/UX is scored on the shipped screens; everything below the UI is scored on evidence of an implementation. Absence of a backend caps the achievable total around the low-30s regardless of how polished the front end is.</p>
+  </section>
+
+  <!-- ============ CRITICAL ============ -->
+  <section id="critical">
+    <div class="sec-h"><span class="sec-n">02</span><h2>Critical Issues — Must Fix Before Any Release</h2></div>
+    <p class="lead-p">These are <strong>release blockers</strong>. None can be design-patched; each requires real engineering. Shipping without them is not a soft launch — it is a liability.</p>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Blocker</span><h3>No backend exists — the app is a browser-only mock</h3><span class="f-id">C-01</span></div>
+      <p>State lives in <code>localStorage</code> and in-memory JS arrays. There is no server, no persistence across devices, no multi-user concurrency, no source of truth. Two agents cannot see the same inbox; a phone wipe deletes the "CRM".</p>
+      <p class="fix">Stand up an API + database (conversations, contacts, tickets, events) before <em>any</em> other feature work. Everything else in this report assumes this lands first.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Blocker</span><h3>No real WhatsApp Cloud API / BSP integration</h3><span class="f-id">C-02</span></div>
+      <p>The product's entire premise is WhatsApp messaging, yet there is no Meta Cloud API connection, no phone-number registration flow, no webhook receiver, no template submission to Meta, and no 24-hour customer-service-window enforcement. Messages are faked bubbles.</p>
+      <p class="fix">Integrate Meta WhatsApp Cloud API (or an embedded-signup BSP path): number onboarding, webhook ingestion, template sync, session-window + messaging-tier limits. Without this there is no product.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Blocker</span><h3>Authentication is cosmetic; no real identity or session security</h3><span class="f-id">C-03</span></div>
+      <p>The login screen ships a hard-coded email and password (<code>eshan@tunepath.com</code> / visible password in markup) and "Remember me" is decorative. There is no token issuance, no session expiry, no password hashing, no OTP delivery, no SSO.</p>
+      <p class="fix">Implement real auth: hashed credentials, JWT/refresh rotation, server-validated OTP, forced logout, and SSO/2FA for business accounts. Remove all demo credentials from source.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Blocker</span><h3>Roles &amp; permissions are unenforced UI</h3><span class="f-id">C-04</span></div>
+      <p>Settings exposes a Roles screen, but every account sees every module and every record. There is no server-side RBAC, no tenant isolation, no row-level scoping. An "agent" can reach billing, security, and every other contact.</p>
+      <p class="fix">Enforce RBAC on the server for all 7 personas (Agent, Sales, Support, Marketing, Owner, Admin, Super Admin). The client may hide; the API must forbid.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Blocker</span><h3>No multi-tenant data isolation for a 100k-user SaaS</h3><span class="f-id">C-05</span></div>
+      <p>There is no concept of an organization/workspace boundary in the data model. For a SaaS onboarding thousands of businesses, cross-tenant leakage is the single most expensive failure mode and there is currently nothing preventing it.</p>
+      <p class="fix">Design tenancy from the schema up (org_id on every row, enforced in every query). Add audit logging of cross-record access.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev crit">Blocker</span><h3>Payments &amp; billing are simulated — no PCI-safe processor wiring</h3><span class="f-id">C-06</span></div>
+      <p>Razorpay/Stripe/UPI appear as labels and the subscription/transactions tabs render mock rows. No webhooks confirm payment, no invoices are generated server-side, no dunning, no usage metering against WhatsApp conversation costs.</p>
+      <p class="fix">Wire a real processor with server-confirmed webhooks, generated invoices, and usage metering tied to Meta conversation pricing before charging anyone.</p>
+    </div>
+  </section>
+
+  <!-- ============ HIGH ============ -->
+  <section id="high">
+    <div class="sec-h"><span class="sec-n">03</span><h2>High Priority Improvements</h2></div>
+    <p class="lead-p">Not blockers, but the difference between a toy and a CRM. Each is a feature gap a paying WhatsApp-CRM customer will hit in week one.</p>
+
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Area</th><th>Gap</th><th>Why it hurts</th></tr></thead>
+        <tbody>
+          <tr><td><b>Contacts</b></td><td>No standalone Contacts module at all (only embedded lead rows)</td><td>CSV import/export, custom fields, segments, tags, dedupe — the CRM backbone — are absent. Every competitor leads with this.</td></tr>
+          <tr><td><b>Templates</b></td><td>No Template Manager; no Meta approval status, variables, or preview</td><td>You cannot send WhatsApp business-initiated messages without approved templates. This is a hard platform dependency, not a nicety.</td></tr>
+          <tr><td><b>Broadcast / Campaigns</b></td><td>Compose exists but no audience builder, scheduling, throttling, or delivery analytics</td><td>Bulk WhatsApp marketing is the #1 revenue driver for Wati/AiSensy customers. Currently unsellable.</td></tr>
+          <tr><td><b>Reports</b></td><td>No reporting module; Dashboard tiles are static mock numbers</td><td>No date range, no drill-down, no export. Owners cannot measure ROI, so they cannot justify renewal.</td></tr>
+          <tr><td><b>Ticketing depth</b></td><td>SLA timers, escalation rules, automation, and CSAT are UI-only</td><td>Support teams churn instantly without enforced SLAs vs. Freshdesk/Zendesk.</td></tr>
+          <tr><td><b>Leads pipeline</b></td><td>Status pills exist but no Kanban, no auto-assignment, no lead scoring engine, no source attribution</td><td>"Lead management" without a pipeline is a contact list. Sales teams will not adopt.</td></tr>
+          <tr><td><b>Notifications</b></td><td>No push infrastructure (FCM/APNs); in-app only, mock</td><td>Agents miss inbound messages → blown response SLA → customer churn.</td></tr>
+          <tr><td><b>Offline / sync</b></td><td>No offline queue, no conflict resolution, no optimistic sync</td><td>Field sales and patchy networks will corrupt or lose data.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ MEDIUM ============ -->
+  <section id="medium">
+    <div class="sec-h"><span class="sec-n">04</span><h2>Medium Priority Improvements</h2></div>
+    <div class="card">
+      <ul class="clean">
+        <li><b>Dashboard customization</b> — widgets are fixed; no add/remove/reorder, no role-based default layouts (Owner vs Agent need different home screens).</li>
+        <li><b>Global search</b> — there is no cross-module search (find a contact, ticket, and chat from one bar). Each module searches only itself.</li>
+        <li><b>Appointment integrations</b> — no Google/Outlook calendar two-way sync, no video-call links, no timezone handling, no no-show automation.</li>
+        <li><b>Customer 360 timeline</b> — Customers view lacks a unified timeline stitching orders, payments, tickets, conversations, and appointments into one history.</li>
+        <li><b>Bulk actions</b> — partial in Leads, absent elsewhere (bulk tag, assign, export, status change across Tickets/Contacts).</li>
+        <li><b>Audit log &amp; activity trail</b> — no record of who changed what, when. Mandatory for Admin/Super-Admin trust and compliance.</li>
+        <li><b>Empty / error / loading states</b> — the prototype only shows happy-path populated screens; no skeletons, no "no results", no failure recovery.</li>
+        <li><b>Accessibility</b> — color-only status encoding, unlabeled icon buttons, and small hit targets in dense lists will fail WCAG AA.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ LOW ============ -->
+  <section id="low">
+    <div class="sec-h"><span class="sec-n">05</span><h2>Low Priority Enhancements</h2></div>
+    <div class="card">
+      <ul class="clean">
+        <li>Dark mode exists as a toggle but isn't audited across every new pane — verify contrast on tickets, appointments, leads detail.</li>
+        <li>Inconsistent naming — "Chats" vs "Chat", "Compose Message" vs "Broadcast", "Leads" vs "Customers" overlap confuses users (see Nav section).</li>
+        <li>Haptics / micro-interactions polish on swipe actions and FAB.</li>
+        <li>Saved views &amp; per-user filter presets.</li>
+        <li>Keyboard shortcuts for power agents on tablet/web.</li>
+        <li>Localization scaffolding (the WhatsApp CRM market is multilingual — Hindi/regional first).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ CHAT ============ -->
+  <section id="chat">
+    <div class="sec-h"><span class="sec-n">06</span><h2>Chat Module — The Core. Live Chat + History Rework</h2></div>
+    <p class="lead-p">Chat is the most complete module and the right thing to perfect first. Messaging primitives (text, image, video, doc, voice note, location, contact share, emoji, camera) are present in the UI. The structural problem is <strong>lifecycle</strong>: there is no Live/History split, and two destructive actions ship that have no place in a CRM.</p>
+
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="margin:0 0 4px;font-size:15px;font-weight:800">Built &amp; working (UI level)</h3>
+      <p style="margin:4px 0 0;color:var(--ink-2);font-size:13.8px">Text · Images · Video · Documents · Voice notes · Location · Contact sharing · Emoji/stickers · Camera · Search-in-chat · Mute · Block · Assign/transfer (partial) · Internal notes (partial).</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev high">Required</span><h3>Implement Live Chat + History (24-hour lifecycle)</h3><span class="f-id">CH-01</span></div>
+      <p>Today every conversation sits in one undifferentiated list. Build a two-tier model:</p>
+      <ul class="clean">
+        <li class="add"><b>Live Chat</b> — active conversations stay here for <b>24 hours</b> from the last inbound message (mirrors WhatsApp's customer-service window).</li>
+        <li class="add"><b>History</b> — after 24h a conversation <b>auto-moves</b> to History. <b>Nothing is ever deleted.</b></li>
+        <li class="add"><b>Search &amp; filters work across both</b> tiers from a single bar, with a Live / History / All toggle.</li>
+        <li class="add"><b>History can be reopened</b> — a new inbound (or agent re-engage within policy) promotes it back to Live.</li>
+      </ul>
+      <p class="fix">Model conversation <code>state</code> (live|history) + <code>window_expires_at</code>; a server job demotes on expiry; reopening is an event, not a copy. Index both tiers in one search.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="f-top"><span class="sev high">Remove</span><h3>Delete "Disappearing Messages" and "Clear Chat"</h3><span class="f-id">CH-02</span></div>
+      <p>Both currently ship in the chat 3-dot menu (<code>data-menu="disappearing"</code>, <code>data-menu="clear"</code>). In a CRM these are <strong>actively harmful</strong>: they destroy the customer record of truth and create compliance gaps. They are consumer-WhatsApp habits that have no place in a business system.</p>
+      <p class="fix">Remove both menu items entirely.</p>
+    </div>
+
+    <div class="finding">
+      <div class="f-top"><span class="sev low">Replace with</span><h3>Add Export Chat · Download Media · Move to History</h3><span class="f-id">CH-03</span></div>
+      <ul class="clean">
+        <li class="add"><b>Export Chat</b> — full transcript (PDF/CSV) with timestamps, agent, and notes for audit/handoff.</li>
+        <li class="add"><b>Download Media</b> — bulk-pull every image/doc/voice note from a conversation.</li>
+        <li class="add"><b>Move to History</b> — manual demote for resolved threads (the constructive inverse of "Clear Chat").</li>
+      </ul>
+      <p class="fix">These reinforce the "nothing is deleted, everything is retrievable" principle the Live/History model depends on.</p>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h3 style="margin:0 0 6px;font-size:15px;font-weight:800">Still missing from a real WhatsApp inbox</h3>
+      <ul class="clean">
+        <li><b>Assignment &amp; routing engine</b> — round-robin, skill/queue-based, load-aware auto-assign (currently manual only).</li>
+        <li><b>Transfer &amp; merge with context</b> — transfer should carry notes/labels; merge duplicate contacts' threads.</li>
+        <li><b>Labels, canned replies, and @mentions</b> in internal notes for real team collaboration.</li>
+        <li><b>Quick-reply / template insertion</b> inside the composer (gated by the 24h window state).</li>
+        <li><b>Delivery/read receipts driven by real webhooks</b>, not faked ticks.</li>
+        <li><b>Typing/agent-collision indicator</b> so two agents don't reply to the same customer.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ MODULES ============ -->
+  <section id="modules">
+    <div class="sec-h"><span class="sec-n">07</span><h2>Module-by-Module Audit</h2></div>
+    <p class="lead-p"><span class="pill ok">Built</span> &nbsp;<span class="pill part">Partial / UI-only</span> &nbsp;<span class="pill no">Not built</span> — status reflects the real app, then the top gaps for each.</p>
+
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Module</th><th>Status</th><th>Top gaps to close</th></tr></thead>
+        <tbody>
+          <tr><td><b>Dashboard</b></td><td><span class="pill part">Partial</span></td><td>Static mock tiles. Missing: real data, date ranges, filters, drill-down, export, widget customization, role-based layouts, and several promised KPIs (conversion rate, revenue, team performance, campaign results).</td></tr>
+          <tr><td><b>Compose / Broadcast</b></td><td><span class="pill part">Partial</span></td><td>Single/Group/CSV tabs exist as UI. Missing: audience segmentation, template binding, scheduling, rate-throttling, opt-out handling, delivery/read analytics.</td></tr>
+          <tr><td><b>Chat</b></td><td><span class="pill ok">Built (UI)</span></td><td>See §06 — Live/History lifecycle, routing engine, real receipts.</td></tr>
+          <tr><td><b>Contacts</b></td><td><span class="pill no">Not built</span></td><td>No standalone module. Need import/export CSV, custom fields, tags, segments, notes, dedupe, bulk actions — the CRM foundation.</td></tr>
+          <tr><td><b>Leads</b></td><td><span class="pill part">Partial</span></td><td>Status pills + detail panel present. Missing: Kanban pipeline, stages config, auto-assignment, lead scoring, source attribution, conversion analytics.</td></tr>
+          <tr><td><b>Customers</b></td><td><span class="pill part">Partial</span></td><td>Reachable inside Leads pane. Missing: unified 360 timeline (orders · payments · tickets · conversations · appointments), lifecycle stage, health/CSAT.</td></tr>
+          <tr><td><b>Appointments</b></td><td><span class="pill ok">Built (UI)</span></td><td>Dashboard/Bookings/Payments/Settings + detail tabs present. Missing: real calendar sync (Google/Outlook), timezones, video links, automated reminders, no-show flows.</td></tr>
+          <tr><td><b>Ticketing</b></td><td><span class="pill part">Partial</span></td><td>Dashboard, tickets, settings UI present. Missing: enforced SLA timers, escalation/automation rules engine, CSAT, merge, public portal, canned responses.</td></tr>
+          <tr><td><b>Manage Template</b></td><td><span class="pill no">Not built</span></td><td>No module. Mandatory: Meta template CRUD, category, approval status sync, variables, live preview, rejection reasons.</td></tr>
+          <tr><td><b>Reports</b></td><td><span class="pill no">Not built</span></td><td>No module. Need conversation, team, sales, campaign and SLA reports with export and scheduled email digests.</td></tr>
+          <tr><td><b>Flow Builder</b></td><td><span class="pill no">Not built</span></td><td>No canvas. Need drag-drop, conditions, delays, tag/API/AI nodes, versioning, analytics per node.</td></tr>
+          <tr><td><b>Chatbot Builder</b></td><td><span class="pill no">Not built</span></td><td>No NLP/intent/FAQ/handoff/context. Greenfield.</td></tr>
+          <tr><td><b>AI Agent</b></td><td><span class="pill no">Not built</span></td><td>No memory, knowledge base, RAG, auto ticket/lead/appointment actions. Greenfield — but the biggest USP lever (see §12).</td></tr>
+          <tr><td><b>WhatsApp Flows</b></td><td><span class="pill no">Not built</span></td><td>No Meta Flows form builder, validation, conditional logic, or CRM write-back.</td></tr>
+          <tr><td><b>Catalog</b></td><td><span class="pill part">Demo only</span></td><td>A single static "Burger Street" card in Profile. Need real Meta commerce catalog sync, product CRUD, cart/checkout.</td></tr>
+          <tr><td><b>Payments</b></td><td><span class="pill part">UI-only</span></td><td>Razorpay/Stripe/UPI as labels. Need real processor wiring, payment links, invoice tracking, reconciliation, refunds.</td></tr>
+          <tr><td><b>Integrations</b></td><td><span class="pill no">Not built</span></td><td>No webhooks, public API, Zapier, Calendar, Shopify/WooCommerce. Critical for stickiness.</td></tr>
+          <tr><td><b>Billing</b></td><td><span class="pill part">UI-only</span></td><td>Pricing/Subscription/Transactions tabs render mock data. Need plans, usage metering, add-ons, server-generated invoices, dunning.</td></tr>
+          <tr><td><b>Settings</b></td><td><span class="pill part">Partial</span></td><td>Roles, QR, security, user-attributes screens exist but unenforced. Need real RBAC, branding/white-label, notification prefs, API keys, audit log.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ COMPETITORS ============ -->
+  <section id="competitors">
+    <div class="sec-h"><span class="sec-n">08</span><h2>Features Missing vs. Competitors</h2></div>
+    <p class="lead-p">Where AskEva sits today against the products a prospect will compare it to. <span class="pill no">✗</span> = AskEva lacks it and the competitor leads with it.</p>
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Capability</th><th>Wati</th><th>Interakt</th><th>AiSensy</th><th>Freshdesk</th><th>Zendesk</th><th>HubSpot</th></tr></thead>
+        <tbody>
+          <tr><td><b>Real WhatsApp Cloud API + number onboarding</b></td><td colspan="6" style="color:#C1352F;font-weight:700">AskEva ✗ — all six ship this as table stakes</td></tr>
+          <tr><td>Template manager w/ Meta approval sync</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>Broadcast w/ segmentation &amp; analytics</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>No-code Flow / Chatbot builder</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>AI agent / RAG knowledge base</td><td>✓</td><td>part</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>SLA + escalation engine</td><td>part</td><td>—</td><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Reporting &amp; exec dashboards</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Integrations marketplace + API/webhooks</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Commerce catalog + payments in-chat</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>part</td></tr>
+          <tr><td>Pipeline / lead scoring CRM</td><td>part</td><td>part</td><td>—</td><td>—</td><td>part</td><td>✓</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Honest read: AskEva does not yet compete on a single line above. Its only current edge is mobile-first visual polish — which none of these defend well. That is the wedge (see §12).</p>
+    </div>
+  </section>
+
+  <!-- ============ NAV ============ -->
+  <section id="nav">
+    <div class="sec-h"><span class="sec-n">09</span><h2>Recommended Navigation Structure</h2></div>
+    <p class="lead-p">The aspirational nav is a flat list of ~25 items — unusable on mobile and a cognitive overload. Collapse to <strong>5 bottom-tab destinations</strong> with grouped sub-sections. Sales sees a pipeline; support sees a queue; everyone shares one inbox.</p>
+    <div class="navcol">
+      <div class="navbox bad">
+        <h4>✗ Today — flat &amp; overloaded</h4>
+        <ul>
+          <li>Dashboard · Compose · Chat · Contacts · Manage Template · Reports · Flow · Chatbot Builder · AI Agent · WhatsApp Flows · Catalog · Payments · Integration · Leads · Customers · Appointments · Ticketing (Dashboard / Tickets / Settings) · Billing · Settings</li>
+          <li><small>~25 peers, no hierarchy, duplicated dashboards, Chat buried mid-list.</small></li>
+        </ul>
+      </div>
+      <div class="navbox good">
+        <h4>✓ Proposed — 5 tabs + grouped drawer</h4>
+        <ol>
+          <li class="grp">Bottom tabs (always visible)</li>
+          <li>Home <small>— role-aware dashboard</small></li>
+          <li>Inbox <small>— Live Chat · History · Broadcast/Compose</small></li>
+          <li>CRM <small>— Leads · Contacts · Customers · Appointments</small></li>
+          <li>Desk <small>— Tickets · SLA · Ticket Settings</small></li>
+          <li>More <small>— drawer ↓</small></li>
+          <li class="grp">"More" drawer (grouped)</li>
+          <li><small>Automation: Flows · Chatbot · AI Agent · WhatsApp Flows</small></li>
+          <li><small>Growth: Templates · Catalog · Payments · Reports</small></li>
+          <li><small>Admin: Integrations · Billing · Team &amp; Roles · Settings</small></li>
+        </ol>
+      </div>
+    </div>
+    <p class="note">Principle: the four things an operator does every hour (see, reply, manage, resolve) are one tap away; configuration and building live behind "More". Fix naming too — one "Dashboard", "Chat"→"Inbox", "Compose"→"Broadcast".</p>
+  </section>
+
+  <!-- ============ SECURITY & PERF ============ -->
+  <section id="security">
+    <div class="sec-h"><span class="sec-n">10</span><h2>Security &amp; Performance — For When the Backend Exists</h2></div>
+    <p class="lead-p">There is nothing to pen-test yet, so this is a <strong>build checklist</strong>, not a findings list. All items are currently <span class="pill no">absent</span>.</p>
+    <div class="navcol">
+      <div class="navbox">
+        <h4 style="color:var(--ink)">Security must-haves</h4>
+        <ul>
+          <li><small>Hashed passwords (argon2/bcrypt), server-issued JWT + refresh rotation, short session TTL.</small></li>
+          <li><small>Server-enforced RBAC + multi-tenant <code>org_id</code> scoping on every query.</small></li>
+          <li><small>Real OTP/2FA delivery; SSO (Google/Microsoft) for business plans.</small></li>
+          <li><small>Immutable audit log of access &amp; changes.</small></li>
+          <li><small>Encryption at rest + in transit; signed, virus-scanned, size-limited file uploads to object storage (not base64 in DB).</small></li>
+          <li><small>Webhook signature verification (Meta + payments); secrets in a vault, never in source.</small></li>
+          <li><small>Rate limiting, GDPR/DPDP data-export &amp; erasure, PII redaction in logs.</small></li>
+        </ul>
+      </div>
+      <div class="navbox">
+        <h4 style="color:var(--ink)">Performance / scale must-haves</h4>
+        <ul>
+          <li><small>Cursor pagination + virtualized lists (inbox/contacts will hit 100k+ rows).</small></li>
+          <li><small>Server-side search index (conversations + history) — not client filter.</small></li>
+          <li><small>Caching layer (Redis) for dashboards &amp; counts; precomputed aggregates.</small></li>
+          <li><small>Lazy-loaded media, thumbnails via CDN, signed URLs.</small></li>
+          <li><small>Offline queue + optimistic sync + conflict resolution for mobile.</small></li>
+          <li><small>WebSocket/push for real-time inbox; FCM/APNs for notifications.</small></li>
+          <li><small>Background workers for broadcasts, throttled to Meta tier limits.</small></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ REVENUE ============ -->
+  <section id="revenue">
+    <div class="sec-h"><span class="sec-n">11</span><h2>Revenue Growth Opportunities</h2></div>
+    <div class="card tbl-card">
+      <table>
+        <thead><tr><th>Lever</th><th>Mechanism</th><th>Why it monetizes</th></tr></thead>
+        <tbody>
+          <tr><td><b>Conversation-based markup</b></td><td>Resell Meta conversation credits at margin + tiered plans</td><td>The core BSP revenue model — recurring, usage-scaling.</td></tr>
+          <tr><td><b>AI Agent add-on</b></td><td>Per-seat or per-resolution pricing for the AI deflection layer</td><td>Highest willingness-to-pay; ties directly to support cost savings.</td></tr>
+          <tr><td><b>Broadcast/campaign tiers</b></td><td>Caps on monthly broadcast volume + advanced analytics paywall</td><td>Marketing teams pay to send more; clean upsell ladder.</td></tr>
+          <tr><td><b>Commerce take-rate</b></td><td>Catalog + in-chat payments with a small transaction fee</td><td>Aligns AskEva revenue with customer GMV growth.</td></tr>
+          <tr><td><b>Integrations / API</b></td><td>Premium connectors (Shopify, Salesforce) + API access on higher tiers</td><td>Increases switching cost → lower churn → higher LTV.</td></tr>
+          <tr><td><b>White-label / agency</b></td><td>Reseller plan with branding controls &amp; sub-accounts</td><td>Agencies bring many SMB tenants per contract.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ USP ============ -->
+  <section id="usp">
+    <div class="sec-h"><span class="sec-n">12</span><h2>Features That Can Become AskEva USPs</h2></div>
+    <p class="lead-p">Competitors are desktop-first, dense, and ugly on a phone. AskEva's polish is real — turn it into defensible differentiation rather than a demo.</p>
+    <div class="card">
+      <ul class="clean">
+        <li><b>Genuinely mobile-first WhatsApp CRM</b> — own "run your entire WhatsApp business from your phone". Wati/Interakt are painful on mobile; this is a wedge none defend.</li>
+        <li><b>AI Agent that takes real actions</b> — not just FAQ deflection, but books appointments, creates tickets, qualifies leads, and writes back to the CRM with memory + RAG over the business's own catalog/docs. This is the single highest-leverage build.</li>
+        <li><b>"Nothing is ever lost" Live + History model</b> — market the 24h Live → permanent History lifecycle as a compliance &amp; trust feature; pair with one-tap Export/Download for audits.</li>
+        <li><b>Unified Inbox + Pipeline + Desk in one app</b> — most rivals do one of chat / CRM / helpdesk well. A clean three-in-one for SMBs is a real positioning.</li>
+        <li><b>Vertical templates</b> — pre-built flows/catalogs for restaurants, clinics, salons, real-estate (the existing demo data already hints at F&amp;B). Fast time-to-value beats generic tools.</li>
+        <li><b>Owner-grade analytics on a phone</b> — a CEO home screen showing revenue, conversion, and team performance at a glance is something the incumbents bury in desktop reports.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="foot">
+    <p><b>AskEva — Final Production Audit.</b> Brutally honest by request: this is a strong prototype and an unbuilt product. The fastest path to fundable is C-01→C-06, then Chat (Live/History), Templates, Broadcast, and the AI Agent USP — in that order.</p>
+  </div>
+
+</div>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" fill="#177A36"/>
+    <g transform="translate(50 50)" fill="none" stroke="#85D653" stroke-width="4" stroke-linecap="round">
+      <path d="M-20 -8 a20 18 0 1 1 4 24 l-10 4 3 -10 a20 18 0 0 1 3 -22z"/>
+      <path d="M-6 2 l4 5 9 -12" stroke="#fff"/>
+    </g>
+  </svg>
+</template>
+</body>
+</html>

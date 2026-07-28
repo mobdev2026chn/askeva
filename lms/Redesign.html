@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Leads & Profile Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --green-700:#177a36;
+    --green-600:#1e9343;
+    --green-500:#2bac51;
+    --lime-400:#7fc63d;
+    --ink:#15231a;
+    --ink-2:#4d5d52;
+    --ink-3:#8a978d;
+    --line:#e9efe9;
+    --surface:#ffffff;
+    --canvas:#eef1ec;
+    --soft:#f4f7f3;
+    --shadow-card:0 8px 30px -12px rgba(20,50,28,.18);
+    --shadow-float:0 16px 40px -16px rgba(20,50,28,.30);
+    --r-lg:26px;
+    --r-md:20px;
+    --r-sm:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:
+      radial-gradient(1200px 700px at 15% -5%, rgba(43,172,81,.10), transparent 60%),
+      radial-gradient(1000px 600px at 110% 110%, rgba(127,198,61,.12), transparent 60%),
+      var(--canvas);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    min-height:100%;
+    padding:64px 40px 90px;
+  }
+
+  .page-head{
+    max-width:1020px;margin:0 auto 50px;text-align:center;
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--green-600);
+    background:rgba(43,172,81,.10);
+    padding:7px 14px;border-radius:999px;margin-bottom:18px;
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--green-500);}
+  .page-head h1{font-size:34px;font-weight:800;letter-spacing:-.02em;}
+  .page-head p{margin-top:10px;color:var(--ink-2);font-size:15px;font-weight:500;}
+
+  .stage{
+    display:flex;gap:72px;justify-content:center;align-items:flex-start;
+    flex-wrap:wrap;max-width:1020px;margin:0 auto;
+  }
+  .frame-wrap{display:flex;flex-direction:column;align-items:center;gap:20px;}
+  .frame-label{
+    font-size:13px;font-weight:700;color:var(--ink-2);letter-spacing:.02em;
+  }
+
+  /* ---------- Phone shell ---------- */
+  .phone{
+    width:390px;height:844px;
+    background:#fff;
+    border-radius:54px;
+    padding:13px;
+    box-shadow:0 50px 90px -40px rgba(20,50,28,.55), 0 0 0 1px rgba(20,50,28,.05);
+    position:relative;
+  }
+  .screen{
+    position:relative;width:100%;height:100%;
+    background:var(--soft);
+    border-radius:42px;overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  .notch{
+    position:absolute;top:11px;left:50%;transform:translateX(-50%);
+    width:120px;height:32px;background:#0c130e;border-radius:20px;z-index:40;
+  }
+
+  /* ---------- Status bar ---------- */
+  .statusbar{
+    height:54px;flex:0 0 54px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 30px 0 34px;font-size:15px;font-weight:700;
+    position:relative;z-index:30;
+  }
+  .statusbar .time{letter-spacing:.02em;}
+  .statusbar .sysicons{display:flex;align-items:center;gap:7px;}
+  .statusbar svg{display:block;}
+  .on-green .statusbar{color:#fff;}
+  .on-light .statusbar{color:var(--ink);}
+
+  /* ---------- Header (gradient image) ---------- */
+  .ghead{
+    position:relative;
+    background-image:linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,0) 42%), url('assets/bg-green.jpg');
+    background-size:cover;background-position:center top;
+    color:#fff;
+    padding:0 22px 0;
+  }
+  .ghead.tall{padding-bottom:0;}
+
+  .topbar{
+    height:52px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .icon-btn{
+    width:42px;height:42px;border-radius:13px;
+    display:grid;place-items:center;
+    background:rgba(255,255,255,.16);
+    backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.22);
+    cursor:pointer;
+  }
+  .topbar .title{font-size:19px;font-weight:800;letter-spacing:.01em;}
+
+  /* segmented tabs */
+  .seg{
+    margin:14px 0 0;
+    background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:16px;padding:5px;display:flex;gap:5px;
+    backdrop-filter:blur(8px);
+  }
+  .seg button{
+    flex:1;border:0;cursor:pointer;font-family:inherit;
+    font-size:14.5px;font-weight:700;color:rgba(255,255,255,.9);
+    background:transparent;border-radius:12px;padding:11px 0;
+    letter-spacing:.01em;
+  }
+  .seg button.active{
+    background:#fff;color:var(--green-700);
+    box-shadow:0 6px 16px -8px rgba(0,0,0,.4);
+  }
+
+  .hero-meta{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding:18px 2px 26px;
+  }
+  .hero-meta .lead-big{font-size:26px;font-weight:800;letter-spacing:-.02em;}
+  .hero-meta .lead-sub{font-size:13px;font-weight:600;color:rgba(255,255,255,.85);margin-top:2px;}
+  .hero-meta .count-pill{
+    font-size:12.5px;font-weight:700;color:#fff;
+    background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);
+    padding:7px 13px;border-radius:999px;
+  }
+
+  /* body sheet that overlaps header */
+  .sheet{
+    flex:1;background:var(--soft);
+    border-radius:28px 28px 0 0;
+    margin-top:-20px;position:relative;z-index:5;
+    padding:22px 22px 0;
+    overflow:auto;
+  }
+  .sheet::-webkit-scrollbar{display:none;}
+
+  /* search */
+  .search{
+    display:flex;align-items:center;gap:12px;
+    background:#fff;border:1px solid var(--line);
+    border-radius:16px;padding:15px 18px;
+    box-shadow:var(--shadow-card);
+    color:var(--ink-3);font-size:15px;font-weight:600;
+  }
+
+  .section-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:26px 4px 14px;
+  }
+  .section-row h3{font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);}
+  .section-row .link{font-size:13px;font-weight:700;color:var(--green-600);}
+
+  /* company card */
+  .ccard{
+    background:#fff;border:1px solid var(--line);border-radius:var(--r-md);
+    padding:16px;display:flex;align-items:center;gap:15px;
+    box-shadow:var(--shadow-card);margin-bottom:14px;
+  }
+  .avatar{
+    width:54px;height:54px;border-radius:16px;flex:0 0 54px;
+    display:grid;place-items:center;font-size:22px;font-weight:800;color:#fff;
+    background:linear-gradient(150deg, var(--green-500), var(--green-700));
+    box-shadow:0 8px 18px -8px rgba(30,147,67,.7);
+  }
+  .avatar.muted{
+    background:linear-gradient(150deg,#eef2ee,#e2e8e2);color:var(--ink-3);
+    box-shadow:none;
+  }
+  .ccard .info{flex:1;min-width:0;}
+  .ccard .info .name{font-size:17px;font-weight:800;letter-spacing:-.01em;}
+  .ccard .info .meta{display:flex;align-items:center;gap:6px;color:var(--ink-2);font-size:13px;font-weight:600;margin-top:4px;}
+  .ccard .info .meta svg{opacity:.6;}
+  .go{
+    width:42px;height:42px;border-radius:13px;flex:0 0 42px;
+    display:grid;place-items:center;
+    background:rgba(43,172,81,.12);color:var(--green-600);
+    cursor:pointer;
+  }
+  .go.solid{background:linear-gradient(150deg, var(--green-500), var(--green-600));color:#fff;box-shadow:0 8px 18px -8px rgba(30,147,67,.8);}
+
+  /* ---------- bottom nav ---------- */
+  .tabbar{
+    position:absolute;left:16px;right:16px;bottom:14px;z-index:30;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(14px);
+    border:1px solid var(--line);
+    border-radius:24px;
+    box-shadow:var(--shadow-float);
+    display:flex;justify-content:space-around;align-items:center;
+    padding:11px 10px;
+  }
+  .tab{
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    color:var(--ink-3);font-size:11.5px;font-weight:700;cursor:pointer;
+    padding:6px 16px;border-radius:14px;
+  }
+  .tab.active{color:var(--green-600);background:rgba(43,172,81,.10);}
+  .tab svg{display:block;}
+  .home-ind{
+    position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+    width:130px;height:5px;border-radius:3px;background:rgba(20,40,25,.28);z-index:40;
+  }
+
+  /* ---------- PROFILE ---------- */
+  .pf-head{
+    position:relative;
+    background-image:linear-gradient(180deg, rgba(0,0,0,.16), rgba(0,0,0,0) 38%), url('assets/bg-green.jpg');
+    background-size:cover;background-position:center 32%;
+    color:#fff;padding:0 22px 60px;
+  }
+  .pf-topbar{height:52px;display:flex;align-items:center;justify-content:space-between;}
+  .pf-topbar .title{font-size:19px;font-weight:800;}
+  .pf-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:14px;}
+  .pf-avatar{
+    width:104px;height:104px;border-radius:50%;
+    background:linear-gradient(160deg,#fff,#f0f5ef);
+    display:grid;place-items:center;
+    box-shadow:0 18px 40px -16px rgba(0,0,0,.5), 0 0 0 6px rgba(255,255,255,.25);
+  }
+  .pf-avatar .logo{
+    width:84px;height:84px;border-radius:50%;
+    background:linear-gradient(155deg, var(--green-500), var(--green-700));
+    display:grid;place-items:center;line-height:1.05;
+    font-size:14px;font-weight:800;color:#fff;text-align:center;letter-spacing:.04em;
+  }
+  .pf-avatar .logo b{font-size:19px;display:block;font-weight:800;}
+
+  .pf-sheet{
+    flex:1;background:var(--soft);
+    border-radius:28px 28px 0 0;margin-top:-40px;position:relative;z-index:5;
+    padding:24px 22px 30px;overflow:auto;
+  }
+  .pf-sheet::-webkit-scrollbar{display:none;}
+
+  .pf-identity{text-align:center;margin:-2px 0 6px;}
+  .pf-identity .nm{font-size:24px;font-weight:800;letter-spacing:-.02em;}
+  .pf-identity .em{font-size:14px;font-weight:600;color:var(--ink-2);margin-top:3px;}
+  .pf-chips{display:flex;justify-content:center;gap:8px;margin-top:14px;}
+  .chip{
+    font-size:12px;font-weight:700;color:var(--green-700);
+    background:rgba(43,172,81,.12);padding:7px 13px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+
+  .pcard{
+    background:#fff;border:1px solid var(--line);border-radius:var(--r-md);
+    padding:18px;box-shadow:var(--shadow-card);margin-top:16px;
+  }
+  .pcard .ph{display:flex;align-items:center;gap:11px;margin-bottom:12px;}
+  .pcard .ph .ic{
+    width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+    background:rgba(43,172,81,.12);color:var(--green-600);
+  }
+  .pcard .ph .lbl{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);}
+  .pcard .body-txt{font-size:15px;font-weight:500;color:var(--ink);line-height:1.5;}
+
+  .pf-row{display:flex;align-items:flex-start;gap:13px;padding:14px 0;}
+  .pf-row + .pf-row{border-top:1px solid var(--line);}
+  .pf-row .ic{
+    width:38px;height:38px;border-radius:11px;flex:0 0 38px;display:grid;place-items:center;
+    background:rgba(43,172,81,.12);color:var(--green-600);
+  }
+  .pf-row .k{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);}
+  .pf-row .v{font-size:15px;font-weight:600;color:var(--ink);margin-top:4px;line-height:1.45;}
+  .pf-row .v.link{color:var(--green-600);font-weight:700;}
+  .nopad{padding-top:0;}
+</style>
+</head>
+<body>
+  <header class="page-head">
+    <span class="eyebrow"><span class="dot"></span>Premium Redesign</span>
+    <h1>Leads &amp; Profile</h1>
+    <p>Two screens reworked around the brand green — refined hierarchy, depth, and a polished header system.</p>
+  </header>
+
+  <div class="stage">
+
+    <!-- ============ SCREEN 1: COMPANIES ============ -->
+    <div class="frame-wrap">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen on-green" data-screen-label="Companies / Leads">
+
+          <div class="ghead">
+            <div class="statusbar">
+              <span class="time">4:53</span>
+              <span class="sysicons">
+                <svg width="18" height="13" viewBox="0 0 18 13" fill="none"><path d="M9 2.2C11.6 2.2 14 3.2 15.7 4.9L17 3.5C14.9 1.4 12 .2 9 .2S3.1 1.4 1 3.5l1.3 1.4C4 3.2 6.4 2.2 9 2.2Z" fill="#fff"/><path d="M9 5.6c1.5 0 2.9.6 3.9 1.6l1.3-1.4C12.8 4.4 11 3.6 9 3.6s-3.8.8-5.2 2.2l1.3 1.4C6.1 6.2 7.5 5.6 9 5.6Z" fill="#fff"/><path d="M9 9c.8 0 1.5.3 2 .9L9 12l-2-2.1c.5-.6 1.2-.9 2-.9Z" fill="#fff"/></svg>
+                <svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="8" width="3" height="4.5" rx="1" fill="#fff"/><rect x="6" y="5.5" width="3" height="7" rx="1" fill="#fff"/><rect x="11" y="3" width="3" height="9.5" rx="1" fill="#fff"/><rect x="16" y="0.5" width="3" height="12" rx="1" fill="#fff"/></svg>
+                <svg width="28" height="14" viewBox="0 0 28 14" fill="none"><rect x="1" y="1" width="22" height="12" rx="3.5" stroke="#fff" stroke-opacity=".6" stroke-width="1.2"/><rect x="3" y="3" width="16" height="8" rx="1.8" fill="#fff"/><rect x="24.5" y="4.5" width="2" height="5" rx="1" fill="#fff" fill-opacity=".7"/><text x="12" y="10" font-family="Plus Jakarta Sans" font-size="7" font-weight="800" fill="#177a36" text-anchor="middle">52</text></svg>
+              </span>
+            </div>
+
+            <div class="topbar">
+              <div class="icon-btn" aria-label="Menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+              <div class="title">Leads</div>
+              <div class="icon-btn" aria-label="Team">
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="#fff"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0 1.5c-3 0-6 1.5-6 4.2V19h12v-2.3c0-2.7-3-4.2-6-4.2Zm7.5-1.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm.5 1.6c.3 1 .5 2 .5 3.1V19h3v-2.3c0-2.2-1.9-3.6-4-4Z"/></svg>
+              </div>
+            </div>
+
+            <div class="seg">
+              <button>Leads</button>
+              <button class="active">Companies</button>
+            </div>
+
+            <div class="hero-meta">
+              <div>
+                <div class="lead-big">Companies</div>
+                <div class="lead-sub">2 organisations · 69 leads</div>
+              </div>
+              <span class="count-pill">All ▾</span>
+            </div>
+          </div>
+
+          <div class="sheet">
+            <div class="search">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#8a978d" stroke-width="2"/><path d="m20 20-3.2-3.2" stroke="#8a978d" stroke-width="2" stroke-linecap="round"/></svg>
+              <span>Search companies</span>
+            </div>
+
+            <div class="section-row">
+              <h3>All Companies</h3>
+              <span class="link">Sort</span>
+            </div>
+
+            <div class="ccard">
+              <div class="avatar">A</div>
+              <div class="info">
+                <div class="name">ASK EVA</div>
+                <div class="meta">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#4d5d52"><path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 1.5c-2.6 0-5 1.3-5 3.6V18h10v-1.9c0-2.3-2.4-3.6-5-3.6Zm7-1.5a2.6 2.6 0 1 0 0-5.2A2.6 2.6 0 0 0 16 11Zm.4 1.6c.3.8.4 1.6.4 2.5V18h2.7v-1.9c0-1.9-1.6-3.1-3.5-3.5Z"/></svg>
+                  3 active leads
+                </div>
+              </div>
+              <div class="go solid" aria-label="View leads">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h13m0 0-5-5m5 5-5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+
+            <div class="ccard">
+              <div class="avatar muted">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9.5 9a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.6-.9 1.2v.5" stroke="#8a978d" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="#8a978d"/></svg>
+              </div>
+              <div class="info">
+                <div class="name">No Company</div>
+                <div class="meta">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#4d5d52"><path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 1.5c-2.6 0-5 1.3-5 3.6V18h10v-1.9c0-2.3-2.4-3.6-5-3.6Zm7-1.5a2.6 2.6 0 1 0 0-5.2A2.6 2.6 0 0 0 16 11Zm.4 1.6c.3.8.4 1.6.4 2.5V18h2.7v-1.9c0-1.9-1.6-3.1-3.5-3.5Z"/></svg>
+                  66 unassigned leads
+                </div>
+              </div>
+              <div class="go" aria-label="View leads">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h13m0 0-5-5m5 5-5 5" stroke="#1e9343" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabbar">
+            <div class="tab">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="2" stroke="#8a978d" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="#8a978d" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="#8a978d" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="2" stroke="#8a978d" stroke-width="2"/></svg>
+              Dashboard
+            </div>
+            <div class="tab active">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#1e9343"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0 1.5c-3 0-6 1.5-6 4.2V19h12v-2.3c0-2.7-3-4.2-6-4.2Zm7.5-1.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm.5 1.6c.3 1 .5 2 .5 3.1V19h3v-2.3c0-2.2-1.9-3.6-4-4Z"/></svg>
+              Leads
+            </div>
+            <div class="tab">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 3.5V6a1 1 0 0 1 1-1Z" stroke="#8a978d" stroke-width="2" stroke-linejoin="round"/></svg>
+              Chat
+            </div>
+          </div>
+
+          <div class="home-ind"></div>
+        </div>
+      </div>
+      <div class="frame-label">Companies</div>
+    </div>
+
+    <!-- ============ SCREEN 2: PROFILE ============ -->
+    <div class="frame-wrap">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen on-green" data-screen-label="Company Profile">
+
+          <div class="pf-head">
+            <div class="statusbar">
+              <span class="time">4:53</span>
+              <span class="sysicons">
+                <svg width="18" height="13" viewBox="0 0 18 13" fill="none"><path d="M9 2.2C11.6 2.2 14 3.2 15.7 4.9L17 3.5C14.9 1.4 12 .2 9 .2S3.1 1.4 1 3.5l1.3 1.4C4 3.2 6.4 2.2 9 2.2Z" fill="#fff"/><path d="M9 5.6c1.5 0 2.9.6 3.9 1.6l1.3-1.4C12.8 4.4 11 3.6 9 3.6s-3.8.8-5.2 2.2l1.3 1.4C6.1 6.2 7.5 5.6 9 5.6Z" fill="#fff"/><path d="M9 9c.8 0 1.5.3 2 .9L9 12l-2-2.1c.5-.6 1.2-.9 2-.9Z" fill="#fff"/></svg>
+                <svg width="20" height="13" viewBox="0 0 20 13" fill="none"><rect x="1" y="8" width="3" height="4.5" rx="1" fill="#fff"/><rect x="6" y="5.5" width="3" height="7" rx="1" fill="#fff"/><rect x="11" y="3" width="3" height="9.5" rx="1" fill="#fff"/><rect x="16" y="0.5" width="3" height="12" rx="1" fill="#fff"/></svg>
+                <svg width="28" height="14" viewBox="0 0 28 14" fill="none"><rect x="1" y="1" width="22" height="12" rx="3.5" stroke="#fff" stroke-opacity=".6" stroke-width="1.2"/><rect x="3" y="3" width="16" height="8" rx="1.8" fill="#fff"/><rect x="24.5" y="4.5" width="2" height="5" rx="1" fill="#fff" fill-opacity=".7"/><text x="12" y="10" font-family="Plus Jakarta Sans" font-size="7" font-weight="800" fill="#177a36" text-anchor="middle">52</text></svg>
+              </span>
+            </div>
+
+            <div class="pf-topbar">
+              <div class="icon-btn" aria-label="Menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+              <div class="title">Profile</div>
+              <div class="icon-btn" aria-label="Edit">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L19 9l-4-4L4 16v4Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="m14 6 4 4" stroke="#fff" stroke-width="2"/></svg>
+              </div>
+            </div>
+
+            <div class="pf-hero">
+              <div class="pf-avatar">
+                <div class="logo">ASK<b>EVA</b></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pf-sheet">
+            <div class="pf-identity">
+              <div class="nm">Eshan</div>
+              <div class="em">eshan@tunepath.com</div>
+              <div class="pf-chips">
+                <span class="chip">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#177a36"><path d="M4 21V8l8-5 8 5v13h-6v-6h-4v6H4Z"/></svg>
+                  Hotel &amp; Lodging
+                </span>
+                <span class="chip">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z" stroke="#177a36" stroke-width="2"/><circle cx="12" cy="10" r="2.3" fill="#177a36"/></svg>
+                  Chennai
+                </span>
+              </div>
+            </div>
+
+            <div class="pcard">
+              <div class="ph">
+                <div class="ic">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 3h8l4 4v14H6V3Z" stroke="#1e9343" stroke-width="2" stroke-linejoin="round"/><path d="M14 3v4h4M9 13h6M9 17h6" stroke="#1e9343" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <span class="lbl">Description</span>
+              </div>
+              <div class="body-txt">Chatbot is the best solution for everything — automating conversations, capturing leads, and supporting guests around the clock.</div>
+            </div>
+
+            <div class="pcard">
+              <div class="pf-row nopad">
+                <div class="ic">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#1e9343" stroke-width="2"/><path d="M3 12h18M12 3c2.5 2.4 2.5 15.6 0 18M12 3c-2.5 2.4-2.5 15.6 0 18" stroke="#1e9343" stroke-width="1.6"/></svg>
+                </div>
+                <div>
+                  <div class="k">Website</div>
+                  <div class="v link">https://app.askeva.io</div>
+                </div>
+              </div>
+              <div class="pf-row">
+                <div class="ic">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#1e9343" stroke-width="2"/><path d="M12 11v5" stroke="#1e9343" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.8" r="1.2" fill="#1e9343"/></svg>
+                </div>
+                <div>
+                  <div class="k">About</div>
+                  <div class="v">A friendly AI assistant for hospitality — "Hi, Hello!"</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pcard">
+              <div class="pf-row nopad">
+                <div class="ic">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="1.5" stroke="#1e9343" stroke-width="2"/><path d="M8 7h2M8 11h2M8 15h2M14 7h2M14 11h2M14 15h2" stroke="#1e9343" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <div>
+                  <div class="k">Business Vertical</div>
+                  <div class="v">Hotel and Lodging</div>
+                </div>
+              </div>
+              <div class="pf-row">
+                <div class="ic">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z" stroke="#1e9343" stroke-width="2"/><circle cx="12" cy="10" r="2.4" fill="#1e9343"/></svg>
+                </div>
+                <div>
+                  <div class="k">Address</div>
+                  <div class="v">Madurai · Hosur · Chennai, Tamil Nadu</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="home-ind"></div>
+        </div>
+      </div>
+      <div class="frame-label">Company Profile</div>
+    </div>
+
+  </div>
+</body>
+</html>
