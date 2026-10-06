@@ -81,13 +81,11 @@ class LeadsRepository {
   /// POST /v1/lead-configuration/leads
   Future<void> createLead(Map<String, dynamic> body, {bool sendAlert = true}) async {
     final rawMobile = (body['mobile'] ?? body['phone'] ?? body['mobileNumber'] ?? '').toString();
-    if (rawMobile.isNotEmpty) {
-      final sanitized = formatCleanMobileNumber(rawMobile);
-      body['mobile'] = sanitized;
-      if (body['countryCode'] != null) {
-        body['countryCode'] = body['countryCode'].toString().replaceAll('+', '').trim();
-      }
-    }
+    final rawCc = (body['countryCode'] ?? body['country_code'] ?? '91').toString();
+    final (cleanMob, cleanCc) = _cleanMobileAndCountryCode(rawMobile, rawCc);
+    body['mobile'] = cleanMob;
+    body['countryCode'] = cleanCc;
+
     body['sendAlert'] = body['sendAlert'] ?? sendAlert;
     body['send_alert'] = body['send_alert'] ?? sendAlert;
     body['sendNewLeadAlert'] = body['sendNewLeadAlert'] ?? sendAlert;
@@ -98,6 +96,13 @@ class LeadsRepository {
 
   /// PUT /v1/lead-configuration/leads/{id}
   Future<void> updateLead(String id, Map<String, dynamic> body) async {
+    if (body['mobile'] != null || body['phone'] != null || body['mobileNumber'] != null) {
+      final rawMobile = (body['mobile'] ?? body['phone'] ?? body['mobileNumber'] ?? '').toString();
+      final rawCc = (body['countryCode'] ?? body['country_code'] ?? '91').toString();
+      final (cleanMob, cleanCc) = _cleanMobileAndCountryCode(rawMobile, rawCc);
+      body['mobile'] = cleanMob;
+      body['countryCode'] = cleanCc;
+    }
     await client.put('/lead-configuration/leads/$id', body: body);
   }
 
@@ -211,9 +216,10 @@ class LeadsRepository {
   }
 
   Future<void> saveAlert(String alertType, Map<String, dynamic> alertData) async {
+    final cleanType = (alertType == 'reminderConfiguration') ? 'businessAlert' : alertType;
     final payload = {
-      'alertType': alertType,
-      'type': alertType,
+      'alertType': cleanType,
+      'type': cleanType,
       'alertData': alertData,
       ...alertData,
     };
@@ -224,7 +230,7 @@ class LeadsRepository {
         await client.post('/lead-configuration/alerts', body: payload);
       } catch (_) {
         try {
-          await client.put('/lead-configuration/alerts/$alertType', body: payload);
+          await client.put('/lead-configuration/alerts/$cleanType', body: payload);
         } catch (_) {}
       }
     }
@@ -299,14 +305,14 @@ class LeadsRepository {
     var cc = rawCountryCode.replaceAll(RegExp(r'[^\d]'), '').trim();
     if (cc.isEmpty) cc = '91';
 
-    if (cc == '91' && mobile.startsWith('9191') && mobile.length >= 14) {
+    if (cc == '91' && mobile.startsWith('9191') && mobile.length >= 12) {
       mobile = mobile.substring(4);
-    } else if (mobile.startsWith(cc + cc) && mobile.length >= (cc.length * 2 + 10)) {
+    } else if (mobile.startsWith(cc + cc) && mobile.length >= (cc.length * 2 + 6)) {
       mobile = mobile.substring(cc.length * 2);
-    } else if (mobile.startsWith(cc) && mobile.length == (cc.length + 10)) {
-      mobile = mobile.substring(cc.length);
-    } else if (cc == '91' && mobile.length == 12 && mobile.startsWith('91')) {
+    } else if (cc == '91' && mobile.startsWith('91') && mobile.length >= 11 && mobile.length <= 13) {
       mobile = mobile.substring(2);
+    } else if (mobile.startsWith(cc) && mobile.length >= (cc.length + 6)) {
+      mobile = mobile.substring(cc.length);
     }
 
     return (mobile, cc);

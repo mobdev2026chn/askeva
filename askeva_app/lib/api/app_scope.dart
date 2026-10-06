@@ -14,6 +14,7 @@ import 'payments_repository.dart';
 import 'reports_repository.dart';
 import 'session.dart';
 import 'ticketing_repository.dart';
+import 'whatsapp_flows_repository.dart';
 
 /// Bundles the session + all repositories and exposes them to the widget tree.
 class AppServices {
@@ -31,6 +32,7 @@ class AppServices {
   late final PaymentsRepository payments;
   late final NotificationsRepository notifications;
   late final ReportsRepository reports;
+  late final WhatsAppFlowsRepository whatsappFlows;
 
   AppServices(this.session) {
     client = ApiClient(session);
@@ -46,6 +48,7 @@ class AppServices {
     payments = PaymentsRepository(client, session);
     notifications = NotificationsRepository(client, session);
     reports = ReportsRepository(client, session);
+    whatsappFlows = WhatsAppFlowsRepository(client, session);
   }
 }
 

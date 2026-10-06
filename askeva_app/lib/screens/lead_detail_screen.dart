@@ -607,11 +607,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
             const SizedBox(height: 20),
 
             // Tabs: Appointments & Ticketing
-            Row(children: [
-              _tabBtn('Appointments (${_appointments.length})', 0),
-              const SizedBox(width: 24),
-              _tabBtn('Ticketing (${_tickets.length})', 1),
-            ]),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                _tabBtn('Appointments (${_appointments.length})', 0),
+                const SizedBox(width: 24),
+                _tabBtn('Ticketing (${_tickets.length})', 1),
+              ]),
+            ),
             const SizedBox(height: 16),
 
             // Content Area

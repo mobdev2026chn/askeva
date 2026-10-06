@@ -9,6 +9,7 @@ import '../screens/dashboard_screen.dart';
 import '../screens/leads_screen.dart';
 import '../screens/chats_screen.dart';
 import '../screens/catalog_orders_screen.dart';
+import '../screens/payments_screen.dart';
 import '../screens/compose_screen.dart';
 import '../screens/reports_screen.dart';
 import '../screens/appointments_screen.dart';
@@ -16,6 +17,7 @@ import '../screens/ticketing_screen.dart';
 import '../screens/contacts_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/whatsapp_flows_screen.dart';
 import '../screens/login_screen.dart';
 import 'app_nav.dart';
 import 'app_sidebar.dart';
@@ -47,11 +49,30 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    // App-open push alert: low wallet balance (fires once after login).
+    // App-open push alert: low wallet balance (fires once after login if balance < 100).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _showWalletBanner();
+      _checkAndShowWalletBanner();
     });
+  }
+
+  Future<void> _checkAndShowWalletBanner() async {
+    try {
+      final scope = AppScope.of(context);
+      final balance = await scope.auth.fetchBalance();
+      if (!mounted) return;
+      if (balance != null) {
+        kWalletBalance.value = balance;
+      }
+      final currentBal = balance ?? kWalletBalance.value;
+      if (currentBal < 100.0) {
+        _showWalletBanner();
+      }
+    } catch (_) {
+      if (kWalletBalance.value < 100.0) {
+        _showWalletBanner();
+      }
+    }
   }
 
   void _showWalletBanner() {
@@ -155,12 +176,16 @@ class _AppShellState extends State<AppShell> {
     switch (_route) {
       case AppRoute.dashboard:
         return const DashboardScreen();
+      case AppRoute.whatsappFlows:
+        return const WhatsAppFlowsScreen();
       case AppRoute.leads:
         return const LeadsScreen();
       case AppRoute.chats:
         return const ChatsScreen();
       case AppRoute.catalog:
         return const CatalogOrdersScreen();
+      case AppRoute.payments:
+        return const PaymentsScreen();
       case AppRoute.compose:
         return const ComposeScreen();
       case AppRoute.reports:
@@ -190,9 +215,16 @@ class _AppShellState extends State<AppShell> {
         toast: _toast,
         child: Scaffold(
           key: _scaffoldKey,
+          backgroundColor: AppColors.surface,
           drawer: AppSidebar(current: _route, onSelect: _goTo, onLogout: _logout),
           drawerEnableOpenDragGesture: false,
-          body: _body(),
+          // SafeArea(top: false) — single fix for the whole app.
+          // Every screen body is constrained above the system navigation bar.
+          // top: false because each screen's green header already handles topPad.
+          body: SafeArea(
+            top: false,
+            child: _body(),
+          ),
         ),
       ),
     );

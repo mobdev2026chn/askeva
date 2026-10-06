@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
+import '../main.dart';
+import '../screens/login_screen.dart';
 import 'api_config.dart';
 import 'session.dart';
 
@@ -21,6 +24,31 @@ class ApiException implements Exception {
 class ApiClient {
   final Session session;
   ApiClient(this.session);
+
+  static bool _isRedirectingToLogin = false;
+
+  /// Clears stored authentication session and immediately redirects to LoginScreen.
+  void handleSessionExpired() {
+    try {
+      session.clear();
+    } catch (_) {}
+
+    if (_isRedirectingToLogin) return;
+    _isRedirectingToLogin = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final nav = navigatorKey.currentState;
+      if (nav != null) {
+        nav.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+      Future.delayed(const Duration(seconds: 3), () {
+        _isRedirectingToLogin = false;
+      });
+    });
+  }
 
   Map<String, String> _headers({bool auth = true, bool json = true}) {
     final t = session.token;
@@ -68,6 +96,9 @@ class ApiClient {
     final resp = await http.post(uri, headers: _headers(auth: auth), body: body == null ? null : jsonEncode(body));
     if (kDebugMode) debugPrint('API POST(text) $uri -> ${resp.statusCode}');
     if (resp.statusCode >= 200 && resp.statusCode < 300) return resp.body;
+    if (resp.statusCode == 401 || resp.statusCode == 403) {
+      handleSessionExpired();
+    }
     throw ApiException('Request failed (${resp.statusCode})', statusCode: resp.statusCode);
   }
 
@@ -94,6 +125,9 @@ class ApiClient {
     if (kDebugMode) debugPrint('API UPLOAD $uri -> ${resp.statusCode} body=${resp.body.length > 200 ? resp.body.substring(0, 200) : resp.body}');
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       return resp.body.isEmpty ? null : jsonDecode(resp.body);
+    }
+    if (resp.statusCode == 401 || resp.statusCode == 403) {
+      handleSessionExpired();
     }
     throw ApiException('Upload failed (${resp.statusCode}): ${resp.body}', statusCode: resp.statusCode);
   }
@@ -140,7 +174,8 @@ class ApiClient {
         return jsonDecode(resp.body);
       }
 
-      if (resp.statusCode == 401) {
+      if (resp.statusCode == 401 || resp.statusCode == 403) {
+        handleSessionExpired();
         throw ApiException('Session expired. Please sign in again.', statusCode: 401);
       }
 
@@ -158,6 +193,18 @@ class ApiClient {
           }
         }
       } catch (_) {}
+
+      final msgLower = msg.toLowerCase();
+      if (msgLower.contains('session expired') ||
+          msgLower.contains('jwt expired') ||
+          msgLower.contains('token expired') ||
+          msgLower.contains('unauthorized') ||
+          msgLower.contains('please sign in again') ||
+          msgLower.contains('invalid token')) {
+        handleSessionExpired();
+        throw ApiException('Session expired. Please sign in again.', statusCode: 401);
+      }
+
       throw ApiException(msg, statusCode: resp.statusCode);
     } on ApiException {
       rethrow;

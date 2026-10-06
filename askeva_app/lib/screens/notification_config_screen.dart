@@ -230,19 +230,40 @@ class _NotificationFormCardState extends State<_NotificationFormCard> {
       Map<String, String> mappings = {};
       bool enabled = true;
 
-      final ac = cfg[widget.alertType];
+      final ac = cfg[widget.alertType] ??
+          cfg['businessAlert'] ??
+          cfg['business_alert'] ??
+          cfg['reminderConfiguration'] ??
+          cfg['business'] ??
+          cfg['userAlert'] ??
+          cfg['data'];
       if (ac is Map && ac.isNotEmpty) {
-        enabled = ac['enabled'] != false && ac['active'] != false;
-        final tid = (ac['templateId'] ?? ac['id'] ?? '').toString();
-        final tname = (ac['templateName'] ?? ac['template']?['name'] ?? ac['template'] ?? '').toString();
+        enabled = ac['enabled'] != false && ac['active'] != false && ac['isAlertEnabled'] != false && ac['isBusinessAlertEnabled'] != false;
+        final tid = (ac['templateId'] ?? ac['id'] ?? ac['_id'] ?? ac['template']?['_id'] ?? ac['template']?['id'] ?? '').toString();
+        final tname = (ac['templateName'] ?? ac['name'] ?? ac['template']?['name'] ?? ac['template'] ?? '').toString();
         found = tpls.cast<TemplateDto?>().firstWhere(
-            (t) => (tid.isNotEmpty && t!.id == tid) || (tname.isNotEmpty && t!.name == tname),
+            (t) => (tid.isNotEmpty && t!.id == tid) ||
+                   (tname.isNotEmpty && (t!.name.toLowerCase() == tname.toLowerCase() || t.name.replaceAll('_', '').toLowerCase() == tname.replaceAll('_', '').toLowerCase())),
             orElse: () => null);
-        final rawMap = ac['variableMappings'] ?? ac['formData']?['variableMappings'];
+        final rawMap = ac['variableMappings'] ?? ac['formData']?['variableMappings'] ?? ac['mappings'] ?? ac['variables'] ?? ac['variableMapping'];
         if (rawMap is Map) {
           mappings = Map<String, String>.from(
             rawMap.map((k, v) => MapEntry(k.toString(), v.toString())),
           );
+        }
+      }
+
+      if (found == null && tpls.isNotEmpty) {
+        found = tpls.cast<TemplateDto?>().firstWhere(
+          (t) => t!.name.toLowerCase().contains('ticket') ||
+                 t.name.toLowerCase().contains('assign') ||
+                 t.name.toLowerCase().contains('support'),
+          orElse: () => tpls.first,
+        );
+        if (found != null && mappings.isEmpty) {
+          for (final v in found.variables) {
+            mappings[v] = _defaultFieldForVariable(v);
+          }
         }
       }
 
@@ -260,9 +281,24 @@ class _NotificationFormCardState extends State<_NotificationFormCard> {
     }
   }
 
+  String _defaultFieldForVariable(String v) {
+    final vl = v.toLowerCase();
+    if (vl == '1' || vl.contains('name') || vl.contains('customer')) return 'customerName';
+    if (vl == '2' || vl.contains('id') || vl.contains('ticket')) return 'ticketId';
+    if (vl == '3' || vl.contains('status')) return 'status';
+    if (vl == '4' || vl.contains('agent') || vl.contains('assign')) return 'assignedTo';
+    if (vl == '5' || vl.contains('subject')) return 'subject';
+    if (vl.contains('mobile') || vl.contains('phone')) return 'mobileNumber';
+    if (vl.contains('email')) return 'custom_field_1759410270994';
+    if (vl.contains('dept') || vl.contains('department')) return 'department_field';
+    if (vl.contains('priority')) return 'priority';
+    if (vl.contains('source')) return 'source';
+    return _fields.first.$1;
+  }
+
   Future<void> _save() async {
     if (_tpl == null) {
-      appToast(context, 'Please select a template first', isError: true);
+      appToast(context, 'Please select a WhatsApp template first', isError: true);
       return;
     }
     for (final v in _tpl!.variables) {
@@ -274,23 +310,29 @@ class _NotificationFormCardState extends State<_NotificationFormCard> {
     setState(() => _saving = true);
     final scope = AppScope.of(context);
     try {
+      final configData = {
+        'templateId': _tpl!.id,
+        'templateName': _tpl!.name,
+        'templateType': '',
+        'headerType': _tpl!.headerType,
+        'message': _tpl!.message,
+        'variableMappings': _map,
+        'fileUrl': '',
+        'enabled': _enabled,
+        'active': _enabled,
+        'isAlertEnabled': _enabled,
+        'isBusinessAlertEnabled': _enabled,
+        'actions': _tpl!.actions,
+      };
+
       await scope.ticketing.saveReminderConfiguration({
         'eventType': _apiEventType,
         'alertType': widget.alertType,
-        'configData': {
-          'templateId': _tpl!.id,
-          'templateName': _tpl!.name,
-          'templateType': '',
-          'headerType': _tpl!.headerType,
-          'message': _tpl!.message,
-          'variableMappings': _map,
-          'fileUrl': '',
-          'enabled': _enabled,
-          'active': _enabled,
-          'actions': _tpl!.actions,
-        },
+        'configData': configData,
+        'businessAlert': configData,
+        'reminderConfiguration': configData,
       });
-      if (mounted) appToast(context, 'Configuration saved successfully');
+      if (mounted) appToast(context, 'Configuration saved successfully', isSuccess: true);
     } catch (e) {
       if (mounted) appToast(context, 'Failed to save: $e', isError: true);
     } finally {
@@ -338,10 +380,12 @@ class _NotificationFormCardState extends State<_NotificationFormCard> {
     final scope = AppScope.of(context);
 
     try {
-      await scope.ticketing.saveReminderConfiguration({
-        'eventType': _apiEventType,
-        'alertType': widget.alertType,
-        'configData': {
+      final configData = {
+        'enabled': _enabled,
+        'active': _enabled,
+        'isAlertEnabled': _enabled,
+        'isBusinessAlertEnabled': _enabled,
+        if (_tpl != null) ...{
           'templateId': _tpl!.id,
           'templateName': _tpl!.name,
           'templateType': '',
@@ -349,12 +393,19 @@ class _NotificationFormCardState extends State<_NotificationFormCard> {
           'message': _tpl!.message,
           'variableMappings': _map,
           'fileUrl': '',
-          'enabled': value,
-          'active': value,
           'actions': _tpl!.actions,
         },
+      };
+
+      await scope.ticketing.saveReminderConfiguration({
+        'eventType': _apiEventType,
+        'alertType': widget.alertType,
+        'configData': configData,
+        'businessAlert': configData,
+        'reminderConfiguration': configData,
       });
-    } catch (_) {
+      if (mounted) appToast(context, '${widget.alertType == "businessAlert" ? "Business Alert" : "User Alert"} is now ${value ? "ON" : "OFF"}', isSuccess: true);
+    } catch (e) {
       if (mounted) setState(() => _enabled = prev);
     }
   }

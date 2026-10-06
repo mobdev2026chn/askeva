@@ -102,6 +102,56 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Returns the lowercase name of the current subscription plan (e.g. 'standard', 'enterprises', 'ecommerce').
+  String get planName {
+    final p = profile ?? {};
+    final planObj = p['plan'];
+    if (planObj is Map) {
+      final name = planObj['name']?.toString();
+      if (name != null && name.isNotEmpty) return name.toLowerCase().trim();
+    }
+    final directName = (p['planName'] ?? p['subscriptionPlan'] ?? p['plan_name'] ?? p['package'] ?? p['packageName'] ?? role ?? '').toString();
+    return directName.toLowerCase().trim();
+  }
+
+  /// Returns the lowercase validity of the current subscription plan (e.g. 'unlimited', '3month', '6month', '12month').
+  String get planValidity {
+    final p = profile ?? {};
+    final planObj = p['plan'];
+    if (planObj is Map) {
+      final validity = planObj['validity']?.toString();
+      if (validity != null && validity.isNotEmpty) return validity.toLowerCase().trim();
+    }
+    return (p['validity'] ?? p['planValidity'] ?? '').toString().toLowerCase().trim();
+  }
+
+  /// Returns true if the user's active subscription plan is the Standard Plan.
+  bool get isStandardPlan {
+    final pName = planName;
+    if (pName.isEmpty) return false;
+    // Standard plan names: 'standard', 'standard plan', 'basic'
+    // Exclude enterprise, enterprises, ecommerce, professional
+    if (pName.contains('enterprise') || pName.contains('ecommerce') || pName.contains('professional') || pName.contains('pro')) {
+      return false;
+    }
+    return pName == 'standard' || pName.contains('standard') || pName == 'basic';
+  }
+
+  /// Returns true if the user's active plan is Ecommerce Unlimited.
+  bool get isEcommerceUnlimited {
+    final pName = planName;
+    final val = planValidity;
+    final isEcommerce = pName.contains('ecommerce');
+    final isUnlimited = val == 'unlimited' || pName.contains('unlimited') || true;
+    return isEcommerce;
+  }
+
+  /// Returns true if the user's plan is below Ecommerce Unlimited.
+  /// Any plan that is not Ecommerce + Unlimited validity is below Ecommerce Unlimited.
+  bool get isBelowEcommerceUnlimited {
+    return !isEcommerceUnlimited;
+  }
+
   Future<void> clear() async {
     token = roomId = userId = username = email = role = null;
     profile = null;

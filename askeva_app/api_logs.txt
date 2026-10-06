@@ -138,3 +138,283 @@ Response:
 Request: null
 Response: 
 
+2026-07-28 13:53:28.027080: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 13:54:18.086106: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 13:57:40.177987: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 15:23:46.979705: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 15:50:13.185958: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 15:58:42.251463: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 16:20:41.165948: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 16:24:27.207785: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 16:32:07.986641: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 16:36:05.578604: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:18.968372: GET https://apiv2.askeva.io/v1/users/notifications?page=1&limit=200 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.208567: GET https://apiv2.askeva.io/v1/users/notifications/unread/count -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.213554: GET https://apiv2.askeva.io/v1/users/notifications/unread/count -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.246467: GET https://apiv2.askeva.io/v1/chatbots/user/plan -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.279379: GET https://apiv2.askeva.io/v1/users/profile -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.307602: GET https://apiv2.askeva.io/v1/users/userbalance -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.343506: GET https://apiv2.askeva.io/v1/users/totalConversations/0 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.371431: GET https://apiv2.askeva.io/v1/users/totalConversations/3 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.406340: GET https://apiv2.askeva.io/v1/users/broadcastChart?startDate=2000-01-01&endDate=2100-01-01 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.759036: GET https://apiv2.askeva.io/v1/general/countries -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.761909: GET https://apiv2.askeva.io/v1/templates/approved -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.788841: GET https://apiv2.askeva.io/v1/contacts/groups -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:21.811779: GET https://apiv2.askeva.io/v1/users/userattr -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:22.358628: GET https://apiv2.askeva.io/v1/contacts/search?limit=100&offset=0&searchType=all -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:22.359625: GET https://apiv2.askeva.io/v1/contacts/groups -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:22.394533: GET https://apiv2.askeva.io/v1/users/userattr -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:22.461199: GET https://apiv2.askeva.io/v1/users/uicontacts?limit=200&offset=0 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:22.624866: GET https://apiv2.askeva.io/v1/users/unsubscribed -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:22.925265: GET https://apiv2.askeva.io/v1/lead-configuration/dashboard/analytics?timeFilter=30 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.033500: GET https://apiv2.askeva.io/v1/lead-configuration/dashboard/analytics?timeFilter=30 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.266946: GET https://apiv2.askeva.io/v1/lead-configuration -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.267943: GET https://apiv2.askeva.io/v1/lead-configuration/assignment-mode -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.294978: GET https://apiv2.askeva.io/v1/lead-configuration/quick-replies -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.320908: GET https://apiv2.askeva.io/v1/lead-configuration/webhook -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.347853: GET https://apiv2.askeva.io/v1/templates/approved -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.379894: GET https://apiv2.askeva.io/v1/lead-configuration/alerts -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.416024: GET https://apiv2.askeva.io/v1/lead-configuration -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.586784: GET https://apiv2.askeva.io/v1/agents/agents -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.586784: GET https://apiv2.askeva.io/v1/booking-configuration/appointments -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.646665: GET https://apiv2.askeva.io/v1/booking-configuration/appointments?startDate=2026-04-29&endDate=2026-10-26 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.676420: GET https://apiv2.askeva.io/v1/whatsapp-pays/transactions -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.724292: GET https://apiv2.askeva.io/v1/booking-configuration -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.794489: GET https://apiv2.askeva.io/v1/booking-configuration/appointments -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.938318: GET https://apiv2.askeva.io/v1/ticketing/?page=1&limit=10000 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:23.939317: GET https://apiv2.askeva.io/v1/whatsapp-flows/ticket-feedback/responses?page=1&limit=50 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.151515: GET https://apiv2.askeva.io/v1/ticketing/?page=1&limit=10000 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.151515: GET https://apiv2.askeva.io/v1/ticketing/?page=1&limit=10000&isStarred=true -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.180791: GET https://apiv2.askeva.io/v1/ticketing/?page=1&limit=10000&isSpam=true -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.204726: GET https://apiv2.askeva.io/v1/whatsapp-flows/ticket-feedback/responses?page=1&limit=50 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.231652: GET https://apiv2.askeva.io/v1/ticketing/settings/sla-policies -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.253834: GET https://apiv2.askeva.io/v1/agents/agents?activeOnly=true -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.274789: GET https://apiv2.askeva.io/v1/ticketing/settings/configuration -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.386490: GET https://apiv2.askeva.io/v1/ticketing/?page=1&limit=10000 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.387467: GET https://apiv2.askeva.io/v1/whatsapp-flows/ticket-feedback/responses?page=1&limit=50 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.574744: GET https://apiv2.askeva.io/v1/users/profile -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.574744: GET https://apiv2.askeva.io/v1/users/userattr -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.596300: GET https://apiv2.askeva.io/v1/users/team-members -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.617244: GET https://apiv2.askeva.io/v1/users/user-countries -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.637583: GET https://apiv2.askeva.io/v1/payments/get-wallet-transactions -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.658527: GET https://apiv2.askeva.io/v1/chatbots/user/plan -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.945618: GET https://apiv2.askeva.io/v1/commerce/catalogs -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.946588: GET https://apiv2.askeva.io/v1/lead-configuration/leads?page=1&limit=30&q=917012998877 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.967554: GET https://apiv2.askeva.io/v1/users/unsubscribed -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:24.988476: GET https://apiv2.askeva.io/v1/chat/917012998877/0/100 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:25.010417: GET https://apiv2.askeva.io/v1/chat/intervene/917012998877 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:25.031361: GET https://apiv2.askeva.io/v1/commerce/products/cat_1 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:25.052481: GET https://apiv2.askeva.io/v1/chat/917012998877/0/100 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:25.073448: GET https://apiv2.askeva.io/v1/commerce/products/cat_2 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:25.093828: GET https://apiv2.askeva.io/v1/chat/messages/917012998877/0/100 -> 400
+Request: null
+Response: 
+
+2026-07-28 18:59:25.115772: GET https://apiv2.askeva.io/v1/commerce/getProducts -> 400
+Request: null
+Response: 
+

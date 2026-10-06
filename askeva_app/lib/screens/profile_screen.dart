@@ -667,7 +667,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final nav = AppNav.of(context);
-    final topPad = MediaQuery.of(context).padding.top;
+    final mq = MediaQuery.of(context);
+    final topPad = mq.padding.top;
+    final bottomPad = mq.padding.bottom;
     return Column(
       children: [
         Container(
@@ -744,33 +746,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 38,
-                    child: ListView.separated(
-                      controller: _tabScrollController,
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _tabs.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (context, i) => _tabChip(i),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: _handleRefresh,
-                      color: AppColors.evaGreen,
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
-                        children: _panel(nav),
+              child: MediaQuery(
+                data: mq.copyWith(
+                  padding: mq.padding.copyWith(top: 0, bottom: bottomPad),
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 38,
+                      child: ListView.separated(
+                        controller: _tabScrollController,
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _tabs.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (context, i) => _tabChip(i),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _handleRefresh,
+                        color: AppColors.evaGreen,
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPad + 30),
+                          children: _panel(nav),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -2408,6 +2415,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final priceVal = (p?.hasPlan ?? false) ? planPriceValue(rawName, p!.validity ?? '', p.startDate ?? '') : 0;
     final priceStr = priceVal > 0 ? inr(priceVal) : '—';
 
+    final sess = AppScope.of(context).session;
+    final valStr = (p?.validity ?? '').toLowerCase();
+    final isEcommercePlan = rawName.toLowerCase().contains('ecommerce') || rawName.toLowerCase() == 'ecommerce' || sess.planName.contains('ecommerce');
+    final isUnlimitedPlan = unlimited || valStr.contains('unlimited') || rawName.toLowerCase().contains('unlimited');
+    final isEcommerceUnlimited = isEcommercePlan || sess.isEcommerceUnlimited;
+    final isLowerUnlimited = isUnlimitedPlan && !isEcommercePlan;
+
     return [
       Container(
         padding: const EdgeInsets.all(20),
@@ -2424,45 +2438,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Row(children: [Expanded(child: _planFact('Duration', durationStr)), Expanded(child: _planFact('Price', priceStr))]),
             const SizedBox(height: 14),
             Text(
-              unlimited ? 'Unlimited plan — no renewal needed' : (endStr != '—' ? 'Next billing on $endStr' : ' '),
+              isEcommerceUnlimited
+                  ? 'Unlimited Ecommerce plan — no renewal needed'
+                  : (isLowerUnlimited
+                      ? 'Unlimited $planName plan — Upgrade to Ecommerce available'
+                      : (endStr != '—' ? 'Next billing on $endStr' : ' ')),
               style: AppText.poppins(size: 12, weight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.9)),
             ),
-            const SizedBox(height: 14),
-            GestureDetector(
-              onTap: unlimited ? null : () => showRenewPlanSheet(context, planName: rawName),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: unlimited ? Colors.white.withValues(alpha: 0.45) : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.refresh_rounded,
-                      size: 18,
-                      color: unlimited
-                          ? AppColors.evaGreenDeep.withValues(alpha: 0.5)
-                          : AppColors.evaGreenDeep,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Renew Now',
-                      style: AppText.poppins(
-                        size: 14,
-                        weight: FontWeight.w800,
-                        color: unlimited
-                            ? AppColors.evaGreenDeep.withValues(alpha: 0.5)
-                            : AppColors.evaGreenDeep,
+            if (!isEcommerceUnlimited) ...[
+              const SizedBox(height: 14),
+              GestureDetector(
+                onTap: () => showRenewPlanSheet(context, planName: isLowerUnlimited ? 'ecommerce' : rawName),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.refresh_rounded,
+                        size: 18,
+                        color: AppColors.evaGreenDeep,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        isLowerUnlimited ? 'Upgrade to Ecommerce Plan' : 'Renew Now',
+                        style: AppText.poppins(
+                          size: 14,
+                          weight: FontWeight.w800,
+                          color: AppColors.evaGreenDeep,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -2473,8 +2489,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Expanded(child: OutlinedButton.icon(onPressed: _billingHistory, icon: const Icon(Icons.receipt_long_outlined, size: 18), label: const Text('Billing'), style: OutlinedButton.styleFrom(foregroundColor: AppColors.ink2, side: const BorderSide(color: AppColors.line), padding: const EdgeInsets.symmetric(vertical: 13), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))))),
       ]),
       const SizedBox(height: 14),
-      if (p != null && p.maxChatbots > 0) AppCard(child: _usageRow('Chatbots', p.chatbotCount, p.maxChatbots)),
-      const SizedBox(height: 12),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -2570,29 +2584,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _usageRow(String label, int used, int total) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: Text(label, style: AppText.poppins(size: 14, weight: FontWeight.w700, color: AppColors.ink))),
-            Text('$used / $total', style: AppText.poppins(size: 13, weight: FontWeight.w700, color: AppColors.ink3)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(
-            value: used / total,
-            minHeight: 7,
-            backgroundColor: AppColors.surface3,
-            valueColor: const AlwaysStoppedAnimation(AppColors.evaGreen),
-          ),
-        ),
-      ],
-    );
-  }
+
 
   // ---------------- Transactions (live invoices) ----------------
   String _fmtTxnDate(dynamic raw) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'api/app_scope.dart';
 import 'api/background_notification_service.dart';
@@ -15,9 +16,28 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Enable edge-to-edge mode for the entire app
+  SystemChrome.setEnabledSystemUIMode(
+    SystemUiMode.edgeToEdge,
+  );
+
+  // Make status bar and navigation bar transparent
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
+
   await LocalNotificationService.init();
   await BackgroundNotificationService.init();
-  
+
   TicketingRepository.onApiCall = (msg, {isError = false}) {
     final ctx = navigatorKey.currentContext;
     if (ctx != null) {
@@ -27,14 +47,20 @@ Future<void> main() async {
 
   final session = Session();
   await session.load();
+
   final services = AppServices(session);
   GlobalNotificationPoller.start(services);
+
   runApp(AskEvaApp(services: services));
 }
 
 class AskEvaApp extends StatelessWidget {
   final AppServices services;
-  const AskEvaApp({super.key, required this.services});
+
+  const AskEvaApp({
+    super.key,
+    required this.services,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,15 +68,27 @@ class AskEvaApp extends StatelessWidget {
       services: services,
       child: ValueListenableBuilder<bool>(
         valueListenable: kDarkMode,
-        builder: (_, dark, _) => MaterialApp(
-          navigatorKey: navigatorKey,
-          title: 'AskEva',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-          home: const SplashScreen(),
-        ),
+        builder: (_, dark, _) {
+          SystemChrome.setSystemUIOverlayStyle(
+            SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+              statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+              systemNavigationBarColor: Colors.transparent,
+              systemNavigationBarDividerColor: Colors.transparent,
+              systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+            ),
+          );
+          return MaterialApp(
+            navigatorKey: navigatorKey,
+            title: 'AskEva',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+            home: const SplashScreen(),
+          );
+        },
       ),
     );
   }

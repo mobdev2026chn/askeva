@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
-enum AppRoute { dashboard, leads, chats, catalog, compose, reports, appointments, ticketing, contacts, profile, settings }
+enum AppRoute { dashboard, whatsappFlows, leads, chats, catalog, payments, compose, reports, appointments, ticketing, contacts, profile, settings }
 
 extension AppRouteX on AppRoute {
   String get label => switch (this) {
         AppRoute.dashboard => 'Dashboard',
+        AppRoute.whatsappFlows => 'WhatsApp Flows',
         AppRoute.leads => 'Leads',
         AppRoute.chats => 'Chats',
         AppRoute.catalog => 'Catalog',
+        AppRoute.payments => 'Payments',
         AppRoute.compose => 'Compose Message',
         AppRoute.reports => 'Reports',
         AppRoute.appointments => 'Appointments',
@@ -19,9 +21,11 @@ extension AppRouteX on AppRoute {
 
   IconData get icon => switch (this) {
         AppRoute.dashboard => Icons.grid_view_rounded,
+        AppRoute.whatsappFlows => Icons.alt_route_rounded,
         AppRoute.leads => Icons.people_outline_rounded,
         AppRoute.chats => Icons.forum_outlined,
         AppRoute.catalog => Icons.shopping_bag_outlined,
+        AppRoute.payments => Icons.payments_outlined,
         AppRoute.compose => Icons.near_me_outlined,
         AppRoute.reports => Icons.bar_chart_rounded,
         AppRoute.appointments => Icons.calendar_today_outlined,
@@ -31,6 +35,7 @@ extension AppRouteX on AppRoute {
         AppRoute.settings => Icons.settings_outlined,
       };
 }
+
 
 /// Lightweight nav controller exposed to all screens via InheritedWidget.
 class AppNav extends InheritedWidget {

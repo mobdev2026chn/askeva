@@ -302,9 +302,47 @@ class LeadsService {
     }
   }
 
+  static (String, String) _cleanMobileAndCc(String rawMobile, String rawCc) {
+    var mobile = rawMobile.replaceAll(RegExp(r'[^\d]'), '').trim();
+    var cc = rawCc.replaceAll(RegExp(r'[^\d]'), '').trim();
+    if (cc.isEmpty) cc = '91';
+
+    if (cc == '91' && mobile.startsWith('9191') && mobile.length >= 12) {
+      mobile = mobile.substring(4);
+    } else if (mobile.startsWith(cc + cc) && mobile.length >= (cc.length * 2 + 6)) {
+      mobile = mobile.substring(cc.length * 2);
+    } else if (cc == '91' && mobile.startsWith('91') && mobile.length >= 11 && mobile.length <= 13) {
+      mobile = mobile.substring(2);
+    } else if (mobile.startsWith(cc) && mobile.length >= (cc.length + 6)) {
+      mobile = mobile.substring(cc.length);
+    }
+
+    return (mobile, cc);
+  }
+
   static Future<Map<String, dynamic>> sendTemplateMessage(
     Map<String, dynamic> payload,
   ) async {
+    final copyBody = Map<String, dynamic>.from(payload);
+
+    if (copyBody['recipientData'] is Map) {
+      final rd = Map<String, dynamic>.from(copyBody['recipientData'] as Map);
+      final rawMob = (rd['mobile'] ?? rd['fullMobile'] ?? rd['mobileNumber'] ?? rd['phone'] ?? '').toString();
+      final rawCc = (rd['countryCode'] ?? rd['country_code'] ?? '91').toString();
+      final (cleanMob, cleanCc) = _cleanMobileAndCc(rawMob, rawCc);
+      rd['mobile'] = cleanMob;
+      rd['mobileNumber'] = cleanMob;
+      rd['fullMobile'] = '$cleanCc$cleanMob';
+      rd['countryCode'] = cleanCc;
+      copyBody['recipientData'] = rd;
+    }
+
+    if (copyBody['recipient'] != null) {
+      final rawMob = copyBody['recipient'].toString();
+      final (cleanMob, cleanCc) = _cleanMobileAndCc(rawMob, '91');
+      copyBody['recipient'] = '+$cleanCc$cleanMob';
+    }
+
     final uri = Uri.parse('$baseUrl/v1/lead-configuration/send-template');
     final token = await AuthService.getToken();
     final resp = await http.post(
@@ -313,7 +351,7 @@ class LeadsService {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       },
-      body: jsonEncode(payload),
+      body: jsonEncode(copyBody),
     );
     if (resp.statusCode == 200) {
       return jsonDecode(resp.body) as Map<String, dynamic>;

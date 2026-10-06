@@ -1070,7 +1070,7 @@
     }
     bindDel();
     $("[data-add]", sheet).addEventListener("click", function () {
-      var d = desc.value.trim(), w = $("#rmWhen", sheet).value, ag = $("#rmAgent", sheet).value;
+      var d = desc.value.trim(), w = $("#rmWhen", sheet).value, ag = $("#rmAgent", sheet).value || L.assigned || "Unassigned";
       if (!d) { toast("Enter a reminder description"); desc.focus(); return; }
       if (!w) { toast("Pick a date & time"); return; }
       if (new Date(w).getTime() < Date.now() - 60000) { toast("Pick a present or future date & time"); return; }

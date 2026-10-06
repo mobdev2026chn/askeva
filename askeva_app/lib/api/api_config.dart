@@ -14,7 +14,7 @@ class ApiConfig {
   /// (askeva-react .env.production / .env.staging) and were verified live
   /// (200 OK on POST /v1/users/login). Default to production so the app talks
   /// to the same backend you sign in to on my.askeva.io.
-  static const AppEnv env = AppEnv.production; // Production — same backend as my.askeva.io (apiv2.askeva.io)
+  static const AppEnv env = AppEnv.development; // Production — same backend as my.askeva.io (apiv2.askeva.io)
   static bool get isDev => env == AppEnv.development;
 
 
@@ -52,3 +52,4 @@ class _Env {
   final String webhook;
   const _Env({required this.base, required this.socket, required this.webhook});
 }
+

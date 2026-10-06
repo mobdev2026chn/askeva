@@ -34,6 +34,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
   // Shared interactive state.
   String _query = '';
+  final TextEditingController _searchCtrl = TextEditingController();
   String _filter = 'All';
   String? _selectedSubFilter;
   bool _selectMode = false;
@@ -51,6 +52,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
   // Phone-number → contact name cache (populated when Contacts tab loads)
   final Map<String, String> _numberToName = {};
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -140,6 +147,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     setState(() {
       _tab = i;
       _query = ''; // Reset query on tab swap
+      _searchCtrl.clear();
       if (i == 0 && _contactsFuture == null) _reloadContacts();
       if (i == 1 && _uiContactsFuture == null) _reloadUi();
       if (i == 2 && _unsubFuture == null) _reloadUnsub();
@@ -367,7 +375,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
   }
 
   Widget _apiCard(ContactDto c) {
-    final display = c.contactName.isEmpty ? c.contactNumber : c.contactName;
+    final display = _safeText(c.contactName.isEmpty ? c.contactNumber : c.contactName);
     final id = c.id;
     final selected = _selected.contains(id);
 
@@ -886,7 +894,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
           Builder(
             builder: (context) {
               final c = contacts[i];
-              final display = c.profileName.isNotEmpty ? c.profileName : (c.contactNumber.isNotEmpty ? c.contactNumber : 'Unknown');
+              final display = _safeText(c.profileName.isNotEmpty ? c.profileName : (c.contactNumber.isNotEmpty ? c.contactNumber : 'Unknown'));
               final sno = i + 1;
               final formattedTime = c.lastMessageTime != null ? _stamp(c.lastMessageTime) : (c.rawTimeStr.isNotEmpty ? c.rawTimeStr : 'N/A');
 
@@ -1000,7 +1008,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                           Expanded(
                             flex: 5,
                             child: Text(
-                              c.lastMessage.isNotEmpty ? c.lastMessage : '—',
+                              c.lastMessage.isNotEmpty ? _safeText(c.lastMessage) : '—',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: AppText.poppins(size: 12, weight: FontWeight.w600, color: AppColors.ink2),
@@ -1266,13 +1274,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
   Widget _unsubCard(UnsubscribedContactDto c, [List<UnsubscribedContactDto>? list]) {
     final hasName = c.profileName.isNotEmpty;
     // Prefer backend profileName → fallback to contacts-list name → fallback to number
-    final resolvedName = hasName
+    final resolvedName = _safeText(hasName
         ? c.profileName
         : (_numberToName[c.contactNumber] ??
            (c.contactNumber.length > 10
                ? _numberToName[c.contactNumber.substring(c.contactNumber.length - 10)]
                : null) ??
-           c.contactNumber);
+           c.contactNumber));
     final hasResolvedName = resolvedName != c.contactNumber;
     final avatarLabel = hasResolvedName
         ? _initials(resolvedName)
@@ -2088,19 +2096,62 @@ class _ContactsScreenState extends State<ContactsScreen> {
         ),
       );
 
+  /// Sanitizes a string by removing lone surrogates (malformed UTF-16).
+  /// Contact names/messages from the API can contain invalid surrogate code
+  /// units (e.g. from broken emoji encodings) which crash Flutter's text
+  /// renderer with "string is not well-formed UTF-16".
+  static String _safeText(String s) {
+    final units = s.codeUnits;
+    final result = <int>[];
+    for (int i = 0; i < units.length; i++) {
+      final u = units[i];
+      if (u >= 0xD800 && u <= 0xDBFF) {
+        // High surrogate — valid only when followed by a low surrogate
+        if (i + 1 < units.length && units[i + 1] >= 0xDC00 && units[i + 1] <= 0xDFFF) {
+          result.add(u);
+          result.add(units[i + 1]);
+          i++; // consume the low surrogate too
+        }
+        // else: lone high surrogate — drop it
+      } else if (u >= 0xDC00 && u <= 0xDFFF) {
+        // Lone low surrogate — drop it
+      } else {
+        result.add(u);
+      }
+    }
+    return String.fromCharCodes(result);
+  }
+
   Widget _searchField(String hint) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.line)),
         child: Row(children: [
           const Icon(Icons.search_rounded, size: 18, color: AppColors.ink4),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
+              controller: _searchCtrl,
               onChanged: (v) => setState(() => _query = v),
               style: AppText.poppins(size: 13.5, weight: FontWeight.w600, color: AppColors.ink),
-              decoration: InputDecoration(isDense: true, border: InputBorder.none, hintText: hint, hintStyle: AppText.poppins(size: 13.5, weight: FontWeight.w500, color: AppColors.ink4)),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: hint,
+                hintStyle: AppText.poppins(size: 13.5, weight: FontWeight.w500, color: AppColors.ink4),
+              ),
             ),
           ),
+          if (_query.isNotEmpty)
+            GestureDetector(
+              onTap: () => setState(() {
+                _query = '';
+                _searchCtrl.clear();
+              }),
+              child: const Padding(
+                padding: EdgeInsets.only(left: 6),
+                child: Icon(Icons.clear_rounded, size: 17, color: AppColors.ink4),
+              ),
+            ),
         ]),
       );
 
@@ -2766,18 +2817,20 @@ class _ContactFormState extends State<_ContactForm> {
                   ),
                 GestureDetector(
                   onTap: _addNewTag,
-                  child: CustomPaint(
-                    painter: _DottedBorderPainter(color: AppColors.ink4, radius: 20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.add_rounded, size: 14, color: AppColors.ink3),
-                          const SizedBox(width: 4),
-                          Text('New tag', style: AppText.poppins(size: 13, weight: FontWeight.w700, color: AppColors.ink3)),
-                        ],
-                      ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.evaGreen200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_rounded, size: 14, color: AppColors.evaGreenDeep),
+                        const SizedBox(width: 4),
+                        Text('New tag', style: AppText.poppins(size: 13, weight: FontWeight.w700, color: AppColors.evaGreenDeep)),
+                      ],
                     ),
                   ),
                 ),
@@ -2834,42 +2887,7 @@ class _ContactFormState extends State<_ContactForm> {
   }
 }
 
-class _DottedBorderPainter extends CustomPainter {
-  final Color color;
-  final double radius;
-  _DottedBorderPainter({required this.color, required this.radius});
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(radius),
-      ));
-
-    // Draw dashed path
-    const dashWidth = 4.0;
-    const dashSpace = 4.0;
-    double distance = 0.0;
-    for (final pathMetric in path.computeMetrics()) {
-      while (distance < pathMetric.length) {
-        canvas.drawPath(
-          pathMetric.extractPath(distance, distance + dashWidth),
-          paint,
-        );
-        distance += dashWidth + dashSpace;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 
 // ---------------------------------------------------------------------------
 // shared bits
@@ -2906,19 +2924,20 @@ class _Tag extends StatelessWidget {
   }
 }
 
-Widget _addTagChip() => CustomPaint(
-      painter: _DottedBorderPainter(color: AppColors.evaGreen, radius: 999),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('+ Add Tag', style: AppText.poppins(size: 11, weight: FontWeight.w700, color: AppColors.evaGreenDeep)),
-          ],
-        ),
+Widget _addTagChip() => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.evaGreen200, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.add_rounded, size: 13, color: AppColors.evaGreenDeep),
+          const SizedBox(width: 3),
+          Text('Add Tag', style: AppText.poppins(size: 11.5, weight: FontWeight.w700, color: AppColors.evaGreenDeep)),
+        ],
       ),
     );
 

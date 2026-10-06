@@ -294,7 +294,41 @@ class _ChatsScreenState extends State<ChatsScreen> {
     super.dispose();
   }
 
+  Set<String> _leadMobiles = {};
+  bool _leadsLoaded = false;
+
+  Future<void> _ensureLeadsLoaded() async {
+    if (_leadsLoaded) return;
+    try {
+      final page = await AppScope.of(context).leads.fetchLeads(limit: 1000);
+      final set = <String>{};
+      for (final l in page.leads) {
+        final digits = l.mobile.replaceAll(RegExp(r'\D'), '');
+        if (digits.isNotEmpty) {
+          set.add(digits);
+          if (digits.length >= 10) {
+            set.add(digits.substring(digits.length - 10));
+          }
+        }
+      }
+      _leadMobiles = set;
+      _leadsLoaded = true;
+    } catch (_) {}
+  }
+
+  bool _isRoomProspect(ChatRoomDto r) {
+    final digits = r.userNumber.replaceAll(RegExp(r'\D'), '');
+    if (digits.isNotEmpty) {
+      final last10 = digits.length >= 10 ? digits.substring(digits.length - 10) : digits;
+      if (_leadMobiles.contains(digits) || _leadMobiles.contains(last10)) {
+        return false; // Contact exists in Leads data -> Lead, NOT a prospect
+      }
+    }
+    return true; // Contact DOES NOT exist in Leads data -> Prospect!
+  }
+
   Future<List<ChatRoomDto>> _load() async {
+    await _ensureLeadsLoaded();
     final searchVal = _query.isEmpty ? null : _query;
     final isLive = _tab == 0;
     final filter = isLive ? _liveFilter : _historyFilter;
@@ -310,7 +344,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
     List<ChatRoomDto> roomsList;
     if (isLive) {
       String apiFilter = 'live';
-      if (filter == 'intervened' || filter == 'replied') {
+      if (filter == 'unread') {
+        apiFilter = 'unread';
+      } else if (filter == 'read') {
+        apiFilter = 'read';
+      } else if (filter == 'intervened' || filter == 'replied') {
         apiFilter = 'intervened';
       } else if (filter == 'prospects') {
         apiFilter = 'prospects';
@@ -332,7 +370,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
         tag: tagVal,
       );
 
-      if (fetched.isEmpty && apiFilter == 'live') {
+      if (fetched.isEmpty) {
         fetched = await AppScope.of(context).chat.fetchRooms(
           filter: 'all',
           limit: 1000,
@@ -347,12 +385,21 @@ class _ChatsScreenState extends State<ChatsScreen> {
       // History tab: load directly from history API
       final agentId = (filter == 'agent' && _selectedAgentId.isNotEmpty) ? _selectedAgentId : null;
       if (!mounted) return [];
-      final fetched = await AppScope.of(context).chat.fetchHistoryRooms(
-        filter: filter == 'prospects' ? 'prospects' : 'all',
+      var fetched = await AppScope.of(context).chat.fetchHistoryRooms(
+        filter: 'all',
         limit: 1000,
         search: searchVal,
         agent: agentId,
       );
+
+      if (fetched.isEmpty) {
+        fetched = await AppScope.of(context).chat.fetchHistoryRooms(
+          filter: 'history',
+          limit: 1000,
+          search: searchVal,
+          agent: agentId,
+        );
+      }
 
       // Filter out reopened numbers from History tab (reopened chats display in Live Chat!)
       if (_reopenedNumbers.isNotEmpty) {
@@ -380,35 +427,28 @@ class _ChatsScreenState extends State<ChatsScreen> {
 
     // 1. Overlay the local read/unread status from SharedPreferences (WhatsApp style)
     final mappedRooms = roomsList.map((r) {
-      // User opened & read this chat locally -> ALWAYS keep as read (unread: 0)
-      if (markedReadSet.contains(r.userNumber)) {
-        return ChatRoomDto(
-          userNumber: r.userNumber,
-          userName: r.userName,
-          lastMsg: r.lastMsg,
-          unread: 0,
-          updatedAt: r.updatedAt,
-          intervene: r.intervene,
-          lastMessageRead: true,
-          tags: r.tags,
-          isProspect: r.isProspect,
-        );
+      final isProspect = _isRoomProspect(r);
+      final readTime = prefs.getInt('read_time_${r.userNumber}') ?? 0;
+      final msgTime = r.updatedAt?.millisecondsSinceEpoch ?? 0;
+      final isNewerMessage = msgTime > (readTime + 1000);
+
+      // Determine unread state
+      bool isUnread = (r.unread > 0 || r.lastMessageRead == false || markedUnreadSet.contains(r.userNumber));
+      if (!isNewerMessage && markedReadSet.contains(r.userNumber) && !markedUnreadSet.contains(r.userNumber) && r.unread == 0) {
+        isUnread = false;
       }
-      // User manually marked as unread
-      if (markedUnreadSet.contains(r.userNumber) && r.unread == 0) {
-        return ChatRoomDto(
-          userNumber: r.userNumber,
-          userName: r.userName,
-          lastMsg: r.lastMsg,
-          unread: 1,
-          updatedAt: r.updatedAt,
-          intervene: r.intervene,
-          lastMessageRead: false,
-          tags: r.tags,
-          isProspect: r.isProspect,
-        );
-      }
-      return r;
+
+      return ChatRoomDto(
+        userNumber: r.userNumber,
+        userName: r.userName,
+        lastMsg: r.lastMsg,
+        unread: isUnread ? (r.unread > 0 ? r.unread : 1) : 0,
+        updatedAt: r.updatedAt,
+        intervene: r.intervene,
+        lastMessageRead: !isUnread,
+        tags: r.tags,
+        isProspect: isProspect,
+      );
     }).toList();
 
     // 2. Count total unread chats globally across all retrieved active rooms
@@ -426,10 +466,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
     } else if (filter2 == 'replied') {
       filteredRooms = mappedRooms.where((r) => r.intervene).toList();
     } else if (filter2 == 'prospects') {
-      filteredRooms = mappedRooms.where((r) => 
-        r.isProspect || 
-        r.tags.any((t) => t.toLowerCase().contains('prospect') || t.toLowerCase().contains('lead'))
-      ).toList();
+      filteredRooms = mappedRooms.where((r) => _isRoomProspect(r)).toList();
     } else if (filter2 == 'tags') {
       if (_selectedTag.isNotEmpty) {
         filteredRooms = mappedRooms.where((r) => r.tags.any((t) => t.toLowerCase() == _selectedTag.toLowerCase())).toList();
@@ -758,7 +795,14 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}', style: AppText.poppins(size: 13, color: AppColors.danger)));
                 }
-                final agents = snapshot.data ?? [];
+                final rawAgents = snapshot.data ?? [];
+                final agents = rawAgents.where((a) {
+                  final statusVal = a['status'];
+                  final bool isInactive = statusVal != null && (statusVal == false || statusVal == 0 || statusVal.toString().toLowerCase() == 'inactive' || statusVal.toString().toLowerCase() == 'disabled');
+                  if (isInactive) return false;
+                  return true;
+                }).toList();
+
                 if (agents.isEmpty) {
                   return Center(child: Text('No agents found', style: AppText.poppins(size: 13, color: AppColors.ink3)));
                 }

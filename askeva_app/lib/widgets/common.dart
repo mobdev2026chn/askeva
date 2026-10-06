@@ -62,7 +62,9 @@ class GreenHeaderScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topPad = MediaQuery.of(context).padding.top;
+    final mq = MediaQuery.of(context);
+    final topPad = mq.padding.top;
+    final bottomPad = mq.padding.bottom;
     return Column(
       children: [
         Container(
@@ -96,9 +98,17 @@ class GreenHeaderScaffold extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 18),
-                child: sheet,
+              // Propagate the system-navigation-bar bottom inset so that
+              // every scrollable child (ListView, SingleChildScrollView, etc.)
+              // inside the sheet automatically adds the correct bottom gap.
+              child: MediaQuery(
+                data: mq.copyWith(
+                  padding: mq.padding.copyWith(top: 0, bottom: bottomPad),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 18),
+                  child: sheet,
+                ),
               ),
             ),
           ),
@@ -1009,7 +1019,7 @@ void showSharedCountryCodePicker(BuildContext context, String currentSelected, V
             color: AppColors.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 16),
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + MediaQuery.of(ctx).padding.bottom + MediaQuery.of(ctx).viewInsets.bottom),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

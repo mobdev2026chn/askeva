@@ -115,7 +115,9 @@ class ChatRepository {
 
     final endpoints = <String>[
       '/chat/history/$offset/$limit/$filterPath/$s',
+      '/chat/history/$offset/$limit/all/$s',
       '/chat/history/$offset/$limit/history/$s',
+      '/chat/session/$offset/$limit/history/$s',
     ];
 
     for (final ep in endpoints) {
@@ -193,14 +195,26 @@ class ChatRepository {
   /// The web app fetches ALL events (no query params) then filters client-side
   /// by userNumber. We do the same to match the backend contract exactly.
   Future<List<Map<String, dynamic>>> fetchCustomerJourney(String userNumber) async {
-    final res = await client.get('/chat/customer-journey');
-    final list = (res is Map && res['data'] is List) ? res['data'] as List : (res is List ? res : const []);
-    final all = list.whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
-    // Filter by userNumber client-side (matches web ChatSideStatus.jsx behaviour)
-    if (userNumber.isNotEmpty) {
-      return all.where((e) => e['userNumber']?.toString() == userNumber).toList();
+    try {
+      final res = await client.get('/chat/customer-journey');
+      final list = (res is Map && res['data'] is List) ? res['data'] as List : (res is List ? res : const []);
+      final all = list.whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
+
+      final cleanedUser = userNumber.replaceAll(RegExp(r'\D'), '');
+
+      if (cleanedUser.isNotEmpty) {
+        final filtered = all.where((e) {
+          final numStr = (e['userNumber'] ?? e['number'] ?? e['mobile'] ?? e['phone'] ?? '').toString().replaceAll(RegExp(r'\D'), '');
+          if (numStr.isEmpty) return false;
+          return numStr == cleanedUser || cleanedUser.endsWith(numStr) || numStr.endsWith(cleanedUser);
+        }).toList();
+
+        if (filtered.isNotEmpty) return filtered;
+      }
+      return all;
+    } catch (_) {
+      return [];
     }
-    return all;
   }
 
   /// GET /v1/chat/intervene/{userNumber} -> { data: bool }

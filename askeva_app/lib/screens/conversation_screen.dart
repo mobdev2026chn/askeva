@@ -47,6 +47,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   bool _templateSent = false;
   bool _searching = false;
   String _searchQ = '';
+  int _searchMatchIndex = 0;
   bool _muted = false;
   bool _showEmoji = false;
   bool _needsScrollToBottom = true;
@@ -168,13 +169,68 @@ class _ConversationScreenState extends State<ConversationScreen> {
     });
   }
 
+  void _scrollToSearchMatch(List<MessageDto> msgs, List<MessageDto> matches) {
+    if (matches.isEmpty || _searchMatchIndex < 0 || _searchMatchIndex >= matches.length) return;
+    final targetMsg = matches[_searchMatchIndex];
+    final targetIndex = msgs.indexOf(targetMsg);
+    if (targetIndex != -1 && _scrollController.hasClients) {
+      final total = msgs.length;
+      final max = _scrollController.position.maxScrollExtent;
+      final targetOffset = total > 1 ? (targetIndex / (total - 1)) * max : 0.0;
+      _scrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  Widget _highlightText(String text, String query, TextStyle defaultStyle) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return Text(text, style: defaultStyle);
+    }
+    final q = trimmed.toLowerCase();
+    final lower = text.toLowerCase();
+    if (!lower.contains(q)) {
+      return Text(text, style: defaultStyle);
+    }
+
+    final spans = <TextSpan>[];
+    int start = 0;
+    int index = lower.indexOf(q, start);
+
+    final highlightStyle = defaultStyle.copyWith(
+      backgroundColor: const Color(0xFFFEF08A),
+      color: const Color(0xFF1E293B),
+      fontWeight: FontWeight.w800,
+    );
+
+    while (index != -1) {
+      if (index > start) {
+        spans.add(TextSpan(text: text.substring(start, index), style: defaultStyle));
+      }
+      spans.add(TextSpan(text: text.substring(index, index + q.length), style: highlightStyle));
+      start = index + q.length;
+      index = lower.indexOf(q, start);
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start), style: defaultStyle));
+    }
+
+    return RichText(text: TextSpan(children: spans));
+  }
+
   /// The 24-hour WhatsApp service window: if the last customer message is
-  /// older than a day, the session is closed and only a template can re-open it.
+  /// older than a day (or if viewing History), the session is closed and only a template can re-open it.
   bool get _sessionClosed {
     // Once a template is sent OR agent has intervened, the session is re-opened locally.
     if (_manuallyIntervened || _templateSent) return false;
-    // History chats are always treated as closed (no active 24h window).
+    // History chats are always treated as closed (matches web /chat/history behavior).
     if (widget.isHistory) return true;
+    // While the bot is actively handling the chat (Live Chat), it is never "closed".
+    if (_aiHandling) return false;
     DateTime? lastIncoming;
     for (final m in _messages) {
       if (m.outgoing || m.timestamp == null) continue;
@@ -217,9 +273,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
       final chat = AppScope.of(context).chat;
       final m = await chat.fetchMessages(widget.number, limit: 100);
       if (mounted && m.isNotEmpty) {
+        final oldLen = _messages.length;
         final oldLast = _messages.isNotEmpty ? _messages.last : null;
         final newLast = m.last;
-        final hasNew = _messages.length != m.length ||
+        final hasNew = oldLen != m.length ||
             oldLast?.id != newLast.id ||
             oldLast?.text != newLast.text ||
             oldLast?.timestamp != newLast.timestamp;
@@ -248,7 +305,23 @@ class _ConversationScreenState extends State<ConversationScreen> {
             _messages = List.from(m);
             _needsScrollToBottom = true;
           });
+          _scrollToBottom(animate: true);
         }
+      }
+
+      // Keep intervene state synced with server
+      final intervened = await chat.fetchInterveneStatus(widget.number);
+      if (mounted) {
+        setState(() {
+          if (_manuallyIntervened) {
+            _aiHandling = false;
+          } else {
+            _aiHandling = !intervened;
+            if (intervened) {
+              _manuallyIntervened = true;
+            }
+          }
+        });
       }
     } catch (_) {}
   }
@@ -331,17 +404,87 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   decoration: const BoxDecoration(gradient: AppColors.evaGradient),
                   child: _searching
                       ? Row(children: [
-                          IconButton(onPressed: () => setState(() { _searching = false; _searchQ = ''; _searchCtrl.clear(); }), icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 24)),
+                          IconButton(
+                            onPressed: () => setState(() {
+                              _searching = false;
+                              _searchQ = '';
+                              _searchMatchIndex = 0;
+                              _searchCtrl.clear();
+                            }),
+                            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 24),
+                          ),
                           Expanded(
                             child: TextField(
                               controller: _searchCtrl,
                               autofocus: true,
-                              onChanged: (v) => setState(() => _searchQ = v),
+                              onChanged: (v) {
+                                setState(() {
+                                  _searchQ = v;
+                                  _searchMatchIndex = 0;
+                                });
+                                final activeMsgs = _messages.isNotEmpty ? _messages : const <MessageDto>[];
+                                final currentMsgs = [...activeMsgs, ..._extra].where((m) => m.type != 'dayBreakFlag').toList();
+                                final matches = v.trim().isEmpty ? <MessageDto>[] : currentMsgs.where((m) => m.text.toLowerCase().contains(v.trim().toLowerCase())).toList();
+                                _scrollToSearchMatch(currentMsgs, matches);
+                              },
                               style: AppText.poppins(size: 15, weight: FontWeight.w600, color: Colors.white),
-                              decoration: InputDecoration(border: InputBorder.none, hintText: 'Search in chat…', hintStyle: AppText.poppins(size: 15, weight: FontWeight.w500, color: Colors.white70)),
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                hintText: 'Search in chat…',
+                                hintStyle: AppText.poppins(size: 15, weight: FontWeight.w500, color: Colors.white70),
+                              ),
                             ),
                           ),
-                          if (_searchQ.isNotEmpty) IconButton(onPressed: () => setState(() { _searchQ = ''; _searchCtrl.clear(); }), icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22)),
+                          if (_searchQ.isNotEmpty) ...[
+                            Builder(builder: (_) {
+                              final activeMsgs = _messages.isNotEmpty ? _messages : const <MessageDto>[];
+                              final currentMsgs = [...activeMsgs, ..._extra].where((m) => m.type != 'dayBreakFlag').toList();
+                              final matches = currentMsgs.where((m) => m.text.toLowerCase().contains(_searchQ.trim().toLowerCase())).toList();
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    matches.isNotEmpty ? '${_searchMatchIndex + 1}/${matches.length}' : '0 matches',
+                                    style: AppText.poppins(size: 11.5, weight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.9)),
+                                  ),
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                    icon: const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white, size: 20),
+                                    onPressed: matches.isEmpty
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _searchMatchIndex = (_searchMatchIndex - 1 + matches.length) % matches.length;
+                                            });
+                                            _scrollToSearchMatch(currentMsgs, matches);
+                                          },
+                                  ),
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                    icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 20),
+                                    onPressed: matches.isEmpty
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _searchMatchIndex = (_searchMatchIndex + 1) % matches.length;
+                                            });
+                                            _scrollToSearchMatch(currentMsgs, matches);
+                                          },
+                                  ),
+                                ],
+                              );
+                            }),
+                            IconButton(
+                              onPressed: () => setState(() {
+                                _searchQ = '';
+                                _searchMatchIndex = 0;
+                                _searchCtrl.clear();
+                              }),
+                              icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                            ),
+                          ],
                         ])
                       : Row(
                           children: [
@@ -356,9 +499,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
                                 },
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(widget.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.poppins(size: 16, weight: FontWeight.w700, color: Colors.white)),
-                                    Text(_statusText, style: AppText.poppins(size: 12, weight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.9))),
+                                    if (widget.number.isNotEmpty && widget.number != widget.name)
+                                      Text(
+                                        widget.number.startsWith('+') ? widget.number : '+${widget.number}',
+                                        style: AppText.poppins(size: 12, weight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.9)),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -399,12 +547,8 @@ class _ConversationScreenState extends State<ConversationScreen> {
                               var msgs = [...activeMsgs, ..._extra]
                                   .where((m) => m.type != 'dayBreakFlag')
                                   .toList();
-                              if (_searchQ.isNotEmpty) {
-                                final q = _searchQ.toLowerCase();
-                                msgs = msgs.where((m) => m.text.toLowerCase().contains(q)).toList();
-                              }
                               if (msgs.isEmpty) {
-                                return Center(child: Text(_searchQ.isNotEmpty ? 'No matches' : 'No messages yet', style: AppText.poppins(size: 14, weight: FontWeight.w600, color: AppColors.ink3)));
+                                return Center(child: Text('No messages yet', style: AppText.poppins(size: 14, weight: FontWeight.w600, color: AppColors.ink3)));
                               }
                               if (msgs.isNotEmpty && _needsScrollToBottom) {
                                 _needsScrollToBottom = false;
@@ -758,7 +902,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       children: [
                         const Icon(Icons.cloud_upload_outlined, size: 19, color: Colors.white),
                         const SizedBox(width: 8),
-                        Text('Send template', style: AppText.poppins(size: 15, weight: FontWeight.w800, color: Colors.white)),
+                        Text('Send Template', style: AppText.poppins(size: 15, weight: FontWeight.w800, color: Colors.white)),
                       ],
                     ),
                   ),
@@ -1299,6 +1443,15 @@ class _ConversationScreenState extends State<ConversationScreen> {
             : await picker.pickVideo(source: ImageSource.gallery);
         
         if (file == null) return;
+        final sizeInBytes = await file.length();
+        if (type == 'image' && sizeInBytes > 5 * 1024 * 1024) {
+          _snack('Image size must be below 5MB');
+          return;
+        } else if (type == 'video' && sizeInBytes > 16 * 1024 * 1024) {
+          _snack('Video size must be below 16MB');
+          return;
+        }
+
         fileBytes = await file.readAsBytes();
         filename = file.name;
         contentType = type == 'image' ? 'image/jpeg' : 'video/mp4';
@@ -1314,6 +1467,16 @@ class _ConversationScreenState extends State<ConversationScreen> {
         }
 
         final file = res.files.first;
+        final sizeInBytes = file.size;
+
+        if (type == 'audio' && sizeInBytes > 16 * 1024 * 1024) {
+          _snack('Audio size must be below 16MB');
+          return;
+        } else if (type != 'audio' && sizeInBytes > 16 * 1024 * 1024) {
+          _snack('Document size must be below 16MB');
+          return;
+        }
+
         final bytes = file.bytes;
         final path = file.path;
         
@@ -1441,6 +1604,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
         return;
       }
 
+      final sizeInBytes = await file.length();
+      if (sizeInBytes > 16 * 1024 * 1024) {
+        _snack('Audio size must be below 16MB');
+        return;
+      }
+
       final bytes = await file.readAsBytes();
       final filename = path.split('/').last;
 
@@ -1481,6 +1650,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
       final XFile? photo = await picker.pickImage(source: ImageSource.camera);
       if (photo == null) return;
       
+      final sizeInBytes = await photo.length();
+      if (sizeInBytes > 5 * 1024 * 1024) {
+        _snack('Image size must be below 5MB');
+        return;
+      }
+
       final bytes = await photo.readAsBytes();
       
       setState(() => _sending = true);
@@ -2936,7 +3111,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     if (t.contains('payment')) return _paymentBubble(m);
     if (t.contains('feedback') || t.contains('rating')) return _feedbackBubble(m);
     if (t.contains('reminder') || t.contains('system')) return _systemBubble(m);
-    return _wrap(m, Text(m.text.isEmpty ? '[${m.type}]' : m.text, style: AppText.poppins(size: 14.5, weight: FontWeight.w500, color: AppColors.ink, height: 1.35)));
+    return _wrap(m, _highlightText(m.text.isEmpty ? '[${m.type}]' : m.text, _searchQ, AppText.poppins(size: 14.5, weight: FontWeight.w500, color: AppColors.ink, height: 1.35)));
   }
 
   /// Common bubble shell with timestamp + ticks.
@@ -3510,6 +3685,17 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       Text(_fmtRs(totalAmount), style: AppText.poppins(size: 13.5, weight: FontWeight.w800, color: AppColors.ink)),
                     ],
                   ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(_fmt(m.timestamp, m.rawJson), style: AppText.poppins(size: 10.5, weight: FontWeight.w500, color: AppColors.ink4)),
+                      if (m.outgoing) ...[
+                        const SizedBox(width: 3),
+                        _tick(m.status),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   const Divider(height: 1, color: AppColors.line),
                   const SizedBox(height: 6),
@@ -3576,6 +3762,17 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(m.text.isEmpty ? 'Template message' : m.text, style: AppText.poppins(size: 14, weight: FontWeight.w500, color: AppColors.ink, height: 1.35)),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(_fmt(m.timestamp, m.rawJson), style: AppText.poppins(size: 10.5, weight: FontWeight.w500, color: AppColors.ink4)),
+                      if (m.outgoing) ...[
+                        const SizedBox(width: 3),
+                        _tick(m.status),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -3620,11 +3817,20 @@ class _ConversationScreenState extends State<ConversationScreen> {
     );
   }
 
-  String _fmt(DateTime? dt) {
-    if (dt == null) return '';
-    final l = dt.toLocal();
+  String _fmt(DateTime? dt, [Map<String, dynamic>? rawJson]) {
+    DateTime? target = dt;
+    if (target == null && rawJson != null) {
+      final raw = rawJson['createdAt'] ?? rawJson['timestamp'] ?? rawJson['time'] ?? rawJson['date'] ?? rawJson['publishedTime'];
+      if (raw != null) {
+        target = DateTime.tryParse(raw.toString());
+      }
+    }
+    target ??= DateTime.now();
+    final l = target.toLocal();
     final h = l.hour % 12 == 0 ? 12 : l.hour % 12;
-    return '$h:${l.minute.toString().padLeft(2, '0')} ${l.hour < 12 ? 'AM' : 'PM'}';
+    final min = l.minute.toString().padLeft(2, '0');
+    final amPm = l.hour < 12 ? 'AM' : 'PM';
+    return '$h:$min $amPm';
   }
 }
 

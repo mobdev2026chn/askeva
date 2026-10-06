@@ -15,7 +15,6 @@ import 'package:http/http.dart' as http;
 import '../api/app_scope.dart';
 import '../api/dto.dart';
 import '../api/gemini_config.dart';
-import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../shell/app_nav.dart';
 import '../shell/app_sidebar.dart';
@@ -71,7 +70,9 @@ class _LeadsScreenState extends State<LeadsScreen> {
   final Map<String, int> _lifecycle = {}; // leadId -> 0 active / 1 at-risk / 2 churned
   final Map<String, String> _statusOverride = {}; // leadId -> kanban status label
 
-  List<String> _agentNames() => MockData.agents.map((a) => a.name).toList();
+  List<String> _leadAgentEmails = [];
+
+  List<String> _agentNames() => _leadAgentEmails;
   List<String> _companyNames(LeadsPage p) => (p.leads.map((l) => l.company).where((c) => c.trim().isNotEmpty).toSet().toList()..sort());
   List<String> _sourceNames(LeadsPage p) => (p.leads.map((l) => l.source).where((s) => s.trim().isNotEmpty).toSet().toList()..sort());
 
@@ -97,9 +98,32 @@ class _LeadsScreenState extends State<LeadsScreen> {
       _offlineCards = await repo.getOfflineCards();
     } catch (_) {}
 
+    // Load lead-permitted agents for assignment / reminder / filter dropdowns
+    _loadLeadAgents();
+
     final page = await repo.fetchLeads(q: _query, limit: 500);
     kTotalLeadsCount.value = page.total;
     return page;
+  }
+
+  /// Fetch only agents who have Leads module access and cache in [_leadAgentEmails].
+  Future<void> _loadLeadAgents() async {
+    try {
+      final agentsRepo = AppScope.of(context).agents;
+      final agentsData = await agentsRepo.fetchLeadAgents();
+
+      final names = <String>[];
+      for (final a in agentsData) {
+        final agentName = getAgentDisplayName(a);
+        if (agentName.isEmpty) continue;
+
+        if (isLeadPermittedAgent(a)) {
+          if (!names.contains(agentName)) names.add(agentName);
+        }
+      }
+
+      if (mounted) setState(() => _leadAgentEmails = names);
+    } catch (_) {}
   }
 
   bool _matchesQuery(LeadDto l) {
@@ -181,6 +205,12 @@ class _LeadsScreenState extends State<LeadsScreen> {
       title: 'Leads',
       onMenu: nav.openDrawer,
       actions: [
+        GlassIconButton(
+          icon: Icons.qr_code_scanner_rounded,
+          tooltip: 'Scan Card',
+          onTap: _openCameraAutoScanner,
+        ),
+       // const SizedBox(width: 8),
         Stack(
           clipBehavior: Clip.none,
           children: [
@@ -251,17 +281,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
       sheet: _top == 2
           ? LeadsSettingsView(tab: _settingsSub, onChanged: (i) => setState(() => _settingsSub = i))
           : _top == 0
-              ? Stack(
-                  children: [
-                    _dashboardView(),
-                    if (_dashboardSub == 0)
-                      Positioned(
-                        right: 18,
-                        bottom: 18,
-                        child: _ScanCardFab(onTap: _openCameraAutoScanner),
-                      ),
-                  ],
-                )
+              ? _dashboardView()
               : Stack(
                   children: [
                     RefreshIndicator(
@@ -645,12 +665,14 @@ class _LeadsScreenState extends State<LeadsScreen> {
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) {
+          final safeBottom = MediaQuery.of(ctx).padding.bottom;
+          final viewInsetBottom = MediaQuery.of(ctx).viewInsets.bottom;
           return Container(
             decoration: const BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
             ),
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + safeBottom + viewInsetBottom),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -3940,7 +3962,7 @@ class _DashboardFilterSheetState extends State<_DashboardFilterSheet> {
     final agentsRepo = AppScope.of(context).agents;
     final leadsRepo = AppScope.of(context).leads;
     try {
-      final agentsData = await agentsRepo.fetchAgents();
+      final agentsData = await agentsRepo.fetchLeadAgents();
       final rolesData = await agentsRepo.fetchRoles().catchError((_) => <Map<String, dynamic>>[]);
       final fields = await leadsRepo.fetchFieldOptions();
 
@@ -3960,38 +3982,14 @@ class _DashboardFilterSheetState extends State<_DashboardFilterSheet> {
 
       final filteredAgents = <Map<String, dynamic>>[];
       for (final a in agentsData) {
-        final status = (a['status'] ?? '').toString().toLowerCase();
-        if (status == 'inactive' || status == 'disabled' || status == 'suspended') continue;
-
-        final role = (a['role'] ?? a['role_name'] ?? '').toString().trim().toLowerCase();
-        final bool isSuperAdmin = role == 'superadmin' || role == 'admin' || role == 'owner';
-        final bool isLeadRole = leadRoleNames.contains(role) || role.contains('lead') || role.contains('admin') || role.contains('manager');
-        final bool hasExplicitLeadPerm = a['leadAccess'] == true || a['hasLeadAccess'] == true || a['leadsAccess'] == true || a['canAccessLeads'] == true;
-
-        bool hasAgentMapLeadPerm = false;
-        final agentPerms = a['permissions'] as Map?;
-        if (agentPerms != null) {
-          final lm = agentPerms['leadsMain'] ?? agentPerms['leads'] ?? agentPerms['leadsDashboard'] ?? agentPerms['lead'];
-          if (lm != null && lm.toString() != '[]' && lm.toString() != '{}' && lm.toString() != 'false' && lm.toString() != 'null') {
-            hasAgentMapLeadPerm = true;
-          }
-        }
-
-        if (isSuperAdmin || isLeadRole || hasExplicitLeadPerm || hasAgentMapLeadPerm) {
+        if (isLeadPermittedAgent(a)) {
           filteredAgents.add(a);
         }
       }
 
-      final finalAgents = filteredAgents.isNotEmpty
-          ? filteredAgents
-          : agentsData.where((a) {
-              final status = (a['status'] ?? '').toString().toLowerCase();
-              return status != 'inactive' && status != 'disabled' && status != 'suspended';
-            }).toList();
-
       if (!context.mounted) return;
       setState(() {
-        _agents = finalAgents;
+        _agents = filteredAgents;
         _sources = fields['source'] ?? ['Website', 'Referral', 'Social Media'];
         _statuses = fields['status'] ?? ['New Lead', 'Hot', 'Warm', 'Cold', 'Converted'];
         _loading = false;
@@ -4289,14 +4287,17 @@ class _CompanyCustomersScreenState extends State<_CompanyCustomersScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          Row(
-            children: [
-              _tabBtn('Customers (${widget.leads.length})', 0),
-              const SizedBox(width: 20),
-              _tabBtn('Appointments (${_companyAppointments.length})', 1),
-              const SizedBox(width: 20),
-              _tabBtn('Ticketing (${_companyTickets.length})', 2),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _tabBtn('Customers (${widget.leads.length})', 0),
+                const SizedBox(width: 20),
+                _tabBtn('Appointments (${_companyAppointments.length})', 1),
+                const SizedBox(width: 20),
+                _tabBtn('Ticketing (${_companyTickets.length})', 2),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           if (_loading)

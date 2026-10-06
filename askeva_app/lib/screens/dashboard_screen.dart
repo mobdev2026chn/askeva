@@ -8,6 +8,7 @@ import 'notification_settings_screen.dart';
 import 'profile_screen.dart';
 import '../shell/app_nav.dart';
 import '../shell/app_sidebar.dart';
+import '../theme/app_assets.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/common.dart';
@@ -124,22 +125,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _fetchInitialUnread() async {
     try {
       final s = AppScope.of(context);
-      final count = await s.notifications.fetchUnreadCount();
-      kNotificationUnreadCount.value = count;
-
-      await refreshUnreadChatsCount(context);
-
-      final leadsPage = await s.leads.fetchLeads(limit: 1);
-      kTotalLeadsCount.value = leadsPage.total;
+      await Future.wait([
+        s.notifications.fetchUnreadCount().then((count) => kNotificationUnreadCount.value = count).catchError((_, __) => 0),
+        refreshUnreadChatsCount(context).catchError((_, __) {}),
+        s.leads.fetchLeads(limit: 1).then((leadsPage) => kTotalLeadsCount.value = leadsPage.total).catchError((_, __) => 0),
+      ]);
     } catch (_) {}
   }
 
   Future<void> _handleRefresh() async {
     try {
       final s = AppScope.of(context);
-      await s.auth.fetchProfile();
-      await _loadUserPlan();
-      await _fetchInitialUnread();
+      await Future.wait([
+        s.auth.fetchProfile().catchError((_, __) => <String, dynamic>{}),
+        _loadUserPlan(),
+        _fetchInitialUnread(),
+      ]);
     } catch (_) {}
     if (mounted) {
       setState(() {
@@ -374,14 +375,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  bool _initialDataLoaded = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _fetchInitialUnread();
-    _loadUserPlan();
-    AppScope.of(context).auth.fetchProfile().then((_) {
+    if (!_initialDataLoaded) {
+      _initialDataLoaded = true;
+      _loadDashboardInitialData();
+    }
+  }
+
+  Future<void> _loadDashboardInitialData() async {
+    try {
+      final s = AppScope.of(context);
+      await Future.wait([
+        s.auth.fetchProfile().catchError((_, __) => <String, dynamic>{}),
+        _loadUserPlan(),
+        _fetchInitialUnread(),
+      ]);
       if (mounted) setState(() {});
-    }).catchError((_) {});
+    } catch (_) {}
   }
 
   Future<void> _loadUserPlan() async {
@@ -396,12 +410,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _planCard(BuildContext context, AppNav nav, Map<String, dynamic> p) {
+    final sess = AppScope.of(context).session;
     final profilePlan = (p['plan'] is Map) ? (p['plan'] as Map).cast<String, dynamic>() : const <String, dynamic>{};
     final rawName = (_userPlan?.name ?? profilePlan['name'] ?? 'ecommerce').toString();
     final planName = rawName.toUpperCase();
     final rawValidity = (_userPlan?.validity ?? profilePlan['validity'] ?? '').toString();
-    final isUnlimited = rawValidity.toLowerCase() == 'unlimited' ||
-        rawName.toLowerCase().contains('unlimited');
+    final isEcommerce = rawName.toLowerCase().contains('ecommerce') || rawName.toLowerCase() == 'ecommerce' || sess.planName.contains('ecommerce');
+    final isUnlimited = rawValidity.toLowerCase() == 'unlimited' || rawName.toLowerCase().contains('unlimited') || sess.isEcommerceUnlimited || isEcommerce;
+    final isHighestUnlimited = isEcommerce || sess.isEcommerceUnlimited;
+
     String formattedValidity = rawValidity;
     if (rawValidity.isNotEmpty && !rawValidity.contains('/')) {
       final dt = DateTime.tryParse(rawValidity);
@@ -432,40 +449,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const Spacer(),
-          Material(
-            color: isUnlimited ? Colors.white.withValues(alpha: 0.45) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
+          if (!isHighestUnlimited)
+            Material(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(12),
-              onTap: isUnlimited
-                  ? null
-                  : () async {
-                      kProfileInitialTab = ProfileTab.subscription;
-                      nav.goTo(AppRoute.profile);
-                      if (mounted) {
-                        try {
-                          await AppScope.of(context).auth.fetchProfile();
-                          setState(() {});
-                        } catch (_) {}
-                      }
-                    },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                alignment: Alignment.center,
-                child: Text(
-                  'Renew Now',
-                  style: AppText.poppins(
-                    size: 13,
-                    weight: FontWeight.w600,
-                    color: isUnlimited
-                        ? AppColors.evaGreenDeep.withValues(alpha: 0.5)
-                        : AppColors.evaGreenDeep,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () async {
+                  kProfileInitialTab = ProfileTab.subscription;
+                  nav.goTo(AppRoute.profile);
+                  if (mounted) {
+                    try {
+                      await AppScope.of(context).auth.fetchProfile();
+                      setState(() {});
+                    } catch (_) {}
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Renew Now',
+                    style: AppText.poppins(
+                      size: 13,
+                      weight: FontWeight.w700,
+                      color: AppColors.evaGreenDeep,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -629,11 +643,25 @@ class _SummaryCardState extends State<_SummaryCard> with AutomaticKeepAliveClien
   Future<void> _load() async {
     try {
       final auth = AppScope.of(context).auth;
+      final now = DateTime.now();
+      final past = now.subtract(const Duration(days: 90));
+      final fmt = (DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      final startStr = _range != null ? fmt(_range!.start) : fmt(past);
+      final endStr = _range != null ? fmt(_range!.end) : fmt(now);
+
       final data = widget.isApi
-          ? await auth.fetchApiBroadcastChart(startDate: '2000-01-01', endDate: '2100-01-01')
-          : await auth.fetchBroadcastChart(startDate: '2000-01-01', endDate: '2100-01-01');
+          ? await auth.fetchApiBroadcastChart(startDate: startStr, endDate: endStr)
+          : await auth.fetchBroadcastChart(startDate: startStr, endDate: endStr);
       if (mounted) setState(() { _all = data; _error = null; });
     } catch (e) {
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('expired') || errStr.contains('401') || errStr.contains('unauthorized')) {
+        if (mounted) {
+          try {
+            AppScope.of(context).client.handleSessionExpired();
+          } catch (_) {}
+        }
+      }
       if (mounted) setState(() => _error = e.toString());
     }
   }
@@ -785,39 +813,33 @@ class _SummaryCardState extends State<_SummaryCard> with AutomaticKeepAliveClien
             ],
           ),
           const SizedBox(height: 6),
-          if (_all == null && _error != null)
-            SizedBox(
-              height: 150,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    _error!.contains('expired') || _error!.contains('401')
-                        ? 'Session expired — please sign out and sign in again.'
-                        : "Couldn't load data: $_error",
-                    textAlign: TextAlign.center,
-                    style: AppText.poppins(size: 12, weight: FontWeight.w600, color: AppColors.danger),
-                  ),
-                ),
-              ),
-            )
+          if (_all == null && _error != null) ...[
+            Builder(
+              builder: (ctx) {
+                final errStr = _error!.toLowerCase();
+                if (errStr.contains('expired') || errStr.contains('401') || errStr.contains('unauthorized')) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    try {
+                      AppScope.of(ctx).client.handleSessionExpired();
+                    } catch (_) {}
+                  });
+                }
+                return const SizedBox(height: 150, child: Center(child: CircularProgressIndicator(color: AppColors.evaGreen)));
+              },
+            ),
+          ]
           else if (_all == null)
             const SizedBox(height: 150, child: Center(child: CircularProgressIndicator(color: AppColors.evaGreen)))
           else
             TrendChart(
-              series: trendSeriesFromData(
-                sent: d?.sentDaily ?? const <int>[],
-                delivered: d?.deliveredDaily ?? const <int>[],
-                read: d?.readDaily ?? const <int>[],
-              ),
-              dates: d?.dates
+              sentValues: d?.sentDaily ?? const <int>[],
+              deliveredValues: d?.deliveredDaily ?? const <int>[],
+              readValues: d?.readDaily ?? const <int>[],
+              dates: (d?.dates ?? [])
                   .map((dt) => dt.year > 2000
                       ? '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}'
                       : '')
                   .toList(),
-              sentValues: d?.sentDaily,
-              deliveredValues: d?.deliveredDaily,
-              readValues: d?.readDaily,
               labels: d?.labels,
             ),
         ],
@@ -1149,8 +1171,11 @@ class DashboardProfileAvatar extends StatelessWidget {
     final session = AppScope.sessionOf(context);
     final profile = session.profile;
     final imgUrlRaw = (profile?['profile_picture_url'] ?? profile?['whatsAppDisplayImage'])?.toString().trim();
-    final isLogoUrl = imgUrlRaw != null && (imgUrlRaw.toLowerCase().contains('askeva') || imgUrlRaw.toLowerCase().contains('logo'));
-    final imgUrl = (imgUrlRaw != null && imgUrlRaw.isNotEmpty && imgUrlRaw.startsWith('http') && !isLogoUrl) ? imgUrlRaw : null;
+    final bool isLogoUrl = imgUrlRaw != null &&
+        (imgUrlRaw.toLowerCase().contains('askeva') ||
+            imgUrlRaw.toLowerCase().contains('logo') ||
+            imgUrlRaw.toLowerCase().contains('brand'));
+    final imgUrl = (imgUrlRaw != null && imgUrlRaw.isNotEmpty && imgUrlRaw.startsWith('http')) ? imgUrlRaw : null;
     final userName = (profile?['name'] ?? profile?['username'] ?? session.username ?? '').toString();
     final initials = userName.isNotEmpty
         ? userName.trim().split(' ').where((s) => s.isNotEmpty).take(2).map((w) => w[0].toUpperCase()).join()
@@ -1166,32 +1191,31 @@ class DashboardProfileAvatar extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.evaGreenDeep,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.75), width: 1.5),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.85), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           clipBehavior: Clip.antiAlias,
-          child: imgUrl != null
-              ? Image.network(
-                  imgUrl,
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: AppColors.evaGreenDeep,
+          child: (imgUrl != null && !isLogoUrl)
+              ? Transform.scale(
+                  scale: 1.25,
+                  child: Image.network(
+                    imgUrl,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
                     alignment: Alignment.center,
-                    child: Text(
-                      initials,
-                      style: AppText.poppins(size: 14, weight: FontWeight.w800, color: Colors.white),
-                    ),
+                    errorBuilder: (_, __, ___) => Image.asset(AppAssets.logoWhite, fit: BoxFit.cover),
                   ),
                 )
-              : Container(
-                  color: AppColors.evaGreenDeep,
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: AppText.poppins(size: 14, weight: FontWeight.w800, color: Colors.white),
-                  ),
+              : Transform.scale(
+                  scale: 1.25,
+                  child: Image.asset(AppAssets.logoWhite, fit: BoxFit.cover),
                 ),
         ),
       ),
@@ -1199,3 +1223,66 @@ class DashboardProfileAvatar extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SemiGauge – semi-circle progress arc for the Message Limit card
+// ─────────────────────────────────────────────────────────────────────────────
+
+class SemiGauge extends StatelessWidget {
+  final double percent; // 0.0 – 1.0
+  final String centerLabel;
+
+  const SemiGauge({super.key, required this.percent, required this.centerLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 120,
+      height: 72,
+      child: CustomPaint(
+        painter: _SemiGaugePainter(percent.clamp(0.0, 1.0)),
+        child: Align(
+          alignment: const Alignment(0, 1.2),
+          child: Text(
+            centerLabel,
+            style: AppText.poppins(size: 14, weight: FontWeight.w700, color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SemiGaugePainter extends CustomPainter {
+  final double percent;
+  const _SemiGaugePainter(this.percent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const strokeW = 10.0;
+    final rect = Rect.fromLTWH(
+      strokeW / 2,
+      strokeW / 2,
+      size.width - strokeW,
+      (size.height - strokeW / 2) * 2,
+    );
+    // Track arc
+    canvas.drawArc(rect, 3.14159, 3.14159, false,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.25)
+        ..strokeWidth = strokeW
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round);
+    // Progress arc
+    if (percent > 0) {
+      canvas.drawArc(rect, 3.14159, 3.14159 * percent, false,
+        Paint()
+          ..color = Colors.white
+          ..strokeWidth = strokeW
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SemiGaugePainter o) => o.percent != percent;
+}

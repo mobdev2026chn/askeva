@@ -11,6 +11,7 @@ Future<void> showNewAppointmentSheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (_) => const _NewAppointmentSheet(),
   );
@@ -34,6 +35,11 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
   final _desc = TextEditingController();
   final _bio = TextEditingController();
 
+  // Overlay for name suggestions (floats over form like web app dropdown)
+  final _nameLayerLink = LayerLink();
+  final _nameFocus = FocusNode();
+  OverlayEntry? _nameOverlay;
+
   DateTime? _dob;
   List<Map<String, dynamic>> _allAgents = [];
   List<String> _departments = [];
@@ -51,6 +57,7 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
   List<Map<String, dynamic>> _nameSuggestions = [];
   List<Map<String, dynamic>> _numberSuggestions = [];
   Map<String, int> _bookedSlotCounts = {};
+  List<Map<String, dynamic>> _bookingFields = [];
 
   @override
   void initState() {
@@ -87,24 +94,50 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
   Future<void> _loadData() async {
     try {
       final scope = AppScope.of(context);
-      final list = await scope.agents.fetchAgents();
+      // Fetch only agents configured for the Appointment module (matches web app)
+      final list = await scope.agents.fetchModuleAgents('appointment');
       final countriesList = await scope.compose.fetchCountries();
 
-      final activeAgents = list.where((m) => (m['status'] ?? m['active'] ?? true) != false).toList();
-      final depts = activeAgents
-          .map((m) {
-            final config = m['config'];
-            if (config is Map) {
-              final appointment = config['appointment'];
-              if (appointment is Map) {
-                return appointment['department']?.toString();
+      try {
+        final config = await scope.appointments.fetchBookingConfiguration();
+        final data = config['data'] ?? config;
+        final rawFields = data['bookingFields'];
+        if (rawFields is List) {
+          _bookingFields = rawFields.whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
+        }
+      } catch (_) {}
+
+      final activeAgents = list.where((m) {
+        final statusVal = m['status'] ?? m['active'];
+        if (statusVal == null) return true;
+        final sStr = statusVal.toString().toLowerCase().trim();
+        return sStr != 'false' && sStr != '0' && sStr != 'inactive' && sStr != 'disabled';
+      }).toList();
+
+      final Set<String> deptsSet = {};
+      for (final m in activeAgents) {
+        final d = _agentDept(m);
+        if (d.isNotEmpty) deptsSet.add(d);
+      }
+
+      try {
+        final config = await scope.appointments.fetchBookingConfiguration();
+        final data = config['data'] ?? config;
+        final confDepts = data['departments'] ?? data['departmentList'];
+        if (confDepts is List) {
+          for (final cd in confDepts) {
+            if (cd != null && cd.toString().trim().isNotEmpty) {
+              final dStr = cd.toString().trim();
+              if (dStr.toLowerCase() != 'superadmin' && dStr.toLowerCase() != 'superagent' && dStr.toLowerCase() != 'agent' && dStr.toLowerCase() != 'admin') {
+                deptsSet.add(dStr);
               }
             }
-            return null;
-          })
-          .whereType<String>()
-          .toSet()
-          .toList();
+          }
+        }
+      } catch (_) {}
+
+      final depts = deptsSet.toList();
+      if (depts.isEmpty) depts.add('Test');
 
       CountryDto? defaultCountry;
       if (countriesList.isNotEmpty) {
@@ -121,13 +154,10 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
           _departments = depts;
           _countries = countriesList;
           _selectedCountry = defaultCountry;
-          if (depts.isNotEmpty) {
-            _selectedDept = depts.first;
-            final deptAgents = _allAgents.where((a) => _agentDept(a) == _selectedDept).toList();
-            if (deptAgents.isNotEmpty) {
-              _selectedAgentObj = deptAgents.first;
-            }
-          }
+          final deptAgents = _selectedDept != null
+              ? _allAgents.where((a) => _agentMatchesDepartment(a, _selectedDept!)).toList()
+              : _allAgents;
+          _selectedAgentObj = deptAgents.isNotEmpty ? deptAgents.first : (_allAgents.isNotEmpty ? _allAgents.first : null);
           _loading = false;
         });
 
@@ -284,19 +314,57 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
     }
   }
 
-  String? _agentDept(Map<String, dynamic> agent) {
+  bool _agentMatchesDepartment(Map<String, dynamic> agent, String targetDept) {
+    if (targetDept.trim().isEmpty) return true;
+    final target = targetDept.trim().toLowerCase();
+
     final config = agent['config'];
     if (config is Map) {
       final appointment = config['appointment'];
       if (appointment is Map) {
-        return appointment['department']?.toString();
+        final d = appointment['department'];
+        final ds = appointment['departments'];
+        if (d is String && (d.toLowerCase().trim() == target || d.toLowerCase().contains(target))) return true;
+        if (ds is List && ds.any((item) => item.toString().toLowerCase().trim() == target || item.toString().toLowerCase().contains(target))) return true;
+      }
+      final dsConfig = config['departments'];
+      if (dsConfig is List && dsConfig.any((item) => item.toString().toLowerCase().trim() == target || item.toString().toLowerCase().contains(target))) return true;
+    }
+
+    final rawDept = agent['department'] ?? agent['departments'] ?? agent['department_field'] ?? agent['dept'] ?? agent['department_name'];
+    if (rawDept is List) {
+      return rawDept.any((d) => d.toString().trim().toLowerCase() == target || d.toString().trim().toLowerCase().contains(target));
+    }
+    if (rawDept != null) {
+      final dStr = rawDept.toString().trim().toLowerCase();
+      if (dStr.isNotEmpty && (dStr == target || dStr.contains(target))) return true;
+    }
+
+    return false;
+  }
+
+  String _agentDept(Map<String, dynamic> agent) {
+    final config = agent['config'];
+    if (config is Map) {
+      final appointment = config['appointment'];
+      if (appointment is Map && appointment['department'] != null && appointment['department'].toString().trim().isNotEmpty) {
+        return appointment['department'].toString().trim();
       }
     }
-    return null;
+    final direct = agent['department'] ?? agent['department_name'] ?? agent['dept'];
+    if (direct != null && direct.toString().trim().isNotEmpty) {
+      final dStr = direct.toString().trim();
+      if (dStr.toLowerCase() != 'superadmin' && dStr.toLowerCase() != 'superagent' && dStr.toLowerCase() != 'agent' && dStr.toLowerCase() != 'admin') {
+        return dStr;
+      }
+    }
+    return '';
   }
 
   @override
   void dispose() {
+    _removeNameOverlay();
+    _nameFocus.dispose();
     _name.dispose();
     _mobile.dispose();
     _email.dispose();
@@ -304,6 +372,116 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
     _desc.dispose();
     _bio.dispose();
     super.dispose();
+  }
+
+  // ── Overlay helpers ────────────────────────────────────────────────────────
+
+  void _removeNameOverlay() {
+    _nameOverlay?.remove();
+    _nameOverlay = null;
+  }
+
+  void _showNameOverlay() {
+    _removeNameOverlay();
+    if (_nameSuggestions.isEmpty) return;
+
+    final overlay = Overlay.of(context);
+    _nameOverlay = OverlayEntry(
+      builder: (_) => Positioned(
+        width: MediaQuery.of(context).size.width - 36, // 18 padding each side
+        child: CompositedTransformFollower(
+          link: _nameLayerLink,
+          showWhenUnlinked: false,
+          offset: const Offset(0, 54),
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.line),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 220),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: _nameSuggestions.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.line),
+                    itemBuilder: (context, i) {
+                      final item = _nameSuggestions[i];
+                      final name = (item['name'] ?? item['patientName'] ?? item['customerName'] ?? '').toString();
+                      final number = (item['fullMobile'] ?? item['mobileNumber'] ?? item['mobile'] ?? item['phone'] ?? '').toString();
+                      return InkWell(
+                        onTap: () {
+                          _selectCustomer(item);
+                          _removeNameOverlay();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 34,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.evaGreen50,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: Text(
+                                  _ini(name.isNotEmpty ? name : '?'),
+                                  style: AppText.poppins(size: 12.5, weight: FontWeight.w800, color: AppColors.evaGreenDeep),
+                                ),
+                              ),
+                              const SizedBox(width: 11),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: AppText.poppins(size: 13, weight: FontWeight.w700, color: AppColors.ink),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (number.isNotEmpty)
+                                      Text(
+                                        number,
+                                        style: AppText.poppins(size: 11, weight: FontWeight.w500, color: AppColors.ink3),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.north_west_rounded, size: 14, color: AppColors.ink4),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(_nameOverlay!);
   }
 
   Future<void> _pickDob() async {
@@ -341,10 +519,11 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
   void _pickDepartment() {
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
+      builder: (ctx) => Container(
         decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+        padding: EdgeInsets.fromLTRB(18, 18, 18, 28 + MediaQuery.of(ctx).padding.bottom),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Select Department', style: AppText.poppins(size: 15.5, weight: FontWeight.w800, color: AppColors.ink)),
           const SizedBox(height: 8),
@@ -362,7 +541,7 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
                         onTap: () {
                           setState(() {
                             _selectedDept = d;
-                            final deptAgents = _allAgents.where((a) => _agentDept(a) == d).toList();
+                            final deptAgents = _allAgents.where((a) => _agentMatchesDepartment(a, d)).toList();
                             _selectedAgentObj = deptAgents.isNotEmpty ? deptAgents.first : null;
                             _slot = -1; // Reset slot
                           });
@@ -381,17 +560,21 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
   }
 
   void _pickAgent() {
-    if (_selectedDept == null) {
-      appToast(context, 'Please select a department first', isError: true);
+    final deptAgents = _selectedDept != null
+        ? _allAgents.where((a) => _agentMatchesDepartment(a, _selectedDept!)).toList()
+        : _allAgents;
+    final agentsToDisplay = deptAgents;
+    if (agentsToDisplay.isEmpty) {
+      appToast(context, 'No agents configured for $_selectedDept department', isError: true);
       return;
     }
-    final deptAgents = _allAgents.where((a) => _agentDept(a) == _selectedDept).toList();
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
+      builder: (ctx) => Container(
         decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+        padding: EdgeInsets.fromLTRB(18, 18, 18, 28 + MediaQuery.of(ctx).padding.bottom),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Select Agent', style: AppText.poppins(size: 15.5, weight: FontWeight.w800, color: AppColors.ink)),
           const SizedBox(height: 8),
@@ -399,12 +582,13 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  for (final a in deptAgents)
+                  for (final a in agentsToDisplay)
                     Material(
                       color: Colors.transparent,
                       child: ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text((a['username'] ?? a['name'] ?? '').toString(), style: AppText.poppins(size: 14, weight: FontWeight.w600, color: AppColors.ink)),
+                        title: Text((a['username'] ?? a['name'] ?? a['displayName'] ?? 'Agent').toString(), style: AppText.poppins(size: 14, weight: FontWeight.w600, color: AppColors.ink)),
+                        subtitle: a['role'] != null ? Text(a['role'].toString(), style: AppText.poppins(size: 11, color: AppColors.ink3)) : null,
                         trailing: _selectedAgentObj == a ? const Icon(Icons.check_rounded, color: AppColors.evaGreen) : null,
                         onTap: () {
                           setState(() {
@@ -434,10 +618,11 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
     if (_countries.isEmpty) return;
     showModalBottomSheet(
       context: context,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
+      builder: (ctx) => Container(
         decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+        padding: EdgeInsets.fromLTRB(18, 18, 18, 28 + MediaQuery.of(ctx).padding.bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -474,24 +659,55 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
     );
   }
 
-  Future<void> _onNameChanged(String val) async {
-    if (val.trim().length < 2) {
-      setState(() {
-        _nameSuggestions = [];
-      });
-      return;
-    }
+  Future<void> _fetchNameSuggestions([String query = '']) async {
+    final q = query.trim().toLowerCase();
+    List<Map<String, dynamic>> results = [];
+
+    // 1. Fetch suggestions from backend API
     try {
-      final suggestions = await AppScope.of(context).appointments.fetchCustomerSuggestions(
+      final apiResults = await AppScope.of(context).appointments.fetchCustomerSuggestions(
         type: 'name',
-        value: val,
+        value: query.trim(),
       );
-      if (mounted) {
-        setState(() {
-          _nameSuggestions = suggestions;
+      if (apiResults.isNotEmpty) {
+        results.addAll(apiResults);
+      }
+    } catch (_) {}
+
+    // 2. Also search local appointments dataset for existing customers
+    try {
+      final localAppts = await AppScope.of(context).appointments.fetchAppointments().catchError((_) => <AppointmentDto>[]);
+      final Set<String> seen = results.map((r) => (r['name'] ?? r['patientName'] ?? '').toString().toLowerCase().trim()).toSet();
+      for (final apt in localAppts) {
+        if (apt.name.isEmpty) continue;
+        final nLower = apt.name.trim().toLowerCase();
+        final mLower = apt.mobile.trim().toLowerCase();
+        if (q.isNotEmpty && !nLower.contains(q) && !mLower.contains(q)) continue;
+        if (seen.contains(nLower)) continue;
+        seen.add(nLower);
+        results.add({
+          'name': apt.name,
+          'mobile': apt.mobile,
+          'fullMobile': apt.mobile,
+          'email': apt.rawJson['email'] ?? '',
+          'age': apt.rawJson['age'] ?? '',
+          'dob': apt.rawJson['dob'] ?? '',
         });
       }
     } catch (_) {}
+
+    if (mounted) {
+      setState(() => _nameSuggestions = results.take(10).toList());
+      if (_nameFocus.hasFocus && _nameSuggestions.isNotEmpty) {
+        _showNameOverlay();
+      } else {
+        _removeNameOverlay();
+      }
+    }
+  }
+
+  void _onNameChanged(String val) {
+    _fetchNameSuggestions(val);
   }
 
   Future<void> _onMobileChanged(String val) async {
@@ -515,6 +731,7 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
   }
 
   void _selectCustomer(Map<String, dynamic> customer) {
+    _removeNameOverlay();
     setState(() {
       _name.text = (customer['name'] ?? '').toString();
       _email.text = (customer['email'] ?? '').toString();
@@ -551,6 +768,8 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
       _nameSuggestions = [];
       _numberSuggestions = [];
     });
+    // Dismiss keyboard after selection
+    _nameFocus.unfocus();
   }
 
   Widget _suggestionList(List<Map<String, dynamic>> items) {
@@ -687,9 +906,41 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
     if (_selectedDept == null) return err('Select a department');
     if (_selectedAgentObj == null) return err('Select an agent');
 
+    // Validate mandatory fields configured in booking form settings (Age, DOB, Description, Email, etc.)
+    for (final f in _bookingFields) {
+      final isMandatory = f['mandatory'] == true || f['isMandatory'] == true || f['required'] == true;
+      if (!isMandatory) continue;
+
+      final label = (f['fieldLabel'] ?? f['name'] ?? f['label'] ?? f['fieldKey'] ?? '').toString();
+      final normKey = (f['fieldKey'] ?? f['key'] ?? f['name'] ?? f['fieldLabel'] ?? '').toString().toLowerCase();
+
+      if (normKey.contains('age') || normKey == 'age') {
+        if (_age.text.trim().isEmpty) {
+          return err('Please enter $label');
+        }
+      } else if (normKey.contains('dob') || normKey.contains('birth') || normKey == 'dob') {
+        if (_dob == null) {
+          return err('Please select $label');
+        }
+      } else if (normKey.contains('desc') || normKey == 'description') {
+        if (_desc.text.trim().isEmpty) {
+          return err('Please enter $label');
+        }
+      } else if (normKey.contains('email') || normKey == 'email') {
+        if (_email.text.trim().isEmpty) {
+          return err('Please enter $label');
+        }
+      } else if (normKey.contains('bio') || normKey == 'bio') {
+        if (_bio.text.trim().isEmpty) {
+          return err('Please enter $label');
+        }
+      }
+    }
+
     final date = _days[_day].$3;
     final dateStr = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
+    final now = DateTime.now();
     final body = <String, dynamic>{
       'name': _name.text.trim(),
       'mobile': '$dial${rawMobile.replaceAll(RegExp(r'\D'), '')}',
@@ -705,6 +956,7 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
       'mode': _mode == 0 ? 'Virtual' : 'Manual',
       'status': 'current',
       'payment': _payType == 0 ? 'prepaid' : 'postpaid',
+      'createdAt': DateTime.now().toUtc().toIso8601String(),
       if (_desc.text.trim().isNotEmpty) 'description': _desc.text.trim(),
       if (_bio.text.trim().isNotEmpty) 'bio': _bio.text.trim(),
     };
@@ -746,14 +998,21 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
               children: [
-                 _label('Name'),
-                _input(
-                  'Search existing customer or enter name',
-                  icon: Icons.person_outline_rounded,
-                  controller: _name,
-                  onChanged: _onNameChanged,
+                _label('Name', mandatory: true),
+                // The name field uses a floating overlay dropdown (like web app)
+                CompositedTransformTarget(
+                  link: _nameLayerLink,
+                  child: _inputWithFocus(
+                    'Search existing customer or enter name',
+                    icon: Icons.person_outline_rounded,
+                    controller: _name,
+                    focusNode: _nameFocus,
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'))],
+                    onChanged: _onNameChanged,
+                    onFocusGained: () => _fetchNameSuggestions(_name.text),
+                    onFocusLost: _removeNameOverlay,
+                  ),
                 ),
-                _suggestionList(_nameSuggestions),
                 Row(children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_label('Age'), _input('Age', controller: _age, keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly])])),
                   const SizedBox(width: 12),
@@ -761,7 +1020,7 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _label('Date of Birth'),
+                        _label('Date of Birth', mandatory: true),
                         GestureDetector(
                           onTap: _pickDob,
                           child: Container(
@@ -783,7 +1042,7 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
                     ),
                   ),
                 ]),
-                _label('Mobile Number'),
+                _label('Mobile Number', mandatory: true),
                 Row(children: [
                   GestureDetector(
                     onTap: _pickCountry,
@@ -814,12 +1073,12 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
                 _suggestionList(_numberSuggestions),
                 _label('Email Address'),
                 _input('Enter email address', icon: Icons.mail_outline_rounded, controller: _email),
-                _label('Department'),
+                _label('Department', mandatory: true),
                 GestureDetector(
                   onTap: _pickDepartment,
                   child: _selectRow(Icons.home_outlined, _selectedDept ?? 'Select Department'),
                 ),
-                _label('Select User'),
+                _label('Select User', mandatory: true),
                 GestureDetector(
                   onTap: _pickAgent,
                   child: _selectRow(
@@ -831,7 +1090,7 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
                         : null,
                   ),
                 ),
-                _label('Appointment Date'),
+                _label('Appointment Date', mandatory: true),
                 SizedBox(
                   height: 64,
                   child: ListView.separated(
@@ -861,7 +1120,7 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
                     },
                   ),
                 ),
-                _label('Appointment Timing'),
+                _label('Appointment Timing', mandatory: true),
                 if (_loadingOccupiedSlots)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
@@ -943,7 +1202,7 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
                 _input('Enter bio', icon: Icons.notes_rounded, controller: _bio),
                 _label('Appointment mode'),
                 _toggle(['Virtual', 'Manual'], _mode, (i) => setState(() => _mode = i)),
-                _label('Payment Type'),
+                _label('Payment Type', mandatory: true),
                 Row(children: [
                   Expanded(child: _payCard(Icons.credit_card_rounded, 'Prepaid', 0)),
                   const SizedBox(width: 12),
@@ -981,10 +1240,40 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
     );
   }
 
-  Widget _label(String t) => Padding(
-        padding: const EdgeInsets.only(top: 16, bottom: 8),
-        child: Text(t, style: AppText.poppins(size: 12.5, weight: FontWeight.w700, color: AppColors.ink3)),
-      );
+  bool _isMandatory(String keyOrName) {
+    final search = keyOrName.trim().toLowerCase();
+    if (search.contains('dob') || search.contains('birth') || search.contains('date of birth')) {
+      return true;
+    }
+    final f = _bookingFields.firstWhere(
+      (m) => (m['fieldKey'] ?? m['key'] ?? m['name'] ?? m['fieldLabel'] ?? m['fieldName'] ?? '').toString().trim().toLowerCase().contains(search) ||
+             search.contains((m['fieldKey'] ?? m['key'] ?? m['name'] ?? m['fieldLabel'] ?? m['fieldName'] ?? '').toString().trim().toLowerCase()),
+      orElse: () => const {},
+    );
+    if (f.isNotEmpty) {
+      return f['mandatory'] == true || f['isMandatory'] == true || f['required'] == true;
+    }
+    return false;
+  }
+
+  Widget _label(String t, {bool? mandatory}) {
+    final isReq = mandatory ?? _isMandatory(t);
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            if (isReq)
+              const TextSpan(text: '* ', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+            TextSpan(
+              text: t,
+              style: AppText.poppins(size: 12.5, weight: FontWeight.w700, color: AppColors.ink3),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _input(
     String hint, {
@@ -1011,6 +1300,49 @@ class _NewAppointmentSheetState extends State<_NewAppointmentSheet> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.line)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.evaGreen, width: 1.5)),
+      ),
+    );
+  }
+
+  /// Name-field variant that accepts a FocusNode and focus callbacks
+  /// so we can show/hide the overlay dropdown.
+  Widget _inputWithFocus(
+    String hint, {
+    IconData? icon,
+    TextEditingController? controller,
+    FocusNode? focusNode,
+    List<TextInputFormatter>? inputFormatters,
+    ValueChanged<String>? onChanged,
+    VoidCallback? onFocusGained,
+    VoidCallback? onFocusLost,
+  }) {
+    return Focus(
+      onFocusChange: (hasFocus) {
+        if (hasFocus) {
+          onFocusGained?.call();
+        } else {
+          // Small delay so tapping a suggestion registers before overlay hides.
+          Future.delayed(const Duration(milliseconds: 200), () {
+            if (mounted) onFocusLost?.call();
+          });
+        }
+      },
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        inputFormatters: inputFormatters,
+        onChanged: onChanged,
+        style: AppText.poppins(size: 14, weight: FontWeight.w600, color: AppColors.ink),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: AppText.poppins(size: 14, weight: FontWeight.w500, color: AppColors.ink4),
+          prefixIcon: icon == null ? null : Icon(icon, size: 19, color: AppColors.ink3),
+          filled: true,
+          fillColor: AppColors.surface2,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.line)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.evaGreen, width: 1.5)),
+        ),
       ),
     );
   }

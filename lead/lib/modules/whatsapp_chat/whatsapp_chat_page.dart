@@ -5796,7 +5796,11 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
     final isConverted =
         _contactInfo?['isConverted'] == true ||
         _contactInfo?['isCoverted'] == true ||
-        _contactInfo?['status']?.toString().toLowerCase() == 'converted';
+        _contactInfo?['status']?.toString().toLowerCase() == 'converted' ||
+        _contactInfo?['leadStatus']?.toString().toLowerCase() == 'customer' ||
+        _contactInfo?['leadStatus']?.toString().toLowerCase() == 'converted' ||
+        _contactInfo?['lead_status']?.toString().toLowerCase() == 'customer' ||
+        _contactInfo?['lead_status']?.toString().toLowerCase() == 'converted';
     final hasLeadId =
         _contactInfo?['leadId'] != null || _contactInfo?['lead_id'] != null;
     // Show Active Lead when API says so, or when createLead returned "already exists"

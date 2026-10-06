@@ -20,27 +20,35 @@ Future<T?> showAppSheet<T>(BuildContext context, Widget child) {
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
-    builder: (sheetContext) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
-      child: Container(
-        decoration: const BoxDecoration(
+    builder: (sheetContext) {
+      final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
+      final navBarPadding = MediaQuery.of(sheetContext).padding.bottom;
+      return Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Material(
           color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Container(width: 42, height: 5, decoration: BoxDecoration(color: AppColors.surface3, borderRadius: BorderRadius.circular(3))),
-              Flexible(child: child),
-            ],
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          child: SafeArea(
+            top: false,
+            bottom: true,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 4, 20, navBarPadding > 0 ? 12.0 : 20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  Container(width: 42, height: 5, decoration: BoxDecoration(color: AppColors.surface3, borderRadius: BorderRadius.circular(3))),
+                  const SizedBox(height: 12),
+                  Flexible(child: child),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 

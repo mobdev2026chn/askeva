@@ -514,6 +514,13 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
       debugPrint('[Profile] Error loading customer journey: $e');
     }
 
+    if (journey.isEmpty && details != null) {
+      final logsRaw = details['logs'] ?? details['contact']?['logs'] ?? details['journey'] ?? details['contact']?['journey'] ?? details['statusLogs'] ?? details['contact']?['statusLogs'] ?? details['events'] ?? details['contact']?['events'];
+      if (logsRaw is List) {
+        journey = logsRaw.whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
+      }
+    }
+
     if (mounted) {
       setState(() {
         _contactDetails = details;
@@ -543,6 +550,9 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
     DateTime? lastActiveTimestamp;
     DateTime? lastConversationTimestamp;
 
+    systemNonInteractiveCount = 0;
+    userCount = 0;
+
     // Loop backwards (from newest to oldest) to find latest timestamps
     for (int i = messages.length - 1; i >= 0; i--) {
       final m = messages[i];
@@ -553,21 +563,21 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
         lastConversationTimestamp = m.timestamp;
       }
 
-      if (sentBy == 'user' && lastActiveTimestamp == null && m.timestamp != null) {
+      if ((sentBy == 'user' || !m.outgoing) && lastActiveTimestamp == null && m.timestamp != null) {
         lastActiveTimestamp = m.timestamp;
       }
     }
 
-    // Count messages
+    // Count messages correctly
     for (final m in messages) {
       final j = m.rawJson;
       final sentBy = (j['sentBy'] ?? '').toString().toLowerCase();
-      if (sentBy == 'system') {
-        if (j['messageKey'] != null) {
-          systemNonInteractiveCount++;
-        } else {
-          userCount++;
-        }
+      final type = (j['type'] ?? j['messageType'] ?? '').toString().toLowerCase();
+
+      if (sentBy == 'user' || !m.outgoing) {
+        userCount++;
+      } else if (sentBy == 'system' || sentBy == 'agent' || type == 'template' || j['messageKey'] != null) {
+        systemNonInteractiveCount++;
       }
     }
 
@@ -575,7 +585,7 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
     try {
       final firstUserMsg = messages.firstWhere((m) {
         final sentBy = (m.rawJson['sentBy'] ?? '').toString().toLowerCase();
-        return sentBy == 'user';
+        return sentBy == 'user' || !m.outgoing;
       });
       firstUserMessageText = firstUserMsg.text.isNotEmpty ? firstUserMsg.text : '—';
     } catch (_) {}
@@ -603,19 +613,19 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
         activityStatus = 'Active now';
       } else if (diffInSeconds < 3600) {
         final minutes = diff.inMinutes;
-        activityStatus = ' $minutes ${minutes == 1 ? "min" : "mins"} ago';
+        activityStatus = '$minutes ${minutes == 1 ? "min" : "mins"} ago';
       } else if (diffInSeconds < 86400) {
         final hours = diff.inHours;
-        activityStatus = ' $hours ${hours == 1 ? "hr" : "hrs"} ago';
+        activityStatus = '$hours ${hours == 1 ? "hr" : "hrs"} ago';
       } else if (diffInSeconds < 2592000) {
         final days = diff.inDays;
-        activityStatus = ' $days ${days == 1 ? "day" : "days"} ago';
+        activityStatus = '$days ${days == 1 ? "day" : "days"} ago';
       } else if (diffInSeconds < 31536000) {
         final months = diffInSeconds ~/ 2592000;
-        activityStatus = ' $months ${months == 1 ? "month" : "months"} ago';
+        activityStatus = '$months ${months == 1 ? "month" : "months"} ago';
       } else {
         final years = diffInSeconds ~/ 31536000;
-        activityStatus = ' $years ${years == 1 ? "yr" : "yrs"} ago';
+        activityStatus = '$years ${years == 1 ? "yr" : "yrs"} ago';
       }
     }
   }
@@ -625,12 +635,18 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
     final agentsService = scope.agents;
     final chatService = scope.chat;
     try {
-      final agentsList = await agentsService.fetchAgents();
+      final rawAgentsList = await agentsService.fetchAgents();
       // Get the IDs already assigned so we can skip them in the list
       final assignedIds = _assignedAgents.map((a) => (a['_id'] ?? a['id'] ?? '').toString()).toSet();
-      final unassigned = agentsList.where((a) {
-        final id = (a['_id'] ?? a['id'] ?? '').toString();
-        return id.isNotEmpty && !assignedIds.contains(id);
+      final unassigned = rawAgentsList.where((a) {
+        final id = (a['_id'] ?? a['id'] ?? a['username'] ?? '').toString();
+        if (id.isNotEmpty && assignedIds.contains(id)) return false;
+
+        final statusVal = a['status'];
+        final bool isInactive = statusVal != null && (statusVal == false || statusVal == 0 || statusVal.toString().toLowerCase() == 'inactive' || statusVal.toString().toLowerCase() == 'disabled');
+        if (isInactive) return false;
+
+        return true;
       }).toList();
       if (!mounted) return;
       showDialog(
@@ -1127,7 +1143,7 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
                           _kv('Last Conversation', readableTimestamp),
                           _kv('Template Messages', systemNonInteractiveCount.toString()),
                           _kv('Session Messages', userCount.toString()),
-                           _kv('First User Message', firstUserMessageText),
+                          _kv('First User Message', firstUserMessageText),
                           _kv('Assigned Agent', '', trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -1155,23 +1171,7 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
                               ),
                             ],
                           )),
-                          _kv('Lead Status', '', trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: const Color(0xFFEEEAFE), borderRadius: BorderRadius.circular(999)),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF7C5CFC), shape: BoxShape.circle)),
-                                const SizedBox(width: 5),
-                                Text(
-                                  (_contactDetails?['contact']?['leadStatus'] ??
-                                   _contactDetails?['contact']?['status'] ??
-                                   'Customer').toString(),
-                                  style: AppText.poppins(size: 11, weight: FontWeight.w700, color: const Color(0xFF7C5CFC)),
-                                ),
-                              ],
-                            ),
-                          )),
+                          _kv('Lead Status', '', trailing: _buildLeadStatusPill()),
                           _kv('Groups', '', trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -1220,28 +1220,20 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
                       _section(Icons.access_time_rounded, 'Active Sessions', child: Builder(
                         builder: (context) {
                           final sessionObj = _contactDetails?['session'] as Map?;
-                          final sessionTypes = [
-                            ('service', 'SERVICE WINDOW · UTILITY'),
-                            ('utility', 'UTILITY'),
-                            ('marketing', 'MARKETING'),
-                            ('authentication', 'AUTHENTICATION'),
-                          ];
-
-                          // Build active sessions from explicit API session object
+                          // Show ONLY Utility session timer alone (hide Marketing & Authentication)
                           final activeSessions = <(String, Map<String, String>, String)>[];
-                          for (final t in sessionTypes) {
-                            final typeData = sessionObj?[t.$1];
-                            if (typeData != null) {
-                              final timeLeft = _sessionCountdown(t.$1);
-                              final isActive = timeLeft['hours'] != '00' || timeLeft['mins'] != '00' || timeLeft['secs'] != '00';
-                              if (isActive) {
-                                activeSessions.add((t.$1, timeLeft, t.$2));
-                              }
+
+                          final utilityData = sessionObj?['service'] ?? sessionObj?['utility'];
+                          if (utilityData != null) {
+                            final key = sessionObj?['service'] != null ? 'service' : 'utility';
+                            final timeLeft = _sessionCountdown(key);
+                            final isActive = timeLeft['hours'] != '00' || timeLeft['mins'] != '00' || timeLeft['secs'] != '00';
+                            if (isActive) {
+                              activeSessions.add(('service', timeLeft, 'SERVICE WINDOW · UTILITY'));
                             }
                           }
 
-                          // Fallback: use last incoming customer message + 24h
-                          // This is exactly how the web works (lastTs + 24h window)
+                          // Fallback: use last incoming customer message + 24h (matches web logic)
                           if (activeSessions.isEmpty && _lastIncomingMessageAt != null) {
                             final expiry = _lastIncomingMessageAt!.toLocal().add(const Duration(hours: 24));
                             final remaining = expiry.difference(DateTime.now());
@@ -1645,6 +1637,72 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
           ]),
         ),
       );
+
+  Widget _buildLeadStatusPill() {
+    final isConverted =
+        _contactDetails?['isConverted'] == true ||
+        _contactDetails?['isCoverted'] == true ||
+        _contactDetails?['contact']?['isConverted'] == true ||
+        _contactDetails?['contact']?['isCoverted'] == true;
+
+    final raw = (
+      _contactDetails?['contact']?['leadStatus'] ??
+      _contactDetails?['contact']?['status'] ??
+      _contactDetails?['leadStatus'] ??
+      _contactDetails?['status'] ??
+      (isConverted ? 'customer' : 'active')
+    ).toString().trim();
+
+    final lower = raw.toLowerCase();
+
+    String label = isConverted ? 'Customer' : 'Active Lead';
+    Color bg = const Color(0xFFE8F5E9);
+    Color fg = AppColors.evaGreenDeep;
+
+    if (isConverted || lower == 'customer' || lower == 'converted') {
+      label = 'Customer';
+      bg = const Color(0xFFE8F5E9);
+      fg = AppColors.evaGreenDeep;
+    } else if (lower == 'addlead' || lower == 'add_lead' || lower == 'add to leads') {
+      label = 'Add to Leads';
+      bg = const Color(0xFFE3F2FD);
+      fg = const Color(0xFF1976D2);
+    } else if (lower.contains('active') || lower.contains('prospect') || lower.contains('lead') || lower == 'new' || lower == 'new lead') {
+      label = 'Active Lead';
+      bg = const Color(0xFFE8F5E9);
+      fg = AppColors.evaGreenDeep;
+    } else if (lower == 'hot') {
+      label = 'Hot';
+      bg = AppColors.hotBg;
+      fg = AppColors.hotFg;
+    } else if (lower == 'warm') {
+      label = 'Warm';
+      bg = AppColors.warmBg;
+      fg = AppColors.warmFg;
+    } else if (lower == 'cold') {
+      label = 'Cold';
+      bg = AppColors.coldBg;
+      fg = AppColors.coldFg;
+    } else if (raw.isNotEmpty) {
+      label = raw[0].toUpperCase() + raw.substring(1);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 6, height: 6, decoration: BoxDecoration(color: fg, shape: BoxShape.circle)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: AppText.poppins(size: 11, weight: FontWeight.w700, color: fg),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _kv(String k, String v, {Widget? trailing}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 7),
@@ -2236,13 +2294,19 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
       return '';
     }
 
-    // Map action → (label, isActive) matching React ChatSideStatus.jsx logic
+    // Map action → (label, isActive) matching Web profile.js / ChatSideStatus.jsx logic
     String actionLabel(Map<String, dynamic> e) {
-      final action = (e['action'] ?? e['event'] ?? e['type'] ?? '').toString().trim();
+      final rawAction = (e['action'] ?? e['event'] ?? e['type'] ?? e['mode'] ?? '').toString().trim();
       final agentName = extractAgentName(e);
       final removedBy = (e['removedBy'] ?? '').toString();
-      final actionLower = action.toLowerCase();
+      final actionLower = rawAction.toLowerCase();
 
+      if (actionLower == 'on' || actionLower == 'intervene on' || actionLower == 'intervened') {
+        return 'Mode: Intervene On';
+      }
+      if (actionLower == 'off' || actionLower == 'intervene off' || actionLower == 'stopped') {
+        return 'Mode: Intervene Off';
+      }
       switch (actionLower) {
         case 'agent_assigned':
           return 'Assigned to${agentName.isNotEmpty ? " $agentName" : ""}';
@@ -2267,41 +2331,48 @@ class _ConversationProfileSheetState extends State<_ConversationProfileSheet> {
           if (actionLower.contains('note')) {
             return 'Note added${agentName.isNotEmpty ? " by $agentName" : ""}';
           }
-          final intervene = e['intervene'];
+          final intervene = e['intervene'] ?? e['interveneState'];
           if (intervene != null) {
-            return intervene == true ? 'Intervene On' : 'Intervene Off';
+            return (intervene == true || intervene == 'true' || intervene == 1) ? 'Mode: Intervene On' : 'Mode: Intervene Off';
           }
-          return action.isNotEmpty ? action.replaceAll('_', ' ') : 'Event';
+          if (rawAction.isEmpty) {
+            return e['mode'] != null ? 'Mode: Intervene ${e['mode'].toString().toUpperCase()}' : 'Mode: Intervene On';
+          }
+          return rawAction.contains('Intervene') || rawAction.contains('Mode')
+              ? rawAction
+              : rawAction.replaceAll('_', ' ');
       }
     }
 
     bool isActiveAction(Map<String, dynamic> e) {
-      final action = (e['action'] ?? e['event'] ?? e['type'] ?? '').toString();
-      switch (action) {
-        case 'agent_assigned':
-        case 'agent_switched':
-          return true;
-        case 'agent_removed':
-        case 'moved_to_admin':
-        case 'user_blocked':
-        case 'user_unsubscribed':
-          return false;
-        case 'user_unblocked':
-          return true;
-        default:
-          final intervene = e['intervene'];
-          return intervene == true;
-      }
+      final rawAction = (e['action'] ?? e['event'] ?? e['type'] ?? e['mode'] ?? '').toString().trim().toLowerCase();
+      if (rawAction == 'on' || rawAction.contains('intervene on') || rawAction == 'intervened') return true;
+      if (rawAction == 'off' || rawAction.contains('intervene off') || rawAction == 'stopped') return false;
+      final intervene = e['intervene'] ?? e['interveneState'];
+      if (intervene != null) return intervene == true || intervene == 'true' || intervene == 1;
+      return true;
     }
 
     String formatTime(Map<String, dynamic> e) {
-      final dt = DateTime.tryParse((e['createdAt'] ?? e['timestamp'] ?? '').toString());
-      if (dt == null) return '';
+      if (e['time'] != null && e['time'].toString().trim().isNotEmpty) {
+        return e['time'].toString().trim();
+      }
+      final rawTs = e['createdAt'] ?? e['timestamp'] ?? e['created_at'] ?? e['ts'] ?? e['date'];
+      if (rawTs == null) return '';
+      DateTime? dt;
+      if (rawTs is int) {
+        dt = DateTime.fromMillisecondsSinceEpoch(rawTs);
+      } else if (rawTs is num) {
+        dt = DateTime.fromMillisecondsSinceEpoch(rawTs.toInt());
+      } else {
+        dt = DateTime.tryParse(rawTs.toString());
+      }
+      if (dt == null) return rawTs.toString();
       final d = dt.toLocal();
       final months = const ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       final hours = d.hour;
       final minutes = d.minute.toString().padLeft(2, '0');
-      final ampm = hours >= 12 ? 'PM' : 'AM';
+      final ampm = hours >= 12 ? 'pm' : 'am';
       final formattedHours = hours % 12 == 0 ? 12 : hours % 12;
       return '${d.day.toString().padLeft(2, '0')} ${months[d.month]} ${d.year}, $formattedHours:$minutes $ampm';
     }

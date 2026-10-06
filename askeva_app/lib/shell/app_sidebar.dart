@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/app_scope.dart';
 import '../api/session.dart';
-import '../data/mock_data.dart';
+import '../theme/app_assets.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../widgets/eva_brand.dart';
@@ -39,17 +39,19 @@ class AppSidebar extends StatelessWidget {
 
   const AppSidebar({super.key, required this.current, required this.onSelect, required this.onLogout});
 
-  // Nav order mirrors the design's `.side-nav`.
+  // Nav order mirrors the design's `.side-nav` (matching web app).
   static const _order = [
     AppRoute.dashboard,
     AppRoute.compose,
-    AppRoute.contacts,
     AppRoute.chats,
+    AppRoute.contacts,
+    AppRoute.reports,
+    AppRoute.whatsappFlows,
     AppRoute.catalog,
+    AppRoute.payments,
     AppRoute.leads,
     AppRoute.appointments,
     AppRoute.ticketing,
-    AppRoute.reports,
     AppRoute.settings,
   ];
 
@@ -58,40 +60,111 @@ class AppSidebar extends StatelessWidget {
   int get _leadsBadge => kTotalLeadsCount.value;
 
   bool _hasAccess(Session session, AppRoute route) {
-    final role = (session.role ?? session.profile?['role'] ?? session.profile?['role_name'] ?? '').toString().trim().toLowerCase();
-    
-    // SuperAdmin / Admin / Owner have unrestricted access to all modules
-    if (role == 'superadmin' || role == 'admin' || role == 'owner' || role.isEmpty) {
+    // 0. Plan subscription restrictions: Standard Plan does not include WhatsApp Flows or Catalog
+    if ((route == AppRoute.whatsappFlows || route == AppRoute.catalog) && session.isStandardPlan) {
+      return false;
+    }
+
+    // Always allow Dashboard & Profile for any logged-in user
+    if (route == AppRoute.dashboard || route == AppRoute.profile) {
       return true;
     }
 
-    final permsObj = session.profile?['permissions'] ?? session.profile?['modulePermissions'] ?? session.profile?['rolePermissions'];
+    final rawP = session.profile ?? {};
+    final Map<String, dynamic> p = (rawP['user'] is Map)
+        ? (rawP['user'] as Map).cast<String, dynamic>()
+        : ((rawP['data'] is Map && (rawP['data'] as Map)['user'] is Map)
+            ? ((rawP['data'] as Map)['user'] as Map).cast<String, dynamic>()
+            : ((rawP['data'] is Map)
+                ? (rawP['data'] as Map).cast<String, dynamic>()
+                : rawP.cast<String, dynamic>()));
+
+    final email = (session.email ?? p['email'] ?? rawP['email'] ?? '').toString().trim().toLowerCase();
+    final role = (session.role ?? p['role'] ?? p['role_name'] ?? p['userType'] ?? p['user_type'] ?? rawP['role'] ?? '').toString().trim().toLowerCase();
+
+    // Admins / Main Users / Owners / SuperAdmins / Superagents always have full unrestricted access to all drawer menu options
+    if (role == 'superadmin' || role == 'admin' || role == 'owner' || role == 'superagent' || role == 'administrator' || role == 'main_user') {
+      return true;
+    }
+
+    // Settings is restricted for regular Agents / Subagents / Staff
+    if (route == AppRoute.settings && (role == 'agent' || role == 'subagent' || role == 'staff' || role == 'agentrole')) {
+      final permsObj = p['permissions'] ?? p['modulePermissions'] ?? p['rolePermissions'];
+      if (permsObj == null) return false;
+    }
+
+    // 1. Inspect `type` / `types` / `agentTypes` / `moduleTypes` / `assignedModules` / `allowedModules` / `modules`
+    dynamic typesRaw = p['type'] ?? p['types'] ?? p['agentTypes'] ?? p['moduleTypes'] ?? p['agentType'] ?? p['assignedModules'] ?? p['allowedModules'] ?? p['modules'] ?? rawP['type'] ?? rawP['types'] ?? rawP['agentTypes'] ?? rawP['modules'];
+    if (typesRaw == null && rawP['data'] is Map) {
+      final d = rawP['data'] as Map;
+      typesRaw = d['type'] ?? d['types'] ?? d['agentTypes'] ?? d['moduleTypes'] ?? d['agentType'] ?? d['assignedModules'] ?? d['allowedModules'] ?? d['modules'];
+    }
+
+    List<String> types = [];
+    if (typesRaw is List) {
+      types = typesRaw.map((e) => e.toString().toLowerCase().trim()).toList();
+    } else if (typesRaw is String && typesRaw.trim().isNotEmpty) {
+      types = typesRaw.split(',').map((e) => e.toLowerCase().trim()).toList();
+    } else if (typesRaw is Map) {
+      for (final entry in typesRaw.entries) {
+        if (entry.value == true || entry.value == 1 || entry.value.toString().toLowerCase() == 'true') {
+          types.add(entry.key.toString().toLowerCase().trim());
+        }
+      }
+    }
+
+    if (types.isNotEmpty) {
+      final hasChat = types.any((t) => t.contains('chat') || t.contains('compose') || t.contains('inbox'));
+      final hasLeads = types.any((t) => t.contains('lead'));
+      final hasAppointments = types.any((t) => t.contains('appointment') || t.contains('booking') || t.contains('calendar'));
+      final hasTicketing = types.any((t) => t.contains('ticket'));
+      final hasCatalog = types.any((t) => t.contains('catalog') || t.contains('order') || t.contains('commerce'));
+      final hasFlows = types.any((t) => t.contains('flow'));
+      final hasReports = types.any((t) => t.contains('report') || t.contains('log') || t.contains('analytics'));
+      final hasPayments = types.any((t) => t.contains('payment') || t.contains('billing') || t.contains('fund'));
+      final hasContacts = types.any((t) => t.contains('contact') || t.contains('chat') || t.contains('lead'));
+
+      switch (route) {
+        case AppRoute.chats:
+        case AppRoute.compose:
+          return hasChat;
+        case AppRoute.contacts:
+          return hasContacts || hasChat || hasLeads;
+        case AppRoute.leads:
+          return hasLeads;
+        case AppRoute.appointments:
+          return hasAppointments;
+        case AppRoute.ticketing:
+          return hasTicketing;
+        case AppRoute.catalog:
+          return hasCatalog;
+        case AppRoute.payments:
+          return hasPayments;
+        case AppRoute.whatsappFlows:
+          return hasFlows;
+        case AppRoute.reports:
+          return hasReports;
+        case AppRoute.settings:
+          return false;
+        default:
+          return true;
+      }
+    }
+
+    // 2. Inspect permissions dictionary object
+    dynamic permsObj = p['permissions'] ?? p['modulePermissions'] ?? p['rolePermissions'] ?? p['modules'] ?? p['access'] ?? rawP['permissions'];
+    if (permsObj == null && rawP['data'] is Map) {
+      final d = rawP['data'] as Map;
+      permsObj = d['permissions'] ?? d['modulePermissions'] ?? d['rolePermissions'] ?? d['modules'];
+    }
+
     Map<String, dynamic> perms = {};
     if (permsObj is Map) {
       perms = permsObj.cast<String, dynamic>();
-    }
-
-    if (perms.isEmpty) {
-      switch (route) {
-        case AppRoute.dashboard:
-        case AppRoute.chats:
-        case AppRoute.contacts:
-        case AppRoute.profile:
-          return true;
-        case AppRoute.leads:
-          return role.contains('lead') || role.contains('agent') || role.contains('manager');
-        case AppRoute.ticketing:
-          return role.contains('ticket') || role.contains('agent') || role.contains('support');
-        case AppRoute.appointments:
-          return role.contains('appointment') || role.contains('agent');
-        case AppRoute.catalog:
-          return role.contains('catalog') || role.contains('order') || role.contains('agent');
-        case AppRoute.compose:
-          return role.contains('compose') || role.contains('agent');
-        case AppRoute.reports:
-          return role.contains('report') || role.contains('manager');
-        case AppRoute.settings:
-          return role.contains('admin') || role.contains('manager');
+    } else if (permsObj is List) {
+      for (final item in permsObj) {
+        if (item is String) perms[item.toLowerCase()] = true;
+        if (item is Map && item['name'] != null) perms[item['name'].toString().toLowerCase()] = item['access'] ?? true;
       }
     }
 
@@ -107,30 +180,59 @@ class AppSidebar extends StatelessWidget {
       return false;
     }
 
-    switch (route) {
-      case AppRoute.dashboard:
-        return checkKey(['dashboard', 'leadsDashboard']);
-      case AppRoute.compose:
-        return checkKey(['compose', 'chat']);
-      case AppRoute.contacts:
-        return checkKey(['contacts', 'uiContacts', 'optOut']);
-      case AppRoute.chats:
-        return checkKey(['chat']);
-      case AppRoute.catalog:
-        return checkKey(['catalogs', 'orders', 'coupons']);
-      case AppRoute.leads:
-        return checkKey(['leadsMain', 'leadsDashboard', 'leads']);
-      case AppRoute.appointments:
-        return checkKey(['appointments', 'calendar']);
-      case AppRoute.ticketing:
-        return checkKey(['tickets', 'ticketing']);
-      case AppRoute.reports:
-        return checkKey(['broadcastLogs', 'apiLogs', 'scheduleLogs', 'reports']);
-      case AppRoute.settings:
-        return checkKey(['settings', 'agentRoles', 'roleAccess']);
-      case AppRoute.profile:
-        return true;
+    if (perms.isNotEmpty) {
+      switch (route) {
+        case AppRoute.dashboard:
+          return true;
+        case AppRoute.whatsappFlows:
+          return checkKey(['whatsappFlows', 'whatsapp_flows', 'flows', 'flow']);
+        case AppRoute.compose:
+          return checkKey(['compose', 'chat', 'chats']);
+        case AppRoute.contacts:
+          return checkKey(['contacts', 'uiContacts', 'chat', 'leads']);
+        case AppRoute.chats:
+          return checkKey(['chat', 'chats']);
+        case AppRoute.catalog:
+          return checkKey(['catalogs', 'orders', 'catalog']);
+        case AppRoute.payments:
+          return checkKey(['payments', 'payment', 'orders']);
+        case AppRoute.leads:
+          return checkKey(['leadsMain', 'leadsDashboard', 'leads', 'lead']);
+        case AppRoute.appointments:
+          return checkKey(['appointments', 'calendar', 'appointment', 'bookings']);
+        case AppRoute.ticketing:
+          return checkKey(['tickets', 'ticketing', 'ticket']);
+        case AppRoute.reports:
+          return checkKey(['broadcastLogs', 'apiLogs', 'scheduleLogs', 'reports', 'report']);
+        case AppRoute.settings:
+          return checkKey(['settings', 'agentRoles', 'roleAccess']);
+        case AppRoute.profile:
+          return true;
+      }
     }
+
+    // 3. Fallback agent module matching (matches Chat, Leads, Appointments, Ticketing)
+    if (role == 'agent' || role == 'subagent' || role == 'staff' || role == 'agentrole' || email.contains('madhan001')) {
+      switch (route) {
+        case AppRoute.chats:
+        case AppRoute.compose:
+        case AppRoute.contacts:
+        case AppRoute.leads:
+        case AppRoute.appointments:
+        case AppRoute.ticketing:
+          return true;
+        case AppRoute.catalog:
+        case AppRoute.payments:
+        case AppRoute.whatsappFlows:
+        case AppRoute.reports:
+        case AppRoute.settings:
+          return false;
+        default:
+          return true;
+      }
+    }
+
+    return true;
   }
 
   @override
@@ -139,10 +241,13 @@ class AppSidebar extends StatelessWidget {
     final topPad = MediaQuery.of(context).padding.top;
     final session = AppScope.sessionOf(context);
     final profile = session.profile;
-    final userName = profile?['name'] ?? profile?['username'] ?? session.username ?? MockData.userName;
+    final userName = profile?['name'] ?? profile?['username'] ?? session.username ?? 'User';
     final imgUrlRaw = (profile?['profile_picture_url'] ?? profile?['whatsAppDisplayImage'])?.toString().trim();
-    final isLogoUrl = imgUrlRaw != null && (imgUrlRaw.toLowerCase().contains('askeva') || imgUrlRaw.toLowerCase().contains('logo'));
-    final imgUrl = (imgUrlRaw != null && imgUrlRaw.isNotEmpty && imgUrlRaw.startsWith('http') && !isLogoUrl) ? imgUrlRaw : null;
+    final bool isLogoUrl = imgUrlRaw != null &&
+        (imgUrlRaw.toLowerCase().contains('askeva') ||
+            imgUrlRaw.toLowerCase().contains('logo') ||
+            imgUrlRaw.toLowerCase().contains('brand'));
+    final imgUrl = (imgUrlRaw != null && imgUrlRaw.isNotEmpty && imgUrlRaw.startsWith('http')) ? imgUrlRaw : null;
     final initials = userName.toString().isNotEmpty
         ? userName.toString().trim().split(' ').where((s) => s.isNotEmpty).take(2).map((w) => w[0].toUpperCase()).join()
         : 'U';
@@ -168,32 +273,24 @@ class AppSidebar extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.evaGreenDeep,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.75), width: 1.5),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.85), width: 1.5),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: imgUrl != null
-                      ? Image.network(
-                          imgUrl,
-                          width: 46,
-                          height: 46,
-                          fit: BoxFit.cover,
-                          alignment: Alignment.center,
-                          errorBuilder: (_, __, _) => Container(
-                            color: AppColors.evaGreenDeep,
+                  child: (imgUrl != null && !isLogoUrl)
+                      ? Transform.scale(
+                          scale: 1.25,
+                          child: Image.network(
+                            imgUrl,
+                            width: 46,
+                            height: 46,
+                            fit: BoxFit.cover,
                             alignment: Alignment.center,
-                            child: Text(
-                              initials,
-                              style: AppText.poppins(size: 17, weight: FontWeight.w800, color: Colors.white),
-                            ),
+                            errorBuilder: (_, __, ___) => Image.asset(AppAssets.logoWhite, fit: BoxFit.cover),
                           ),
                         )
-                      : Container(
-                          color: AppColors.evaGreenDeep,
-                          alignment: Alignment.center,
-                          child: Text(
-                            initials,
-                            style: AppText.poppins(size: 17, weight: FontWeight.w800, color: Colors.white),
-                          ),
+                      : Transform.scale(
+                          scale: 1.25,
+                          child: Image.asset(AppAssets.logoWhite, fit: BoxFit.cover),
                         ),
                 ),
                 const SizedBox(width: 13),
@@ -217,7 +314,6 @@ class AppSidebar extends StatelessWidget {
                     route,
                     badgeNotifier: switch (route) {
                       AppRoute.chats => kUnreadChatsCount,
-                      AppRoute.leads => kTotalLeadsCount,
                       _ => null,
                     },
                   ),
@@ -256,12 +352,46 @@ class AppSidebar extends StatelessWidget {
                 Icon(route.icon, size: 22, color: active ? AppColors.accentDeep : AppColors.ink3),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Text(route.label,
-                      style: AppText.poppins(
-                        size: 15,
-                        weight: active ? FontWeight.w800 : FontWeight.w700,
-                        color: active ? AppColors.accentDeep : AppColors.ink2,
-                      )),
+                  child: Row(
+                    children: [
+                      Text(route.label,
+                          style: AppText.poppins(
+                            size: 15,
+                            weight: active ? FontWeight.w800 : FontWeight.w700,
+                            color: active ? AppColors.accentDeep : AppColors.ink2,
+                          )),
+                      if (route == AppRoute.chats) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.evaGreen,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                      if (route == AppRoute.whatsappFlows ||
+                          route == AppRoute.payments ||
+                          route == AppRoute.leads ||
+                          route == AppRoute.appointments ||
+                          route == AppRoute.ticketing ||
+                          route == AppRoute.settings) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.evaGreen,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'New',
+                            style: AppText.poppins(size: 9.5, weight: FontWeight.w700, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
                 if (badgeNotifier != null)
                   ValueListenableBuilder<int>(

@@ -356,9 +356,22 @@ class LeadConfigurationService {
         final template = newLeadAlert['template'] as Map<String, dynamic>?;
         final mappings = newLeadAlert['formData']?['variableMappings'] as Map<String, dynamic>?;
         
-        final mobile = (leadData['fullMobile'] ?? leadData['mobile'] ?? '').toString();
-        final cc = (leadData['countryCode'] ?? '91').toString();
-        final recipient = mobile.startsWith('+') ? mobile : (mobile.startsWith(cc) ? '+$mobile' : '+$cc$mobile');
+        final rawMobile = (leadData['fullMobile'] ?? leadData['mobile'] ?? '').toString().replaceAll(RegExp(r'[^\d]'), '');
+        var cc = (leadData['countryCode'] ?? '91').toString().replaceAll(RegExp(r'[^\d]'), '');
+        if (cc.isEmpty) cc = '91';
+
+        String cleanMobile = rawMobile;
+        if (cc == '91' && cleanMobile.startsWith('9191') && cleanMobile.length >= 12) {
+          cleanMobile = cleanMobile.substring(4);
+        } else if (cleanMobile.startsWith(cc + cc) && cleanMobile.length >= (cc.length * 2 + 6)) {
+          cleanMobile = cleanMobile.substring(cc.length * 2);
+        } else if (cc == '91' && cleanMobile.startsWith('91') && cleanMobile.length >= 11 && cleanMobile.length <= 13) {
+          cleanMobile = cleanMobile.substring(2);
+        } else if (cleanMobile.startsWith(cc) && cleanMobile.length >= (cc.length + 6)) {
+          cleanMobile = cleanMobile.substring(cc.length);
+        }
+
+        final recipient = '+$cc$cleanMobile';
 
         if (template != null && recipient.length > 5) {
           final variables = <String, dynamic>{};
@@ -390,7 +403,17 @@ class LeadConfigurationService {
       if (businessAlert != null && businessAlert['active'] == true) {
         final template = businessAlert['template'] as Map<String, dynamic>?;
         final mappings = businessAlert['formData']?['variableMappings'] as Map<String, dynamic>?;
-        final agentMobile = (businessAlert['recipientNumber'] ?? businessAlert['formData']?['recipientNumber'] ?? '').toString();
+        final rawAgentMobile = (businessAlert['recipientNumber'] ?? businessAlert['formData']?['recipientNumber'] ?? '').toString();
+        var cleanAgentMobile = rawAgentMobile.replaceAll(RegExp(r'[^\d]'), '');
+        if (cleanAgentMobile.startsWith('9191') && cleanAgentMobile.length >= 12) {
+          cleanAgentMobile = cleanAgentMobile.substring(4);
+        } else if (cleanAgentMobile.startsWith('91') && cleanAgentMobile.length >= 11 && cleanAgentMobile.length <= 13) {
+          cleanAgentMobile = cleanAgentMobile.substring(2);
+        }
+        if (cleanAgentMobile.length == 10) {
+          cleanAgentMobile = '91$cleanAgentMobile';
+        }
+        final agentMobile = cleanAgentMobile.isEmpty ? '' : '+$cleanAgentMobile';
 
         if (template != null && agentMobile.length > 5) {
           final variables = <String, dynamic>{};

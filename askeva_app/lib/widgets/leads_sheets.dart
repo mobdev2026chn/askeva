@@ -604,12 +604,14 @@ class _SendTemplateSheetState extends State<_SendTemplateSheet> {
     var cleanCc = widget.lead.countryCode.replaceAll(RegExp(r'[^\d]'), '').trim();
     if (cleanCc.isEmpty) cleanCc = '91';
 
-    if (cleanCc == '91' && cleanMobile.startsWith('9191') && cleanMobile.length >= 14) {
+    if (cleanCc == '91' && cleanMobile.startsWith('9191') && cleanMobile.length >= 12) {
       cleanMobile = cleanMobile.substring(4);
-    } else if (cleanMobile.startsWith(cleanCc) && cleanMobile.length == (cleanCc.length + 10)) {
-      cleanMobile = cleanMobile.substring(cleanCc.length);
-    } else if (cleanCc == '91' && cleanMobile.length == 12 && cleanMobile.startsWith('91')) {
+    } else if (cleanMobile.startsWith(cleanCc + cleanCc) && cleanMobile.length >= (cleanCc.length * 2 + 6)) {
+      cleanMobile = cleanMobile.substring(cleanCc.length * 2);
+    } else if (cleanCc == '91' && cleanMobile.startsWith('91') && cleanMobile.length >= 11 && cleanMobile.length <= 13) {
       cleanMobile = cleanMobile.substring(2);
+    } else if (cleanMobile.startsWith(cleanCc) && cleanMobile.length >= (cleanCc.length + 6)) {
+      cleanMobile = cleanMobile.substring(cleanCc.length);
     }
 
     final body = {
@@ -1569,12 +1571,12 @@ class _LeadsSettingsViewState extends State<LeadsSettingsView> {
             desc: 'Track and manage all new leads in your system with real-time updates.',
             recipientLabel: 'Agent Contact Number',
             value: _businessAlert,
-            onChanged: (v) => _toggleAlert('reminderConfiguration', v),
+            onChanged: (v) => _toggleAlert('businessAlert', v),
             template: _businessTemplate,
             variableMappings: _businessMappings,
-            onSelectTemplate: () => _selectTemplateForAlert('reminderConfiguration'),
-            onSave: () => _saveAlertConfig('reminderConfiguration'),
-            onReset: () => _resetAlertConfig('reminderConfiguration'),
+            onSelectTemplate: () => _selectTemplateForAlert('businessAlert'),
+            onSave: () => _saveAlertConfig('businessAlert'),
+            onReset: () => _resetAlertConfig('businessAlert'),
             isSaving: _businessSaving,
             expanded: _businessExpanded,
             onToggleExpand: () => setState(() => _businessExpanded = !_businessExpanded),

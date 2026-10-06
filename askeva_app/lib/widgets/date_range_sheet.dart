@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -24,6 +25,7 @@ Future<DateTimeRange?> showAppDateRangePicker(
   return showModalBottomSheet<DateTimeRange>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _DateRangeSheet(initialRange: initialRange, firstDate: firstDate, lastDate: lastDate),
   );
@@ -46,8 +48,17 @@ class _DateRangeSheetState extends State<_DateRangeSheet> {
     super.initState();
     _start = widget.initialRange?.start;
     _end = widget.initialRange?.end;
-    final ref = _start ?? widget.lastDate;
-    _month = DateTime(ref.year, ref.month);
+    final now = DateTime.now();
+    DateTime refMonth = DateTime(now.year, now.month);
+    if (_start != null) {
+      refMonth = DateTime(_start!.year, _start!.month);
+    }
+    final firstMonth = DateTime(widget.firstDate.year, widget.firstDate.month);
+    final lastMonth = DateTime(widget.lastDate.year, widget.lastDate.month);
+    if (refMonth.isBefore(firstMonth)) refMonth = firstMonth;
+    if (refMonth.isAfter(lastMonth)) refMonth = lastMonth;
+
+    _month = refMonth;
   }
 
   static DateTime _d(DateTime x) => DateTime(x.year, x.month, x.day);

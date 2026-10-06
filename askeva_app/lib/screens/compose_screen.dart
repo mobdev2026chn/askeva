@@ -121,12 +121,30 @@ class _ComposeScreenState extends State<ComposeScreen> {
     return GreenHeaderScaffold(
       title: 'Compose Message',
       onMenu: nav.openDrawer,
-      headerChild: GreenSegmented(items: const ['Single MSG', 'Group', 'CSV'], selected: _tab, onChanged: (i) => setState(() => _tab = i)),
       sheet: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.evaGreen))
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(18, 4, 18, 30),
-              children: [switch (_tab) { 0 => _single(), 1 => _group(), _ => _csv() }],
+          : Column(
+              children: [
+                AppTabBar(
+                  tabs: const ['Single MSG'],
+                  selected: _tab,
+                  onChanged: (i) => setState(() => _tab = i),
+                ),
+                const Divider(height: 1, color: AppColors.line),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 30),
+                    children: [
+                      switch (_tab) {
+                        0 => _single(),
+                        // 1 => _group(), // Hidden per user requirement
+                        // 2 => _csv(), // CSV tab hidden per user requirement
+                        _ => _single(),
+                      }
+                    ],
+                  ),
+                ),
+              ],
             ),
     );
   }
@@ -511,7 +529,8 @@ class _ComposeScreenState extends State<ComposeScreen> {
           ),
 
           // Category tabs
-          Padding(
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Row(children: [
               for (int i = 0; i < tabs.length; i++) ...[
@@ -764,22 +783,38 @@ class _ComposeScreenState extends State<ComposeScreen> {
   Future<void> _pickMedia() async {
     final t = _template;
     if (t == null) return;
-    final ext = switch (t.headerType.toLowerCase()) {
+    final headerType = t.headerType.toLowerCase();
+    final ext = switch (headerType) {
       'image' => ['jpg', 'jpeg', 'png'],
-      'video' => ['mp4', 'mov', 'mpeg'],
+      'video' => ['mp4', 'mov', 'mpeg', '3gp'],
       _ => ['pdf', 'doc', 'docx'],
     };
     final repo = AppScope.of(context).compose;
     final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ext, withData: true);
-    if (res == null || res.files.isEmpty || res.files.first.bytes == null) return;
+    if (res == null || res.files.isEmpty) return;
     final f = res.files.first;
+
+    final sizeInBytes = f.size;
+    if (headerType == 'image' && sizeInBytes > 5 * 1024 * 1024) {
+      if (mounted) appToast(context, 'Image size must be below 5MB', isError: true);
+      return;
+    } else if (headerType == 'video' && sizeInBytes > 16 * 1024 * 1024) {
+      if (mounted) appToast(context, 'Video size must be below 16MB', isError: true);
+      return;
+    } else if (headerType != 'image' && headerType != 'video' && sizeInBytes > 16 * 1024 * 1024) {
+      if (mounted) appToast(context, 'Document size must be below 16MB', isError: true);
+      return;
+    }
+
+    if (f.bytes == null) return;
+
     setState(() => _uploadingMedia = true);
     try {
       final url = await repo.uploadMedia(f.bytes!, f.name);
       if (url == null || url.isEmpty) throw Exception('Upload failed');
       if (mounted) setState(() { _mediaUrl = url; _mediaName = f.name; });
     } catch (e) {
-      if (mounted) appToast(context, e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) appToast(context, e.toString().replaceFirst('Exception: ', ''), isError: true);
     } finally {
       if (mounted) setState(() => _uploadingMedia = false);
     }
@@ -1366,25 +1401,39 @@ class _ComposeScreenState extends State<ComposeScreen> {
           ),
         ),
         footer: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
           child: Row(children: [
             Expanded(
               child: SizedBox(
                 height: 48,
                 child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.line), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.line),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
                   onPressed: () => Navigator.of(ctx).pop(),
-                  child: Text('Cancel', style: AppText.poppins(size: 14.5, weight: FontWeight.w700, color: AppColors.ink3)),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Cancel',
+                      maxLines: 1,
+                      style: AppText.poppins(size: 14.5, weight: FontWeight.w700, color: AppColors.ink3),
+                    ),
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              flex: 2,
               child: SizedBox(
                 height: 48,
                 child: FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.evaGreen, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.evaGreen,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
                   onPressed: () async {
                     final when = combined();
                     if (!when.isAfter(DateTime.now().subtract(const Duration(minutes: 1)))) {
@@ -1409,7 +1458,14 @@ class _ComposeScreenState extends State<ComposeScreen> {
                       _send();
                     }
                   },
-                  child: Text('Set', style: AppText.poppins(size: 14.5, weight: FontWeight.w700, color: Colors.white)),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Set',
+                      maxLines: 1,
+                      style: AppText.poppins(size: 14.5, weight: FontWeight.w700, color: Colors.white),
+                    ),
+                  ),
                 ),
               ),
             ),

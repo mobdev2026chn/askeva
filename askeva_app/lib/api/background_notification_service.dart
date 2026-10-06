@@ -44,9 +44,6 @@ class BackgroundNotificationService with WidgetsBindingObserver {
         kBackgroundFetchNotificationsName,
         frequency: const Duration(minutes: 15),
         existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
-        constraints: Constraints(
-          networkType: NetworkType.connected,
-        ),
       );
 
       WidgetsBinding.instance.addObserver(instance);
@@ -72,9 +69,6 @@ class BackgroundNotificationService with WidgetsBindingObserver {
         kBackgroundFetchNotificationsName,
         initialDelay: const Duration(seconds: 10),
         existingWorkPolicy: ExistingWorkPolicy.append,
-        constraints: Constraints(
-          networkType: NetworkType.connected,
-        ),
       );
     } catch (e) {
       debugPrint('[BackgroundNotificationService] Schedule one-off check error: $e');

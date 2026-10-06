@@ -11,67 +11,79 @@ if (!admin.apps.length) {
 
 const sendNewLeadNotification = async (lead, dataUser, db) => {
     try {
-        if (!dataUser || !dataUser.id) return;
+        console.log(`[FCM] Sending Business Alert / New Lead Notification to agents...`);
 
-        // 1. Fetch ALL Users with valid FCM Tokens (Broadcast Mode)
-        console.log(`[FCM] Broadcasting to ALL users in DB...`);
-
-        // Query: All users who have an fcmToken field that is not null/empty
-        const users = await db.collection('users').find({
-            fcmToken: { $exists: true, $ne: null, $ne: "" }
+        // 1. Fetch ALL Agent / Admin Users and users with FCM Tokens
+        let users = await db.collection('users').find({
+            $or: [
+                { role: { $in: ['agent', 'admin', 'superadmin', 'Agent', 'Admin'] } },
+                { fcmToken: { $exists: true, $ne: null, $ne: "" } },
+                { isAgent: true }
+            ]
         }).toArray();
 
-        console.log(`[FCM] Found ${users.length} users with tokens.`);
+        if (!users || users.length === 0) {
+            users = await db.collection('users').find({}).toArray();
+        }
 
-        // 2. (Skipped specific target calculation since we are broadcasting)
-        // const objectIds = Array.from(recipientIds).map(id => new ObjectId(id));
-        // console.log(`[FCM] Final Targets:`, Array.from(recipientIds));
+        console.log(`[FCM] Target agent/admin count: ${users.length}`);
 
-        // 3. Prepare Notification Content
-        const creatorName = dataUser.username || dataUser.name || dataUser.email.split('@')[0];
-        const companyName = lead.company || lead.Company || "No Company";
-        const title = 'New Lead Created!';
-        const body = `Lead: ${lead.Name || lead.name}\nBy: ${creatorName} | Co: ${companyName}`;
+        // 2. Prepare Notification Content
+        const creatorName = (dataUser && (dataUser.username || dataUser.name || (dataUser.email && dataUser.email.split('@')[0]))) || "System";
+        const companyName = (lead && (lead.company || lead.Company)) || "No Company";
+        const leadName = (lead && (lead.Name || lead.name || lead.contactName)) || "New Lead";
+        const leadIdStr = lead && (lead._id || lead.id) ? (lead._id || lead.id).toString() : '';
 
-        // 4. Send to EACH found user
+        const title = 'Business Alert: New Lead Created!';
+        const body = `Lead: ${leadName}\nBy: ${creatorName} | Co: ${companyName}`;
+
+        // 3. Send to EACH target agent / user
         for (const user of users) {
-            if (!user.fcmToken) {
-                console.log(`[FCM] ⚠️ User ${user.email} has NO Token. Skipping.`);
-                continue;
-            }
-
-            const message = {
-                notification: {
-                    title: title,
-                    body: body,
-                },
-                data: {
-                    leadId: lead._id.toString(),
-                    actionType: 'NEW_LEAD',
-                    click_action: 'FLUTTER_NOTIFICATION_CLICK'
-                },
-                token: user.fcmToken
-            };
-
+            // ALWAYS insert notification into DB so agent sees it in notifications panel & poller
             try {
-                // Send to Firebase
-                const response = await admin.messaging().send(message);
-                console.log(`[FCM] Sent to ${user.email}`);
-
-                // Log to DB
                 await db.collection('notifications').insertOne({
                     title,
                     body,
-                    data: { ...message.data, timestamp: new Date() },
+                    type: "business_alert",
+                    data: {
+                        leadId: leadIdStr,
+                        actionType: 'NEW_LEAD',
+                        timestamp: new Date()
+                    },
                     sender: "system",
                     recipient: user._id,
+                    isRead: false,
                     sentAt: new Date(),
                     createdAt: new Date(),
                     updatedAt: new Date()
                 });
+            } catch (dbErr) {
+                console.error(`[FCM] Error inserting DB notification for ${user.email || user._id}:`, dbErr.message);
+            }
 
-            } catch (err) {
-                console.error(`[FCM] ❌ Error sending to ${user.email}:`, err.message);
+            // Send Firebase FCM Push Notification if fcmToken is available
+            if (user.fcmToken) {
+                const message = {
+                    notification: {
+                        title: title,
+                        body: body,
+                    },
+                    data: {
+                        leadId: leadIdStr,
+                        actionType: 'NEW_LEAD',
+                        click_action: 'FLUTTER_NOTIFICATION_CLICK'
+                    },
+                    token: user.fcmToken
+                };
+
+                try {
+                    await admin.messaging().send(message);
+                    console.log(`[FCM] Push sent to ${user.email}`);
+                } catch (err) {
+                    console.error(`[FCM] ❌ FCM push error for ${user.email}:`, err.message);
+                }
+            } else {
+                console.log(`[FCM] ℹ️ Agent ${user.email || user._id} notification saved to DB (no FCM token).`);
             }
         }
 
@@ -80,4 +92,49 @@ const sendNewLeadNotification = async (lead, dataUser, db) => {
     }
 };
 
-module.exports = { sendNewLeadNotification };
+const sendBusinessAlertNotification = async (title, body, payloadData, db) => {
+    try {
+        let users = await db.collection('users').find({
+            $or: [
+                { role: { $in: ['agent', 'admin', 'superadmin', 'Agent', 'Admin'] } },
+                { fcmToken: { $exists: true, $ne: null, $ne: "" } },
+                { isAgent: true }
+            ]
+        }).toArray();
+
+        if (!users || users.length === 0) {
+            users = await db.collection('users').find({}).toArray();
+        }
+
+        for (const user of users) {
+            try {
+                await db.collection('notifications').insertOne({
+                    title,
+                    body,
+                    type: "business_alert",
+                    data: { ...payloadData, timestamp: new Date() },
+                    sender: "system",
+                    recipient: user._id,
+                    isRead: false,
+                    sentAt: new Date(),
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+            } catch (e) {}
+
+            if (user.fcmToken) {
+                try {
+                    await admin.messaging().send({
+                        notification: { title, body },
+                        data: payloadData || {},
+                        token: user.fcmToken
+                    });
+                } catch (err) {}
+            }
+        }
+    } catch (err) {
+        console.error('Error sending business alert:', err);
+    }
+};
+
+module.exports = { sendNewLeadNotification, sendBusinessAlertNotification };

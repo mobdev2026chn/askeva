@@ -9,10 +9,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../api/agents_repository.dart';
 import '../api/app_scope.dart';
 import '../api/dto.dart';
 import '../data/models.dart';
-import '../data/mock_data.dart';
 import '../shell/app_nav.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -21,6 +21,29 @@ import 'dashboard_sheets.dart' show showAppSheet, appToast;
 
 // Built-in lead statuses (mirrors the design's dropdown-driven set).
 const List<String> kLeadStatuses = ['New', 'Hot', 'Warm', 'Cold', 'Customer'];
+
+/// Extracts the human-readable display name of an agent, prioritizing name over email.
+String getAgentDisplayName(Map<String, dynamic> a) {
+  // Try all common name fields the backend may use
+  for (final key in ['name', 'agentName', 'fullName', 'displayName', 'username']) {
+    final v = (a[key] ?? '').toString().trim();
+    if (v.isNotEmpty && !v.contains('@')) return v;
+  }
+  // Try firstName + lastName combo
+  final first = (a['firstName'] ?? a['first_name'] ?? '').toString().trim();
+  final last = (a['lastName'] ?? a['last_name'] ?? '').toString().trim();
+  if (first.isNotEmpty || last.isNotEmpty) return '$first $last'.trim();
+  // Fall back to username even if it looks like an email, then bare email
+  final username = (a['username'] ?? '').toString().trim();
+  if (username.isNotEmpty) return username;
+  return (a['email'] ?? '').toString().trim();
+}
+
+/// Helper to determine whether an agent has permission to access/be assigned to Leads.
+/// Checks status, role, type array badges (e.g. ["Leads", "Chat Agent"]), permissions map, and explicit flags.
+bool isLeadPermittedAgent(Map<String, dynamic> a) {
+  return AgentsRepository.isAgentPermittedForModule(a, 'leads');
+}
 
 // ---------------------------------------------------------------------------
 // Filter model
@@ -109,8 +132,9 @@ const Object _u = Object();
 Widget sheetScaffold(BuildContext context, {required String title, required IconData icon, required Widget body, Widget? footer}) {
   return SafeArea(
     top: false,
+    bottom: true,
     child: Padding(
-      padding: EdgeInsets.only(bottom: footer == null ? 12.0 : 0.0),
+      padding: EdgeInsets.only(bottom: footer == null ? 14.0 : 16.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -124,7 +148,10 @@ Widget sheetScaffold(BuildContext context, {required String title, required Icon
             ]),
           ),
           Flexible(child: body),
-          if (footer != null) footer,
+          if (footer != null) ...[
+            const SizedBox(height: 12),
+            footer,
+          ],
         ],
       ),
     ),
@@ -224,6 +251,7 @@ class _LeadFormState extends State<_LeadForm> {
   bool _newLeadAlert = true;
 
   List<String> _dynamicAgents = [];
+  List<Map<String, dynamic>> _rawAgentsList = [];
   List<String> _dynamicCompanies = [];
   List<String> _dynamicSources = [];
 
@@ -299,7 +327,9 @@ class _LeadFormState extends State<_LeadForm> {
     if (keyLower.contains('assign') || nameLower.contains('assign')) return l.assignedTo ?? '';
     if (keyLower == 'position' || nameLower == 'position' || nameLower == 'role' || nameLower == 'designation' || nameLower == 'job title' || nameLower == 'title') return l.position;
     if (keyLower == 'countrycode' || keyLower == 'country_code' || nameLower.contains('country code')) {
-      return l.countryCode.isNotEmpty ? l.countryCode : '+91';
+      final code = l.countryCode.isNotEmpty ? l.countryCode : '+91';
+      final clean = code.replaceAll('+', '').trim();
+      return clean.isNotEmpty ? '+$clean' : '+91';
     }
     if (keyLower == 'mobile' || keyLower == 'phone' || nameLower == 'mobile' || nameLower == 'phone' || nameLower == 'mobile number' || nameLower == 'phone number' || nameLower == 'whatsapp') return l.mobile;
     if (keyLower == 'address' || nameLower == 'address' || nameLower == 'full address') return l.address;
@@ -329,6 +359,37 @@ class _LeadFormState extends State<_LeadForm> {
     {'fieldName': 'Description', 'fieldKey': 'description', 'fieldType': 'textarea', 'displayInTable': true, 'mandatory': false},
   ];
 
+  List<Map<String, dynamic>> _reorderFields(List<Map<String, dynamic>> fields) {
+    final list = List<Map<String, dynamic>>.from(fields);
+
+    int getOrder(String name) {
+      final n = name.toLowerCase().trim();
+      if (n == 'name' || n == 'full name' || n == 'lead name') return 0;
+      if (n == 'company' || n == 'company name') return 1;
+      if (n == 'email' || n == 'email address') return 2;
+      if (n == 'assigned' || n == 'assigned to' || n == 'assignee' || n == 'agent') return 3;
+      if (n == 'status' || n == 'lead status') return 4;
+      if (n == 'source' || n == 'lead source') return 5;
+      if (n == 'position' || n == 'designation' || n == 'job title') return 6;
+      if (n == 'country code' || n == 'countrycode' || n == 'country_code') return 7;
+      if (n == 'mobile' || n == 'mobile number' || n == 'phone') return 8;
+      return 100;
+    }
+
+    list.sort((a, b) {
+      final nameA = (a['fieldName'] ?? a['name'] ?? a['fieldKey'] ?? '').toString();
+      final nameB = (b['fieldName'] ?? b['name'] ?? b['fieldKey'] ?? '').toString();
+      final orderA = getOrder(nameA);
+      final orderB = getOrder(nameB);
+      if (orderA != orderB) return orderA.compareTo(orderB);
+      final idxA = (a['order'] ?? a['sortOrder'] ?? 99) as int;
+      final idxB = (b['order'] ?? b['sortOrder'] ?? 99) as int;
+      return idxA.compareTo(idxB);
+    });
+
+    return list;
+  }
+
   Future<void> _loadFields() async {
     List<Map<String, dynamic>> res = [];
     try {
@@ -339,68 +400,31 @@ class _LeadFormState extends State<_LeadForm> {
       res = _defaultFallbackFields();
     }
 
+    res = _reorderFields(res);
+
     if (!mounted) return;
       
-    // Load agents dynamically (Only lead-accessed active agents)
+    // Load agents dynamically (ONLY Lead-accessed active agents)
     List<String> agentsList = [];
     try {
       final agentsRepo = AppScope.of(context).agents;
       final agentsData = await agentsRepo.fetchAgents();
-      final rolesData = await agentsRepo.fetchRoles().catchError((_) => <Map<String, dynamic>>[]);
-      
-      final leadRoleNames = <String>{};
-      for (final r in rolesData) {
-        final roleName = (r['role_name'] ?? r['name'] ?? r['role'] ?? '').toString().trim().toLowerCase();
-        final perms = r['permissions'] as Map?;
-        if (roleName.contains('admin') || roleName.contains('lead') || roleName.contains('owner') || roleName.contains('manager')) {
-          leadRoleNames.add(roleName);
-        } else if (perms != null) {
-          final lm = perms['leadsMain'] ?? perms['leads'] ?? perms['leadsDashboard'] ?? perms['lead'];
-          if (lm != null && lm.toString() != '[]' && lm.toString() != '{}' && lm.toString() != 'false' && lm.toString() != 'null') {
-            leadRoleNames.add(roleName);
-          }
-        }
-      }
+      _rawAgentsList = agentsData;
 
       for (final a in agentsData) {
-        final email = (a['email'] ?? a['username'] ?? a['name'] ?? '').toString().trim();
-        final status = (a['status'] ?? '').toString().toLowerCase();
-        if (status == 'inactive' || status == 'disabled' || status == 'suspended') continue;
+        final agentName = getAgentDisplayName(a);
+        if (agentName.isEmpty) continue;
 
-        final role = (a['role'] ?? a['role_name'] ?? '').toString().trim().toLowerCase();
-        final bool isSuperAdmin = role == 'superadmin' || role == 'admin' || role == 'owner';
-        final bool isLeadRole = leadRoleNames.contains(role) || role.contains('lead') || role.contains('admin') || role.contains('manager');
-        final bool hasExplicitLeadPerm = a['leadAccess'] == true || a['hasLeadAccess'] == true || a['leadsAccess'] == true || a['canAccessLeads'] == true;
-
-        bool hasAgentMapLeadPerm = false;
-        final agentPerms = a['permissions'] as Map?;
-        if (agentPerms != null) {
-          final lm = agentPerms['leadsMain'] ?? agentPerms['leads'] ?? agentPerms['leadsDashboard'] ?? agentPerms['lead'];
-          if (lm != null && lm.toString() != '[]' && lm.toString() != '{}' && lm.toString() != 'false' && lm.toString() != 'null') {
-            hasAgentMapLeadPerm = true;
-          }
-        }
-
-        if (isSuperAdmin || isLeadRole || hasExplicitLeadPerm || hasAgentMapLeadPerm) {
-          if (email.isNotEmpty && !agentsList.contains(email)) {
-            agentsList.add(email);
+        if (isLeadPermittedAgent(a)) {
+          if (!agentsList.contains(agentName)) {
+            agentsList.add(agentName);
           }
         }
       }
 
       if (widget.lead?.assignedTo != null && widget.lead!.assignedTo!.isNotEmpty) {
         if (!agentsList.contains(widget.lead!.assignedTo!)) {
-          agentsList.add(widget.lead!.assignedTo!);
-        }
-      }
-
-      if (agentsList.isEmpty) {
-        for (final a in agentsData) {
-          final email = (a['email'] ?? a['username'] ?? '').toString().trim();
-          final status = (a['status'] ?? '').toString().toLowerCase();
-          if (email.isNotEmpty && status != 'inactive' && status != 'disabled' && status != 'suspended') {
-            agentsList.add(email);
-          }
+          agentsList.insert(0, widget.lead!.assignedTo!);
         }
       }
     } catch (_) {}
@@ -466,8 +490,10 @@ class _LeadFormState extends State<_LeadForm> {
           _tags.addAll(widget.lead!.tags);
         }
 
-        if (_dropdownValues['countryCode'] == null || _dropdownValues['countryCode']!.isEmpty) {
-          _dropdownValues['countryCode'] = '+91';
+        final ccVal = _dropdownValues['countryCode'];
+        if (ccVal == null || ccVal.isEmpty || ccVal == 'Code' || !ccVal.startsWith('+')) {
+          final clean = (ccVal ?? '91').replaceAll('+', '').trim();
+          _dropdownValues['countryCode'] = clean.isNotEmpty ? '+$clean' : '+91';
         }
         if (_dropdownValues['status'] == null || _dropdownValues['status']!.isEmpty) {
           _dropdownValues['status'] = 'New';
@@ -494,12 +520,17 @@ class _LeadFormState extends State<_LeadForm> {
   }
 
   bool _isFieldRequired(String name) {
-    final n = name.trim().toLowerCase();
-    if (n == 'website' || n == 'website url' || n == 'web') return false;
-    if (n == 'description' || n == 'description *') return true;
-    final f = _fields.firstWhere((e) => (e['fieldName'] ?? e['name'] ?? '') == name, orElse: () => const {});
-    if (f.isEmpty) return false;
-    return f['mandatory'] == true;
+    final search = name.trim().toLowerCase();
+    if (search == 'country code' || search == 'countrycode' || search == 'country_code') return true;
+    final f = _fields.firstWhere(
+      (e) => (e['fieldName'] ?? e['name'] ?? e['fieldKey'] ?? '').toString().trim().toLowerCase() == search,
+      orElse: () => const {},
+    );
+    if (f.isNotEmpty) {
+      return f['mandatory'] == true || f['isMandatory'] == true || f['required'] == true;
+    }
+    if (search == 'website' || search == 'website url' || search == 'web') return false;
+    return false;
   }
 
   Future<void> _save() async {
@@ -618,18 +649,16 @@ class _LeadFormState extends State<_LeadForm> {
       }
     }
 
-    final builtins = ["Name", "Full Name", "Company", "Company Name", "Email", "Status", "Source", "Assigned", "Position", "Designation", "Job Title", "Role", "Country Code", "Mobile", "Mobile Number", "Phone", "Product", "Address", "City", "Country", "Website", "Lead Value", "Tags", "Description"];
     for (final f in _fields) {
+      final isMandatory = f['mandatory'] == true || f['isMandatory'] == true || f['required'] == true;
+      if (!isMandatory) continue;
       final name = (f['fieldName'] ?? f['name'] ?? '').toString();
-      if (builtins.contains(name)) continue;
       final key = getFieldJsonKey(name);
-      if (f['displayInTable'] == true && f['mandatory'] == true) {
-        final isSelect = (f['fieldType'] ?? '') == 'select';
-        final val = isSelect ? _dropdownValues[key] : _controllers[key]?.text.trim();
-        if (val == null || val.isEmpty) {
-          appToast(context, 'Enter $name');
-          return;
-        }
+      final isSelect = (f['fieldType'] ?? '') == 'select';
+      final val = isSelect ? _dropdownValues[key] : _controllers[key]?.text.trim();
+      if (val == null || val.isEmpty) {
+        appToast(context, 'Please enter $name');
+        return;
       }
     }
 
@@ -641,15 +670,23 @@ class _LeadFormState extends State<_LeadForm> {
     final navigator = Navigator.of(context);
     setState(() => _saving = true);
 
-    final cleanCode = codeVal.replaceAll('+', '').trim();
-    final rawCombined = mobileVal.startsWith(cleanCode) ? mobileVal : '$cleanCode$mobileVal';
-    final cleanMobile = formatCleanMobileNumber(rawCombined.isNotEmpty ? rawCombined : mobileVal);
+    final rawCc = codeVal.replaceAll('+', '').trim();
+    var cleanCode = rawCc.isEmpty ? '91' : rawCc;
+    var digitsOnly = mobileVal.replaceAll(RegExp(r'[^\d]'), '').trim();
+
+    if (cleanCode == '91') {
+      if (digitsOnly.startsWith('9191') && digitsOnly.length >= 12) {
+        digitsOnly = digitsOnly.substring(4);
+      } else if (digitsOnly.startsWith('91') && digitsOnly.length >= 11 && digitsOnly.length <= 13) {
+        digitsOnly = digitsOnly.substring(2);
+      }
+    }
 
     final body = <String, dynamic>{
       'name': nameVal,
-      'mobile': cleanMobile,
+      'mobile': digitsOnly,
       'status': statusVal.isEmpty ? 'New' : statusVal,
-      'countryCode': cleanCode.isEmpty ? '91' : cleanCode,
+      'countryCode': cleanCode,
       if (sourceVal.isNotEmpty) 'source': sourceVal,
       if (assignedVal.isNotEmpty) 'assigned': assignedVal,
     };
@@ -687,6 +724,7 @@ class _LeadFormState extends State<_LeadForm> {
     setVal('Description', 'description', _controllers['description']?.text.trim());
     setVal('Tags', 'tags', _tags);
 
+    const builtins = ["Name", "Full Name", "Company", "Company Name", "Email", "Status", "Source", "Assigned", "Position", "Designation", "Job Title", "Role", "Country Code", "Mobile", "Mobile Number", "Phone", "Product", "Address", "City", "Country", "Website", "Lead Value", "Tags", "Description"];
     for (final f in _fields) {
       final name = (f['fieldName'] ?? f['name'] ?? '').toString();
       if (builtins.contains(name)) continue;
@@ -705,41 +743,14 @@ class _LeadFormState extends State<_LeadForm> {
     try {
       if (_isEdit) {
         await repo.updateLead(widget.lead!.id, body);
+        appToast(context, 'Lead updated successfully!', isSuccess: true);
       } else {
-        final existingLeadsPage = await repo.fetchLeads(limit: 100).catchError((_) => LeadsPage([], 0));
-        final cleanDigits = mobileVal.replaceAll(RegExp(r'[^\d]'), '');
-        final match = cleanDigits.isNotEmpty && existingLeadsPage.leads.any((l) {
-          final existingDigits = l.mobile.replaceAll(RegExp(r'[^\d]'), '');
-          if (cleanDigits.length >= 7 && existingDigits.length >= 7) {
-            return existingDigits == cleanDigits || existingDigits.endsWith(cleanDigits) || cleanDigits.endsWith(existingDigits);
-          }
-          return existingDigits == cleanDigits;
-        });
-        if (match) {
-          if (!mounted) return;
-          setState(() => _saving = false);
-          appToast(context, 'Lead with mobile $mobileVal already exists');
-          return;
-        }
         await repo.createLead(body);
+        appToast(context, 'Lead created successfully!', isSuccess: true);
       }
       if (!mounted) return;
       navigator.pop(true);
-      if (nav != null) {
-        nav.toast(_isEdit ? 'Lead updated' : 'Lead created');
-      } else {
-        appToast(context, _isEdit ? 'Lead updated' : 'Lead created');
-      }
     } catch (e) {
-      if (!_isEdit && (sourceVal.toLowerCase().contains('card') || sourceVal.toLowerCase().contains('business'))) {
-        try {
-          await repo.saveOfflineCard(body);
-          if (!mounted) return;
-          navigator.pop(true);
-          appToast(context, '🎴 Business card saved offline locally! Will auto-sync when online.', isSuccess: true);
-          return;
-        } catch (_) {}
-      }
       if (!mounted) return;
       setState(() => _saving = false);
       final errMsg = e.toString().replaceFirst('Exception: ', '');
@@ -751,7 +762,7 @@ class _LeadFormState extends State<_LeadForm> {
     }
   }
 
-  final List<(String, String)> kCountryCodes = [
+  final List<(String, String)> kCountryCodes = const [
     ('+91', '+91 (India)'),
     ('+1', '+1 (USA)'),
     ('+44', '+44 (UK)'),
@@ -759,6 +770,188 @@ class _LeadFormState extends State<_LeadForm> {
     ('+61', '+61 (Australia)'),
     ('+65', '+65 (Singapore)'),
   ];
+
+  void _showCompanyPickerModal(BuildContext context, List<String> compOpts, TextEditingController companyCtrl) {
+    final newCompanyCtrl = TextEditingController();
+    final searchCtrl = TextEditingController();
+    List<String> filteredOpts = List.from(compOpts);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          return Container(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('Select or Search Company', style: AppText.poppins(size: 16, weight: FontWeight.w800, color: AppColors.ink)),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      icon: const Icon(Icons.close_rounded, size: 22, color: AppColors.ink2),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Search input matching Web UI: "Select or search company"
+                TextField(
+                  controller: searchCtrl,
+                  style: AppText.poppins(size: 13.5, weight: FontWeight.w600, color: AppColors.ink),
+                  onChanged: (q) {
+                    setSt(() {
+                      final query = q.trim().toLowerCase();
+                      filteredOpts = compOpts.where((c) => c.toLowerCase().contains(query)).toList();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Select or search company',
+                    hintStyle: AppText.poppins(size: 13, weight: FontWeight.w500, color: AppColors.ink4),
+                    prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.ink3),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.all(12),
+                    filled: true,
+                    fillColor: AppColors.surface2,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.line)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.line)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Options list
+                if (filteredOpts.isNotEmpty)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 180),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: filteredOpts.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.line),
+                      itemBuilder: (ctx, idx) {
+                        final c = filteredOpts[idx];
+                        return ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                          title: Text(c, style: AppText.poppins(size: 13.5, weight: FontWeight.w600, color: AppColors.ink)),
+                          trailing: companyCtrl.text == c ? const Icon(Icons.check_circle_rounded, color: AppColors.evaGreen, size: 18) : null,
+                          onTap: () {
+                            setState(() {
+                              companyCtrl.text = c;
+                              _dropdownValues['company'] = c;
+                            });
+                            Navigator.of(ctx).pop();
+                          },
+                        );
+                      },
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: Text('No matching company found', style: AppText.poppins(size: 12.5, weight: FontWeight.w500, color: AppColors.ink3)),
+                    ),
+                  ),
+                const SizedBox(height: 14),
+                const Divider(height: 1, color: AppColors.line),
+                const SizedBox(height: 14),
+                // Add New Company row matching Web UI: [ Enter Company Name ] [ + Add ]
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: newCompanyCtrl,
+                        style: AppText.poppins(size: 13.5, weight: FontWeight.w600, color: AppColors.ink),
+                        decoration: InputDecoration(
+                          hintText: 'Enter Company Name',
+                          hintStyle: AppText.poppins(size: 13, weight: FontWeight.w500, color: AppColors.ink4),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          filled: true,
+                          fillColor: AppColors.surface2,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.line)),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.line)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        final val = newCompanyCtrl.text.trim();
+                        if (val.isEmpty) {
+                          appToast(context, 'Enter a company name first');
+                          return;
+                        }
+                        setState(() {
+                          if (!_dynamicCompanies.contains(val) && !widget.companies.contains(val)) {
+                            _dynamicCompanies.add(val);
+                          }
+                          companyCtrl.text = val;
+                          _dropdownValues['company'] = val;
+                        });
+                        Navigator.of(ctx).pop();
+                        appToast(context, 'Company "$val" added', isSuccess: true);
+                      },
+                      icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                      label: Text('Add', style: AppText.poppins(size: 13.5, weight: FontWeight.w700, color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.evaGreen,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _filterAgentsByDepartment(String? dept) {
+    if (dept == null || dept.trim().isEmpty) {
+      final allNames = _rawAgentsList
+          .where((a) => isLeadPermittedAgent(a))
+          .map((a) => getAgentDisplayName(a))
+          .where((n) => n.isNotEmpty)
+          .toSet()
+          .toList();
+      _dynamicAgents = allNames;
+      return;
+    }
+
+    final target = dept.trim().toLowerCase();
+    final matched = _rawAgentsList.where((a) {
+      final deptRaw = a['department'] ?? a['departments'] ?? a['department_field'] ?? a['dept'] ?? '';
+      if (deptRaw is List) {
+        return deptRaw.any((d) => d.toString().trim().toLowerCase() == target || d.toString().trim().toLowerCase().contains(target));
+      }
+      final str = deptRaw.toString().trim().toLowerCase();
+      return str.isNotEmpty && (str == target || str.contains(target));
+    }).toList();
+
+    final names = matched
+        .where((a) => isLeadPermittedAgent(a))
+        .map((a) => getAgentDisplayName(a))
+        .where((n) => n.isNotEmpty)
+        .toSet()
+        .toList();
+
+    _dynamicAgents = names;
+    if (_dropdownValues['assigned'] != null && !names.contains(_dropdownValues['assigned'])) {
+      _dropdownValues['assigned'] = null;
+    }
+  }
 
   Widget _buildFieldWidget(Map<String, dynamic> f) {
     final name = (f['fieldName'] ?? f['name'] ?? '').toString();
@@ -774,13 +967,15 @@ class _LeadFormState extends State<_LeadForm> {
       if (_isFieldShown('Mobile')) {
         return const SizedBox.shrink();
       }
+      final rawCc = (_dropdownValues[key] ?? '+91').toString().replaceAll('+', '').trim();
+      final currentCc = rawCc.isNotEmpty ? '+$rawCc' : '+91';
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           formLabel('$name${mandatory ? " *" : ""}'),
           formSelect<String>(
-            value: _dropdownValues[key],
-            placeholder: 'Select code',
+            value: currentCc,
+            placeholder: '+91',
             options: kCountryCodes,
             onChanged: (v) => setState(() => _dropdownValues[key] = v),
           ),
@@ -790,6 +985,8 @@ class _LeadFormState extends State<_LeadForm> {
 
     if (name == 'Mobile') {
       final showCode = _isFieldShown('Country Code');
+      final rawCc = (_dropdownValues['countryCode'] ?? '+91').toString().replaceAll('+', '').trim();
+      final currentCc = rawCc.isNotEmpty ? '+$rawCc' : '+91';
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -800,8 +997,8 @@ class _LeadFormState extends State<_LeadForm> {
                 Expanded(
                   flex: 2,
                   child: formSelect<String>(
-                    value: _dropdownValues['countryCode'] ?? '+91',
-                    placeholder: 'Code',
+                    value: currentCc,
+                    placeholder: '+91',
                     options: kCountryCodes,
                     onChanged: (v) => setState(() => _dropdownValues['countryCode'] = v),
                   ),
@@ -811,7 +1008,7 @@ class _LeadFormState extends State<_LeadForm> {
                   flex: 5,
                   child: formInput(
                     _controllers['mobile']!,
-                    hint: '91XXXXXXXXXX',
+                    hint: '7904532349',
                     keyboard: TextInputType.phone,
                     formatters: [FilteringTextInputFormatter.digitsOnly],
                   ),
@@ -821,7 +1018,7 @@ class _LeadFormState extends State<_LeadForm> {
           else
             formInput(
               _controllers['mobile']!,
-              hint: '91XXXXXXXXXX',
+              hint: '7904532349',
               keyboard: TextInputType.phone,
               formatters: [FilteringTextInputFormatter.digitsOnly],
             ),
@@ -965,43 +1162,35 @@ class _LeadFormState extends State<_LeadForm> {
 
     if (name == 'Company') {
       final List<String> compOpts = List<String>.from(_dynamicCompanies.isNotEmpty ? _dynamicCompanies : widget.companies);
-      final currentComp = _controllers['company']?.text ?? _dropdownValues['company'] ?? '';
-      if (currentComp.isNotEmpty && !compOpts.contains(currentComp)) {
-        compOpts.add(currentComp);
-      }
+      final companyCtrl = _controllers['company'] ??= TextEditingController(text: getInitialValue(name, key));
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           formLabel('$name${mandatory ? " *" : ""}'),
-          Row(
-            children: [
-              Expanded(
-                child: formInput(
-                  _controllers['company'] ??= TextEditingController(text: currentComp),
-                  hint: 'Company Name',
-                  onChanged: (val) {
-                    _dropdownValues['company'] = val;
-                  },
-                ),
+          TextField(
+            controller: companyCtrl,
+            style: AppText.poppins(size: 14.5, weight: FontWeight.w600, color: AppColors.ink),
+            decoration: InputDecoration(
+              hintText: 'Select or search company',
+              hintStyle: AppText.poppins(size: 14, weight: FontWeight.w500, color: AppColors.ink4),
+              filled: true,
+              fillColor: AppColors.surface2,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(13),
+                borderSide: const BorderSide(color: AppColors.line),
               ),
-              if (compOpts.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 130,
-                  child: formSelect<String>(
-                    value: compOpts.contains(currentComp) ? currentComp : null,
-                    placeholder: 'Select',
-                    options: [for (final c in compOpts) (c, c)],
-                    onChanged: (v) {
-                      setState(() {
-                        _dropdownValues['company'] = v;
-                        _controllers['company']?.text = v;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ],
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(13),
+                borderSide: const BorderSide(color: AppColors.evaGreen, width: 1.5),
+              ),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.arrow_drop_down_rounded, color: AppColors.ink3, size: 28),
+                onPressed: () => _showCompanyPickerModal(context, compOpts, companyCtrl),
+              ),
+            ),
+            onTap: () => _showCompanyPickerModal(context, compOpts, companyCtrl),
           ),
         ],
       );
@@ -1073,6 +1262,7 @@ class _LeadFormState extends State<_LeadForm> {
 
     if (type == 'select' || type == 'dropdown') {
       final opts = ((f['options'] as List?) ?? []).map((e) => e.toString()).toList();
+      final isDeptField = name.toLowerCase().contains('department');
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1081,7 +1271,14 @@ class _LeadFormState extends State<_LeadForm> {
             value: _dropdownValues[key],
             placeholder: 'Select $name',
             options: [for (final o in opts) (o, o)],
-            onChanged: (v) => setState(() => _dropdownValues[key] = v),
+            onChanged: (v) {
+              setState(() {
+                _dropdownValues[key] = v;
+                if (isDeptField) {
+                  _filterAgentsByDepartment(v);
+                }
+              });
+            },
           ),
         ],
       );
@@ -1133,6 +1330,9 @@ class _LeadFormState extends State<_LeadForm> {
     } else if (name == 'Lead Value' || type == 'number') {
       keyboard = TextInputType.number;
       formatters = [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))];
+    } else if (key == 'name') {
+      // Name fields only allow letters and spaces — no digits or special characters.
+      formatters = [FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s]"))];
     }
 
     return Column(
@@ -1235,66 +1435,37 @@ class _ReminderSheetState extends State<_ReminderSheet> {
       final results = await Future.wait([
         leadsRepo.fetchLeadReminders(widget.lead.id),
         leadsRepo.fetchQuickReplies(),
-        agentsRepo.fetchAgents().catchError((_) => <Map<String, dynamic>>[]),
+        agentsRepo.fetchLeadAgents().catchError((_) => <Map<String, dynamic>>[]),
         agentsRepo.fetchRoles().catchError((_) => <Map<String, dynamic>>[]),
       ]);
 
       final List<Map<String, dynamic>> agentsData = (results[2] as List).cast<Map<String, dynamic>>();
-      final List<Map<String, dynamic>> rolesData = (results[3] as List).cast<Map<String, dynamic>>();
-
-      final leadRoleNames = <String>{};
-      for (final r in rolesData) {
-        final roleName = (r['role_name'] ?? r['name'] ?? r['role'] ?? '').toString().trim().toLowerCase();
-        final perms = r['permissions'] as Map?;
-        if (roleName.contains('admin') || roleName.contains('lead') || roleName.contains('owner') || roleName.contains('manager')) {
-          leadRoleNames.add(roleName);
-        } else if (perms != null) {
-          final lm = perms['leadsMain'] ?? perms['leads'] ?? perms['leadsDashboard'] ?? perms['lead'];
-          if (lm != null && lm.toString() != '[]' && lm.toString() != '{}' && lm.toString() != 'false' && lm.toString() != 'null') {
-            leadRoleNames.add(roleName);
-          }
-        }
-      }
 
       final List<String> loadedAgents = [];
       for (final a in agentsData) {
-        final email = (a['email'] ?? a['username'] ?? a['name'] ?? '').toString().trim();
-        final status = (a['status'] ?? '').toString().toLowerCase();
-        if (status == 'inactive' || status == 'disabled' || status == 'suspended') continue;
+        final agentName = getAgentDisplayName(a);
+        if (agentName.isEmpty) continue;
 
-        final role = (a['role'] ?? a['role_name'] ?? '').toString().trim().toLowerCase();
-        final bool isSuperAdmin = role == 'superadmin' || role == 'admin' || role == 'owner';
-        final bool isLeadRole = leadRoleNames.contains(role) || role.contains('lead') || role.contains('admin') || role.contains('manager');
-        final bool hasExplicitLeadPerm = a['leadAccess'] == true || a['hasLeadAccess'] == true || a['leadsAccess'] == true || a['canAccessLeads'] == true;
-
-        bool hasAgentMapLeadPerm = false;
-        final agentPerms = a['permissions'] as Map?;
-        if (agentPerms != null) {
-          final lm = agentPerms['leadsMain'] ?? agentPerms['leads'] ?? agentPerms['leadsDashboard'] ?? agentPerms['lead'];
-          if (lm != null && lm.toString() != '[]' && lm.toString() != '{}' && lm.toString() != 'false' && lm.toString() != 'null') {
-            hasAgentMapLeadPerm = true;
-          }
-        }
-
-        if (isSuperAdmin || isLeadRole || hasExplicitLeadPerm || hasAgentMapLeadPerm) {
-          if (email.isNotEmpty && !loadedAgents.contains(email)) {
-            loadedAgents.add(email);
-          }
-        }
-      }
-
-      if (loadedAgents.isEmpty) {
-        for (final a in agentsData) {
-          final email = (a['email'] ?? a['username'] ?? '').toString().trim();
-          final status = (a['status'] ?? '').toString().toLowerCase();
-          if (email.isNotEmpty && status != 'inactive' && status != 'disabled' && status != 'suspended') {
-            loadedAgents.add(email);
+        if (isLeadPermittedAgent(a)) {
+          if (!loadedAgents.contains(agentName)) {
+            loadedAgents.add(agentName);
           }
         }
       }
 
       final bool isMockList = widget.agents.length == 4 && widget.agents.contains('Kavya Reddy');
-      final List<String> finalAgentList = (widget.agents.isNotEmpty && !isMockList) ? widget.agents : loadedAgents;
+      final List<String> filteredPassedAgents = widget.agents.where((agentName) {
+        final match = agentsData.firstWhere(
+          (a) => getAgentDisplayName(a) == agentName || (a['email'] ?? '').toString().trim() == agentName,
+          orElse: () => <String, dynamic>{},
+        );
+        if (match.isNotEmpty) return isLeadPermittedAgent(match);
+        return true;
+      }).toList();
+
+      final List<String> finalAgentList = loadedAgents.isNotEmpty
+          ? loadedAgents
+          : ((filteredPassedAgents.isNotEmpty && !isMockList) ? filteredPassedAgents : loadedAgents);
 
       if (mounted) {
         setState(() {
@@ -1331,7 +1502,13 @@ class _ReminderSheetState extends State<_ReminderSheet> {
       return;
     }
     final dateStr = '${_when!.year}-${_when!.month.toString().padLeft(2, '0')}-${_when!.day.toString().padLeft(2, '0')} ${_when!.hour.toString().padLeft(2, '0')}:${_when!.minute.toString().padLeft(2, '0')}:00';
-    final assignedAgent = _agent ?? '';
+    final scope = AppScope.of(context);
+    final sessionUser = (scope.session.username ?? '').trim().isNotEmpty ? (scope.session.username ?? '').trim() : (scope.session.email ?? '').split('@')[0];
+    final assignedAgent = (_agent != null && _agent!.isNotEmpty)
+        ? _agent!
+        : ((widget.lead.assignedTo ?? '').trim().isNotEmpty
+            ? widget.lead.assignedTo!.trim()
+            : (sessionUser.isNotEmpty ? sessionUser : 'Unassigned'));
 
     setState(() => _loading = true);
     try {
@@ -1339,12 +1516,17 @@ class _ReminderSheetState extends State<_ReminderSheet> {
         'description': description,
         'date': dateStr,
         'assigned': assignedAgent,
+        'assignedTo': assignedAgent,
+        'agent': assignedAgent,
+        'agentName': assignedAgent,
+        'assigned_to': assignedAgent,
         'type': 'general',
         'isNotified': false,
       };
       await AppScope.of(context).leads.addLeadReminder(widget.lead.id, body);
       _desc.clear();
       _when = null;
+      _agent = null;
       await _load();
       appToast(context, 'Reminder set');
     } catch (e) {
@@ -1367,6 +1549,23 @@ class _ReminderSheetState extends State<_ReminderSheet> {
         appToast(context, 'Failed to delete reminder: ${e.toString().replaceFirst('Exception: ', '')}');
       }
     }
+  }
+
+  String _getReminderAgentStr(Map<String, dynamic> r) {
+    final val = r['assigned'] ?? r['assignedTo'] ?? r['agent'] ?? r['agentName'] ?? r['assigned_to'] ?? r['agent_name'];
+    if (val is Map) {
+      final name = (val['name'] ?? val['displayName'] ?? val['email'] ?? val['user'] ?? '').toString().trim();
+      if (name.isNotEmpty) return name;
+    }
+    final str = val?.toString().trim() ?? '';
+    if (str.isNotEmpty && str != 'null') return str;
+    final leadAssigned = (widget.lead.assignedTo ?? '').trim();
+    if (leadAssigned.isNotEmpty && leadAssigned != 'null') return leadAssigned;
+    try {
+      final sessionUser = (AppScope.of(context).session.username ?? '').trim();
+      if (sessionUser.isNotEmpty && sessionUser != 'null') return sessionUser;
+    } catch (_) {}
+    return 'Unassigned';
   }
 
   @override
@@ -1499,7 +1698,7 @@ class _ReminderSheetState extends State<_ReminderSheet> {
                         final r = _list[i];
                         final desc = r['description']?.toString() ?? r['notes']?.toString() ?? '—';
                         final dateStr = r['date']?.toString() ?? '';
-                        final agentStr = r['assigned']?.toString() ?? r['agent']?.toString() ?? 'Me';
+                        final agentStr = _getReminderAgentStr(r);
                         String displayDate = dateStr;
                         final dt = DateTime.tryParse(dateStr);
                         if (dt != null) {
@@ -1525,7 +1724,7 @@ class _ReminderSheetState extends State<_ReminderSheet> {
                                   children: [
                                     Text(desc, style: AppText.poppins(size: 13.5, weight: FontWeight.w700, color: AppColors.ink)),
                                     const SizedBox(height: 3),
-                                    Text('$displayDate · Assigned to $agentStr', style: AppText.poppins(size: 11.5, weight: FontWeight.w600, color: AppColors.ink3)),
+                                    Text('$displayDate · ${agentStr.isNotEmpty ? "Assigned to $agentStr" : "Unassigned"}', style: AppText.poppins(size: 11.5, weight: FontWeight.w600, color: AppColors.ink3)),
                                   ],
                                 ),
                               ),
@@ -3238,46 +3437,53 @@ class _ImportWizardState extends State<_ImportWizard> {
         final mode = await repo.fetchAssignmentMode();
         final agentsList = await AppScope.of(context).agents.fetchAgents();
         final names = agentsList
-            .where((a) => (a['role'] ?? '').toString().toLowerCase() != 'superadmin')
-            .map((a) => (a['name'] ?? a['username'] ?? a['email'] ?? '').toString().trim())
+            .where((a) => isLeadPermittedAgent(a) && (a['role'] ?? '').toString().toLowerCase() != 'superadmin')
+            .map((a) => getAgentDisplayName(a))
             .where((s) => s.isNotEmpty)
             .toList();
         _assignmentMode = mode;
-        _agentNames = names.isNotEmpty ? names : MockData.agents.map((a) => a.name).toList();
+        _agentNames = names;
       } catch (_) {}
 
       final custom = await repo.fetchLeadFields();
       final List<Map<String, dynamic>> fields = [
-        {'key': 'name', 'label': 'Name', 'required': true},
-        {'key': 'mobile', 'label': 'Mobile', 'required': true},
-        {'key': 'email', 'label': 'Email', 'required': false},
-        {'key': 'company', 'label': 'Company', 'required': false},
-        {'key': 'countryCode', 'label': 'Country Code', 'required': false},
-        {'key': 'position', 'label': 'Position', 'required': false},
-        {'key': 'address', 'label': 'Address', 'required': false},
-        {'key': 'city', 'label': 'City', 'required': false},
-        {'key': 'country', 'label': 'Country', 'required': false},
-        {'key': 'website', 'label': 'Website', 'required': false},
-        {'key': 'leadValue', 'label': 'Lead Value', 'required': false},
-        {'key': 'description', 'label': 'Description', 'required': false},
-        {'key': 'source', 'label': 'Source', 'required': false},
-        {'key': 'status', 'label': 'Status', 'required': false},
-        {'key': 'assigned', 'label': 'Assigned', 'required': false},
-        {'key': 'product', 'label': 'Product', 'required': false},
+        // importRequired = true only for the 3 identity fields needed to create a lead.
+        // Form-mandatory fields (source, status, description, assigned) from the backend
+        // config are NOT required during CSV import — the CSV may not have those columns.
+        {'key': 'name', 'label': 'Name', 'required': true, 'importRequired': true},
+        {'key': 'mobile', 'label': 'Mobile', 'required': true, 'importRequired': true},
+        {'key': 'countryCode', 'label': 'Country Code', 'required': true, 'importRequired': true},
+        {'key': 'email', 'label': 'Email', 'required': false, 'importRequired': false},
+        {'key': 'company', 'label': 'Company', 'required': false, 'importRequired': false},
+        {'key': 'position', 'label': 'Position', 'required': false, 'importRequired': false},
+        {'key': 'address', 'label': 'Address', 'required': false, 'importRequired': false},
+        {'key': 'city', 'label': 'City', 'required': false, 'importRequired': false},
+        {'key': 'country', 'label': 'Country', 'required': false, 'importRequired': false},
+        {'key': 'website', 'label': 'Website', 'required': false, 'importRequired': false},
+        {'key': 'leadValue', 'label': 'Lead Value', 'required': false, 'importRequired': false},
+        {'key': 'description', 'label': 'Description', 'required': false, 'importRequired': false},
+        {'key': 'source', 'label': 'Source', 'required': false, 'importRequired': false},
+        {'key': 'status', 'label': 'Status', 'required': false, 'importRequired': false},
+        {'key': 'assigned', 'label': 'Assigned', 'required': false, 'importRequired': false},
+        {'key': 'product', 'label': 'Product', 'required': false, 'importRequired': false},
       ];
       for (final f in custom) {
         final key = (f['fieldKey'] ?? '').toString();
         final label = (f['fieldName'] ?? '').toString();
+        final isMandatory = f['mandatory'] == true || f['isMandatory'] == true || f['required'] == true;
         final idx = fields.indexWhere((element) => element['key'] == key || element['label'].toString().toLowerCase() == label.toLowerCase());
         if (idx >= 0) {
-          if (key != 'name' && key != 'mobile') {
-            fields[idx]['required'] = false;
+          if (isMandatory) {
+            fields[idx]['required'] = true;
+            // Do NOT set importRequired = true for form-level mandatory fields.
+            // Only the 3 identity fields (name, mobile, countryCode) block import.
           }
         } else if (key.startsWith('custom_')) {
           fields.add({
             'key': key,
             'label': label,
-            'required': false,
+            'required': isMandatory,
+            'importRequired': false, // Custom form fields are never import-blocking
           });
         }
       }
@@ -3286,6 +3492,7 @@ class _ImportWizardState extends State<_ImportWizard> {
           _allFields = fields;
         });
       }
+
     } catch (_) {}
   }
 
@@ -3311,6 +3518,12 @@ class _ImportWizardState extends State<_ImportWizard> {
         (f) {
           final lowerLabel = f['label'].toString().toLowerCase().trim();
           final lowerKey = f['key'].toString().toLowerCase().trim();
+          if (lowerHeader == 'country_code' || lowerHeader == 'countrycode' || lowerHeader == 'code') {
+            return lowerKey == 'countrycode' || lowerLabel.contains('country code');
+          }
+          if (lowerHeader == 'country') {
+            return lowerKey == 'country' && !lowerHeader.contains('code');
+          }
           return lowerHeader == lowerLabel || lowerHeader == lowerKey ||
               lowerHeader.contains(lowerLabel) || lowerLabel.contains(lowerHeader) ||
               lowerHeader.contains(lowerKey) || lowerKey.contains(lowerHeader);
@@ -3871,7 +4084,7 @@ class _ImportWizardState extends State<_ImportWizard> {
                         ],
                         onChanged: (v) {
                           setState(() {
-                            _fieldMapping[header] = v ?? '';
+                            _fieldMapping[header] = v;
                           });
                         },
                       ),
@@ -3901,46 +4114,49 @@ class _ImportWizardState extends State<_ImportWizard> {
             const SizedBox(height: 14),
 
             // Tab bar: Unique Records (N) | Duplicates (M)
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () => setState(() => _previewTab = 0),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _previewTab == 0 ? const Color(0xFFE8FDF0) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _previewTab == 0 ? AppColors.evaGreen : AppColors.line),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.check_circle_outline_rounded, size: 16, color: _previewTab == 0 ? AppColors.evaGreenDeep : AppColors.ink3),
-                        const SizedBox(width: 6),
-                        Text('Unique Records (${uniqueList.length})', style: AppText.poppins(size: 13, weight: FontWeight.w700, color: _previewTab == 0 ? AppColors.evaGreenDeep : AppColors.ink3)),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: () => setState(() => _previewTab = 1),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _previewTab == 1 ? const Color(0xFFFEF3C7) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _previewTab == 1 ? const Color(0xFFF59E0B) : AppColors.line),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.warning_amber_rounded, size: 16, color: _previewTab == 1 ? const Color(0xFFB45309) : AppColors.ink3),
-                        const SizedBox(width: 6),
-                        Text('Duplicates (${duplicateList.length})', style: AppText.poppins(size: 13, weight: FontWeight.w700, color: _previewTab == 1 ? const Color(0xFFB45309) : AppColors.ink3)),
-                      ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _previewTab = 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: _previewTab == 0 ? const Color(0xFFE8FDF0) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: _previewTab == 0 ? AppColors.evaGreen : AppColors.line),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle_outline_rounded, size: 15, color: _previewTab == 0 ? AppColors.evaGreenDeep : AppColors.ink3),
+                          const SizedBox(width: 5),
+                          Text('Unique Records (${uniqueList.length})', style: AppText.poppins(size: 12.5, weight: FontWeight.w700, color: _previewTab == 0 ? AppColors.evaGreenDeep : AppColors.ink3)),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => setState(() => _previewTab = 1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: _previewTab == 1 ? const Color(0xFFFEF3C7) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: _previewTab == 1 ? const Color(0xFFF59E0B) : AppColors.line),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, size: 15, color: _previewTab == 1 ? const Color(0xFFB45309) : AppColors.ink3),
+                          const SizedBox(width: 5),
+                          Text('Duplicates (${duplicateList.length})', style: AppText.poppins(size: 12.5, weight: FontWeight.w700, color: _previewTab == 1 ? const Color(0xFFB45309) : AppColors.ink3)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 14),
 
@@ -4029,47 +4245,44 @@ class _ImportWizardState extends State<_ImportWizard> {
                 ),
                 const SizedBox(height: 12),
 
-                // Duplicate Actions row: Dropdown + Export Button
-                Row(
+                // Duplicate Actions Section: Header Row + Full-Width Dropdown Select
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Duplicate Action:', style: AppText.poppins(size: 12, weight: FontWeight.w700, color: AppColors.ink)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.line)),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _duplicateAction,
-                            isExpanded: true,
-                            style: AppText.poppins(size: 12, weight: FontWeight.w600, color: AppColors.ink),
-                            items: const [
-                              DropdownMenuItem(value: 'skip', child: Text('Skip Duplicates')),
-                              DropdownMenuItem(value: 'overwrite', child: Text('Overwrite Existing')),
-                              DropdownMenuItem(value: 'include_all', child: Text('Import All (Include Duplicates)')),
-                            ],
-                            onChanged: (v) {
-                              if (v != null) setState(() => _duplicateAction = v);
-                            },
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Duplicate Action', style: AppText.poppins(size: 13, weight: FontWeight.w800, color: AppColors.ink)),
+                        OutlinedButton.icon(
+                          onPressed: () => _exportDuplicates(duplicateList),
+                          icon: const Icon(Icons.download_rounded, size: 14, color: AppColors.ink),
+                          label: Text('Export Duplicates', style: AppText.poppins(size: 11.5, weight: FontWeight.w700, color: AppColors.ink)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            side: const BorderSide(color: AppColors.line),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: () => _exportDuplicates(duplicateList),
-                      icon: const Icon(Icons.download_rounded, size: 14, color: AppColors.ink),
-                      label: Text('Export Duplicates', style: AppText.poppins(size: 11.5, weight: FontWeight.w700, color: AppColors.ink)),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        side: const BorderSide(color: AppColors.line),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
+                    const SizedBox(height: 8),
+                    formSelect<String>(
+                      value: _duplicateAction,
+                      placeholder: 'Select Action',
+                      options: const [
+                        ('skip', 'Skip Duplicates'),
+                        ('overwrite', 'Overwrite Existing'),
+                        ('include_all', 'Import All (Include Duplicates)'),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) setState(() => _duplicateAction = v);
+                      },
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 // Table of duplicates
                 Container(
@@ -4077,14 +4290,14 @@ class _ImportWizardState extends State<_ImportWizard> {
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                         color: AppColors.surface2,
                         child: Row(
                           children: [
-                            SizedBox(width: 50, child: Text('Country', style: AppText.poppins(size: 11, weight: FontWeight.w700, color: AppColors.ink3))),
-                            Expanded(flex: 2, child: Text('Mobile', style: AppText.poppins(size: 11, weight: FontWeight.w700, color: AppColors.ink3))),
-                            Expanded(flex: 3, child: Text('Name', style: AppText.poppins(size: 11, weight: FontWeight.w700, color: AppColors.ink3))),
-                            SizedBox(width: 80, child: Text('Status', style: AppText.poppins(size: 11, weight: FontWeight.w700, color: AppColors.ink3))),
+                            SizedBox(width: 45, child: Text('Code', style: AppText.poppins(size: 11, weight: FontWeight.w700, color: AppColors.ink3))),
+                            SizedBox(width: 95, child: Text('Mobile', style: AppText.poppins(size: 11, weight: FontWeight.w700, color: AppColors.ink3))),
+                            Expanded(child: Text('Name', style: AppText.poppins(size: 11, weight: FontWeight.w700, color: AppColors.ink3))),
+                            SizedBox(width: 75, child: Text('Status', style: AppText.poppins(size: 11, weight: FontWeight.w700, color: AppColors.ink3))),
                           ],
                         ),
                       ),
@@ -4095,11 +4308,11 @@ class _ImportWizardState extends State<_ImportWizard> {
                           decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.line, width: 0.5))),
                           child: Row(
                             children: [
-                              SizedBox(width: 50, child: Text('${item['countryCode']}', style: AppText.poppins(size: 11.5, color: AppColors.ink))),
-                              Expanded(flex: 2, child: Text('${item['mobile']}', style: AppText.poppins(size: 11.5, weight: FontWeight.w600, color: AppColors.ink))),
-                              Expanded(flex: 3, child: Text('${item['name']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.poppins(size: 11.5, weight: FontWeight.w700, color: AppColors.ink))),
+                              SizedBox(width: 45, child: Text('${item['countryCode']}', style: AppText.poppins(size: 11.5, color: AppColors.ink))),
+                              SizedBox(width: 95, child: Text('${item['mobile']}', style: AppText.poppins(size: 11.5, weight: FontWeight.w600, color: AppColors.ink))),
+                              Expanded(child: Text('${item['name']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.poppins(size: 11.5, weight: FontWeight.w700, color: AppColors.ink))),
                               SizedBox(
-                                width: 80,
+                                width: 75,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                   decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(4), border: Border.all(color: const Color(0xFFFCD34D))),
@@ -4259,11 +4472,22 @@ class _ImportWizardState extends State<_ImportWizard> {
     }
 
     if (_step == 1) {
-      // Validate mandatory fields (Name and Mobile are required for CSV lead import!)
+      // Only block import if the 3 identity fields (name, mobile, countryCode) are unmapped.
+      // Form-level mandatory fields (description, source, status, assigned, etc.) are NOT
+      // required during import — the CSV may simply not contain those columns.
       final missingRequired = <String>[];
-      final mappedTargetFields = _fieldMapping.values.toSet();
-      if (!mappedTargetFields.contains('name')) missingRequired.add('Name');
-      if (!mappedTargetFields.contains('mobile')) missingRequired.add('Mobile');
+      final mappedTargetFields = _fieldMapping.values.where((v) => v.isNotEmpty).toSet();
+
+      for (final f in _allFields) {
+        final isImportRequired = f['importRequired'] == true;
+        if (isImportRequired) {
+          final key = f['key'].toString();
+          final label = f['label'].toString();
+          if (!mappedTargetFields.contains(key)) {
+            missingRequired.add('$label *');
+          }
+        }
+      }
 
       if (missingRequired.isNotEmpty) {
         appToast(context, 'Please map mandatory fields: ${missingRequired.join(", ")}', isError: true);

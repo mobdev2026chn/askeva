@@ -1043,9 +1043,15 @@ class _RemindersTabState extends State<_RemindersTab> {
                     return;
                   }
                   try {
+                    final assignedStr = (widget.lead?['assigned'] ?? widget.lead?['assignedTo'] ?? widget.lead?['assigned_to'] ?? '').toString().trim();
+                    final assignedVal = assignedStr.isNotEmpty ? assignedStr : 'Unassigned';
                     await LeadsService.addLeadReminder(widget.leadId!, {
                       'date': dateController.text,
                       'description': descController.text,
+                      'assigned': assignedVal,
+                      'assignedTo': assignedVal,
+                      'agent': assignedVal,
+                      'agentName': assignedVal,
                       'type': 'general',
                     });
                     if (ctx.mounted) Navigator.of(ctx).pop();

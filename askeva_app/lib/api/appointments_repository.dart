@@ -19,16 +19,48 @@ class AppointmentsRepository {
     return const [];
   }
 
-  /// GET /v1/booking-configuration/appointments?status=&startDate=&endDate=&agentId=
-  Future<List<AppointmentDto>> fetchAppointments({String? status, String? startDate, String? endDate, String? agentId}) async {
+  /// GET /v1/booking-configuration/appointments?status=&startDate=&endDate=&agentId=&mobile=&limit=
+  Future<List<AppointmentDto>> fetchAppointments({String? status, String? startDate, String? endDate, String? agentId, String? mobile, int? limit}) async {
     final res = await client.get('/booking-configuration/appointments', query: {
-      if (status != null && status.isNotEmpty) 'status': status,
+      'status': (status != null && status.isNotEmpty) ? status : 'all',
       if (startDate != null && startDate.isNotEmpty) 'startDate': startDate,
       if (endDate != null && endDate.isNotEmpty) 'endDate': endDate,
       if (agentId != null && agentId.isNotEmpty) 'agentId': agentId,
+      if (mobile != null && mobile.isNotEmpty) 'mobile': mobile,
+      if (limit != null) 'limit': limit.toString(),
     });
     return _list(res).map(AppointmentDto.fromJson).toList();
   }
+
+  /// GET /v1/booking-configuration/appointments/status-all?startDate=&endDate=&agentId=
+  /// Returns pre-computed dashboard stats as the web app's Appointment Dashboard uses.
+  /// Response shape: { data: { today, total, pending, completed, rescheduled, cancelled,
+  ///                           earnedRevenue, totalRevenue, avgRevenue, successRate, ... } }
+  Future<Map<String, dynamic>> fetchDashboardStats({String? startDate, String? endDate, String? agentId}) async {
+    final paths = [
+      '/booking-configuration/appointments/status-all',
+      '/booking-configuration/appointments/stats',
+      '/booking-configuration/dashboard',
+      '/booking-configuration/appointments/dashboard',
+    ];
+    for (final path in paths) {
+      try {
+        final res = await client.get(path, query: {
+          if (startDate != null && startDate.isNotEmpty) 'startDate': startDate,
+          if (endDate != null && endDate.isNotEmpty) 'endDate': endDate,
+          if (agentId != null && agentId.isNotEmpty) 'agentId': agentId,
+        });
+        if (res is Map) {
+          final data = (res['data'] is Map) ? (res['data'] as Map).cast<String, dynamic>() : res.cast<String, dynamic>();
+          // Validate that we got meaningful stats back (at least one numeric field)
+          final hasStats = data.values.any((v) => v is num);
+          if (hasStats) return data;
+        }
+      } catch (_) {}
+    }
+    return const {};
+  }
+
 
   /// GET /v1/booking-configuration/appointments/{id}
   Future<Map<String, dynamic>> fetchAppointment(String id) async {
@@ -142,15 +174,27 @@ class AppointmentsRepository {
 
   /// GET /v1/customers/suggestions?type={type}&value={value}
   Future<List<Map<String, dynamic>>> fetchCustomerSuggestions({required String type, required String value}) async {
-    final res = await client.get('/customers/suggestions', query: {
-      'type': type,
-      'value': value,
-    });
-    if (res is Map && res['data'] is List) {
-      return (res['data'] as List).whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
-    }
-    if (res is List) {
-      return res.whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
+    final paths = [
+      '/customers/suggestions',
+      '/booking-configuration/customers/suggestions',
+      '/ticketing/customers/suggestions',
+      '/leads/suggestions',
+      '/customers/search',
+    ];
+    for (final path in paths) {
+      try {
+        final res = await client.get(path, query: {
+          'type': type,
+          'value': value,
+        });
+        List<Map<String, dynamic>> items = [];
+        if (res is Map && res['data'] is List) {
+          items = (res['data'] as List).whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
+        } else if (res is List) {
+          items = res.whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
+        }
+        if (items.isNotEmpty) return items;
+      } catch (_) {}
     }
     return const [];
   }
@@ -177,16 +221,94 @@ class AppointmentsRepository {
     return const [];
   }
 
-  /// POST /v1/appointments/{id}/notes
-  Future<void> addAppointmentNote(String id, Map<String, dynamic> body) async {
-    await client.post('/appointments/$id/notes', body: body);
+  /// POST /v1/booking-configuration/appointments/{id}/notes
+  Future<void> addAppointmentNote(String id, Map<String, dynamic> body, {String? mongoId}) async {
+    final targetIds = [
+      if (mongoId != null && mongoId.isNotEmpty) mongoId,
+      id,
+    ];
+
+    Object? lastError;
+    for (final tid in targetIds) {
+      final endpoints = [
+        '/booking-configuration/appointments/$tid/notes',
+        '/booking-configuration/appointments/$tid/note',
+        '/appointments/$tid/notes',
+        '/appointments/$tid/note',
+      ];
+      for (final endpoint in endpoints) {
+        try {
+          await client.post(endpoint, body: body);
+          return;
+        } catch (e) {
+          lastError = e;
+        }
+      }
+    }
+
+    // Fallback: update appointment note via PATCH /booking-configuration/appointments/{id}
+    for (final tid in targetIds) {
+      try {
+        await client.patch('/booking-configuration/appointments/$tid', body: {
+          'note': body['content'] ?? body['text'] ?? body,
+          'notes': [body],
+        });
+        return;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (lastError != null) throw lastError;
   }
 
   /// GET /v1/appointments/stats-by-mobile?mobile={mobile}
   Future<Map<String, dynamic>> fetchStatsByMobile(String mobile) async {
-    final res = await client.get('/appointments/stats-by-mobile', query: {'mobile': mobile});
-    if (res is Map && res['data'] is Map) return (res['data'] as Map).cast<String, dynamic>();
-    if (res is Map) return res.cast<String, dynamic>();
+    final cleanMob = mobile.replaceAll(RegExp(r'\D'), '');
+    var with91 = cleanMob;
+    if (with91.length == 10) with91 = '91$with91';
+    final without91 = with91.startsWith('91') ? with91.substring(2) : with91;
+
+    final queryVariants = [
+      mobile.trim(),
+      with91,
+      without91,
+    ].where((s) => s.isNotEmpty).toSet();
+
+    final paths = [
+      '/booking-configuration/appointments/stats-by-mobile',
+      '/booking-configuration/stats-by-mobile',
+      '/appointments/stats-by-mobile',
+      '/bookings/stats-by-mobile',
+      '/users/stats-by-mobile',
+      '/leads/stats-by-mobile',
+    ];
+
+    for (final q in queryVariants) {
+      for (final path in paths) {
+        try {
+          final res = await client.get(path, query: {'mobile': q});
+          if (res is Map) {
+            final data = res['data'] ?? res['stats'] ?? res['result'] ?? res['visitStats'] ?? res['summary'] ?? res;
+            if (data is Map && data.isNotEmpty) {
+              final mapData = data.cast<String, dynamic>();
+              return mapData;
+            }
+          }
+        } catch (_) {}
+      }
+    }
     return const {};
+  }
+
+  /// POST /v1/booking-configuration/alerts/template-config
+  Future<void> saveAlertTemplateConfig(Map<String, dynamic> body) async {
+    try {
+      await client.post('/booking-configuration/alerts/template-config', body: body);
+    } catch (_) {
+      try {
+        await client.post('/booking-configuration/template-config', body: body);
+      } catch (_) {}
+    }
   }
 }
